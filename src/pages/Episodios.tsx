@@ -1,0 +1,5 @@
+import { Link } from 'react-router-dom';
+const mock = Array.from({length:10}).map((_,i)=>({ id:String(1000+i), paciente:`Paciente ${i+1}`, grd: i%2?'G045':'G012', estado: i%3===0?'pendiente':'inlier' }));
+export default function Episodios(){
+  return (<main className='max-w-6xl mx-auto px-4 py-10'><h1 className='text-xl font-semibold'>Episodios</h1><div className='mt-4 bg-white rounded-xl border overflow-x-auto'><table className='w-full text-sm'><thead className='bg-slate-100'><tr><th className='text-left p-3'>N° Episodio</th><th className='text-left p-3'>Paciente</th><th className='text-left p-3'>GRD</th><th className='text-left p-3'>Estado</th><th className='text-left p-3'>Acciones</th></tr></thead><tbody>{mock.map(ep=>(<tr key={ep.id} className='border-t'><td className='p-3'>{ep.id}</td><td className='p-3'>{ep.paciente}</td><td className='p-3'>{ep.grd}</td><td className='p-3'>{ep.estado}</td><td className='p-3'><Link className='text-indigo-600' to={`/episodios/${ep.id}`}>Ver</Link></td></tr>))}</tbody></table></div></main>);
+}

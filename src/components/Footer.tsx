@@ -1,0 +1,1 @@
+export default function Footer(){return(<footer className='mt-10 border-t border-slate-200 bg-white'><div className='max-w-6xl mx-auto px-4 py-6 text-xs text-slate-500 flex items-center justify-between'><span>UC Christus – GRD • MVP Sprint 2</span><span>v0.1.0</span></div></footer>);}

@@ -1,0 +1,1 @@
+export default function Admin(){ return(<main className='max-w-6xl mx-auto px-4 py-10'><h1 className='text-xl font-semibold'>Administración</h1><div className='bg-white rounded-xl border p-6 mt-4'><p className='text-sm text-slate-600'>Gestión de usuarios, configuración y logs.</p></div></main>); }
