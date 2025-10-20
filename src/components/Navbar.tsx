@@ -57,7 +57,7 @@ useEffect(() => {
 
   const navItems: Array<{ id: 'inicio' | 'como-funciona' | 'equipo-grd'; label: string }> = [
     { id: 'inicio', label: 'Inicio' },
-    { id: 'como-funciona', label: 'Cómo funciona' },
+    { id: 'como-funciona', label: '¿Cómo funciona?' },
     { id: 'equipo-grd', label: 'Equipo GRD' },
   ];
 
