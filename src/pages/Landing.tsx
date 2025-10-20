@@ -85,42 +85,58 @@ export default function Landing() {
       {/* ======= Cómo funciona ======= */}
       <section
         id="como-funciona"
-        className="max-w-6xl mx-auto px-4 py-10 md:py-14 bg-white rounded-3xl border"
+        className="max-w-6xl mx-auto px-4"
       >
-        <div className="flex items-center justify-between mb-8">
-          <h2 className="text-xl md:text-2xl font-semibold">Cómo funciona</h2>
-        </div>
+        <div className="relative bg-slate-100 rounded-[28px] md:rounded-[32px] p-6 md:p-10">
+          {/* Línea punteada superior */}
+          <div className="hidden md:block absolute left-10 right-10 top-10">
+            <div className="border-t-2 border-dotted border-slate-300" />
+          </div>
 
-        {/* Timeline en 4 tarjetas */}
-        <div className="grid md:grid-cols-4 gap-6">
-          <CardPaso
-            n="1"
-            title="Carga de datos clínicos"
-            p1="Los codificadores GRD cargan los archivos Excel."
-            p2="El sistema valida y prepara automáticamente los datos."
-            color="text-blue-600"
-          />
-          <CardPaso
-            n="2"
-            title="Codificación asistida"
-            p1="El sistema cruza información clínica y sugiere códigos."
-            p2="Los codificadores revisan, ajustan y confirman los datos."
-            color="text-indigo-600"
-          />
-          <CardPaso
-            n="3"
-            title="Revisión financiera"
-            p1="Finanzas valida los pesos GRD y genera la prefactura FONASA."
-            p2="Se reducen errores y mejora la trazabilidad contable."
-            color="text-purple-600"
-          />
-          <CardPaso
-            n="4"
-            title="Supervisión y análisis"
-            p1="Gestión visualiza reportes de eficiencia y rechazos."
-            p2="Información centralizada para decisiones clínicas y administrativas."
-            color="text-fuchsia-600"
-          />
+          {/* Íconos circulares alineados */}
+          <div className="hidden md:flex items-center justify-between mb-6 mt-2">
+            {['🫶','📝','💰','🔎'].map((emoji, idx) => (
+              <div key={idx} className="w-20 h-20 rounded-full bg-white shadow-sm ring-4 ring-slate-100 flex items-center justify-center text-3xl select-none">
+                <span aria-hidden>{emoji}</span>
+              </div>
+            ))}
+          </div>
+
+          <div className="flex items-center justify-between mb-6">
+            <h2 className="text-xl md:text-2xl font-semibold">Cómo funciona</h2>
+          </div>
+
+          {/* Timeline en 4 tarjetas */}
+          <div className="grid md:grid-cols-4 gap-6">
+            <CardPaso
+              n="1"
+              title="Carga de datos clínicos"
+              p1="Los codificadores GRD cargan los archivos Excel con episodios hospitalarios."
+              p2="El sistema valida y prepara automáticamente los datos para codificación."
+              color="text-blue-600"
+            />
+            <CardPaso
+              n="2"
+              title="Codificación asistida"
+              p1="El sistema cruza información clínica y sugiere códigos."
+              p2="Los codificadores revisan, ajustan y confirman los datos."
+              color="text-indigo-600"
+            />
+            <CardPaso
+              n="3"
+              title="Revisión financiera"
+              p1="Finanzas valida los pesos GRD y genera la prefactura para FONASA."
+              p2="El sistema reduce errores y mejora la trazabilidad contable."
+              color="text-purple-600"
+            />
+            <CardPaso
+              n="4"
+              title="Supervisión y análisis"
+              p1="Gestión visualiza reportes de eficiencia y rechazos."
+              p2="Toda la información queda centralizada para la toma de decisiones."
+              color="text-fuchsia-600"
+            />
+          </div>
         </div>
       </section>
 
@@ -185,11 +201,11 @@ function CardPaso({
   color: string;
 }) {
   return (
-    <div className="bg-slate-50 rounded-2xl p-5 border">
-      <div className={`${color} text-4xl font-semibold`}>{n}</div>
-      <h3 className={`mt-1 font-semibold ${color}`}>{title}</h3>
-      <p className="text-sm text-slate-700 mt-2">{p1}</p>
-      <p className="text-sm text-slate-600 mt-1">{p2}</p>
+    <div className="bg-white rounded-3xl p-6 border shadow-sm">
+      <div className={`${color} text-6xl font-semibold leading-none`}>{n}</div>
+      <h3 className={`mt-2 text-xl font-semibold ${color}`}>{title}</h3>
+      <p className="text-[15px] text-slate-700 mt-3 leading-6">{p1}</p>
+      <p className="text-[15px] text-slate-700 mt-2 leading-6">{p2}</p>
     </div>
   );
 }
