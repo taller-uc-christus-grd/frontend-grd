@@ -1,7 +1,7 @@
 import { Link } from 'react-router-dom';
 import { useState } from 'react';
 import ucFoto from '@/assets/uc_foto.jpg';
-import letras from '@/assets/letras.png'; // <— imagen “ConectaGRD” grande
+import letras from '@/assets/letras.png'; // <— imagen "ConectaGRD" grande
 import icon1 from '@/assets/icon1.png';
 import icon2 from '@/assets/icon2.png';
 import icon3 from '@/assets/icon3.png';
@@ -215,7 +215,7 @@ export default function Landing() {
                 title={s.title}
                 p1={s.p1}
                 p2={s.p2}
-                color={`text-[${s.color}]`}
+                color={s.color}
                 className={hovered === null || hovered === idx ? 'opacity-100' : 'opacity-50'}
                 onMouseEnter={() => setHovered(idx)}
                 onMouseLeave={() => setHovered(null)}
@@ -281,8 +281,6 @@ export default function Landing() {
           </div>
         </div>
       </section>
-
-      
     </main>
   );
 }
@@ -310,8 +308,8 @@ function CardPaso({
 }) {
   return (
     <div className={`bg-white rounded-3xl p-6 border shadow-lg transition-opacity ${className ?? ''}`} onMouseEnter={onMouseEnter} onMouseLeave={onMouseLeave}>
-      <div className={`${color} text-6xl font-open-sauce font-light leading-none text-center`}>{n}</div>
-      <h3 className={`mt-2 text-xl font-open-sauce font-light ${color}`}>{title}</h3>
+      <div className="text-6xl font-open-sauce font-light leading-none text-center" style={{ color }}>{n}</div>
+      <h3 className="mt-2 text-xl font-open-sauce font-light" style={{ color }}>{title}</h3>
       <p className="text-[15px] text-slate-700 mt-3 leading-6">{p1}</p>
       <p className="text-[15px] text-slate-700 mt-2 leading-6">{p2}</p>
     </div>

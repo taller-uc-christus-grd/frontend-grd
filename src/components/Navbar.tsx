@@ -61,6 +61,28 @@ useEffect(() => {
     { id: 'equipo-grd', label: 'Equipo GRD' },
   ];
 
+  // Modo login - navbar simplificado
+  if (pathname === '/login') {
+    return (
+      <header className="bg-white/90 backdrop-blur border-b border-slate-200 sticky top-0 z-50">
+        <div className="max-w-6xl mx-auto px-4 py-3 flex items-center justify-between">
+          {/* Logo */}
+          <Link to="/" className="flex items-center">
+            <img src={logo} alt="ConectaGRD" className="h-10 md:h-12 w-auto" />
+          </Link>
+
+          {/* Botón de volver */}
+          <Link 
+            to="/" 
+            className="px-4 py-2 rounded-xl bg-slate-100 text-slate-700 hover:bg-slate-200 transition-colors"
+          >
+            ← Volver al inicio
+          </Link>
+        </div>
+      </header>
+    );
+  }
+
   return (
     <header className="bg-white/90 backdrop-blur border-b border-slate-200 sticky top-0 z-50">
       <div className="max-w-6xl mx-auto px-4 py-3 flex items-center justify-between">
