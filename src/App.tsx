@@ -13,7 +13,6 @@ import Admin from '@/pages/Admin'
 import Respaldos from '@/pages/Respaldos'
 import Protected from '@/components/Protected'
 import Catalogos from '@/pages/Catalogos' 
-
 // Wrapper para poder anidar rutas protegidas con roles opcionales
 import type { Role } from '@/types'
 

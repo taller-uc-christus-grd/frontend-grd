@@ -1,3 +1,190 @@
+@import url('https://fonts.googleapis.com/css2?family=Open+Sans:wght@300;400;500;600;700&display=swap');
+
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
+
+/* Estilos personalizados para Landing */
+
+.font-open-sauce {
+  font-family: 'Open Sans', sans-serif;
+}
+
+.gradient-overlay {
+  background: linear-gradient(135deg, rgba(91, 139, 255, 0.1) 0%, rgba(155, 121, 255, 0.1) 50%, rgba(197, 123, 255, 0.1) 100%);
+}
+
+/* ===== SISTEMA DE COLORES UNIFICADO ===== */
+:root {
+  --primary-blue: #5B8BFF;
+  --primary-purple: #9B79FF;
+  --primary-purple-light: #C57BFF;
+  --admin-gray: #333333;
+  --background: #f8fafc;
+  --surface: #ffffff;
+  --border: #e2e8f0;
+  --text-primary: #1e293b;
+  --text-secondary: #64748b;
+  --text-muted: #94a3b8;
+}
+
+/* ===== ESTILOS GLOBALES UNIFICADOS ===== */
+body {
+  background-color: var(--background);
+  font-family: 'Open Sans', sans-serif;
+}
+
+/* Contenedores principales */
+.main-container {
+  @apply max-w-7xl mx-auto px-6 py-10;
+}
+
+.main-container-sm {
+  @apply max-w-4xl mx-auto px-4 py-10;
+}
+
+.main-container-lg {
+  @apply max-w-6xl mx-auto px-4 py-10;
+}
+
+/* Tarjetas unificadas */
+.card {
+  @apply bg-white rounded-2xl border border-slate-200 shadow-sm hover:shadow-md transition-all duration-300;
+}
+
+.card-elevated {
+  @apply bg-white rounded-2xl border border-slate-200 shadow-lg hover:shadow-xl transition-all duration-300;
+}
+
+.card-interactive {
+  @apply bg-white rounded-2xl border border-slate-200 shadow-sm hover:shadow-lg hover:scale-102 transition-all duration-300 cursor-pointer;
+}
+
+/* Botones unificados */
+.btn-primary {
+  @apply px-6 py-3 rounded-2xl bg-black text-white font-medium hover:bg-gray-800 transition-all duration-300;
+}
+
+.btn-secondary {
+  @apply px-6 py-3 rounded-2xl bg-white text-gray-700 border border-gray-300 font-medium hover:bg-gray-50 transition-all duration-300;
+}
+
+.btn-accent {
+  @apply px-6 py-3 rounded-2xl font-medium transition-all duration-300;
+}
+
+.btn-blue {
+  @apply bg-[var(--primary-blue)] text-white hover:bg-[#4a7ae8];
+}
+
+.btn-purple {
+  @apply bg-[var(--primary-purple)] text-white hover:bg-[#8a6ae8];
+}
+
+.btn-purple-light {
+  @apply bg-[var(--primary-purple-light)] text-white hover:bg-[#b36ae8];
+}
+
+/* Títulos unificados */
+.title-primary {
+  @apply text-2xl md:text-3xl font-open-sauce font-light text-[var(--text-primary)];
+}
+
+.title-secondary {
+  @apply text-xl font-semibold text-[var(--text-primary)];
+}
+
+.title-section {
+  @apply text-sm font-medium text-[var(--text-secondary)] mb-3;
+}
+
+/* Formularios unificados */
+.form-input {
+  @apply w-full border border-gray-300 rounded-xl px-4 py-3 focus:ring-2 focus:ring-[var(--primary-blue)] focus:border-transparent transition-all duration-300;
+}
+
+.form-label {
+  @apply block text-sm font-medium text-[var(--text-secondary)] mb-2;
+}
+
+/* Tablas unificadas */
+.table-container {
+  @apply bg-white rounded-2xl border border-slate-200 overflow-hidden;
+}
+
+.table-header {
+  @apply bg-slate-100;
+}
+
+.table-cell {
+  @apply p-4 text-sm;
+}
+
+.table-row {
+  @apply border-t border-slate-200 hover:bg-slate-50 transition-colors duration-200;
+}
+
+/* Estados y badges */
+.badge-success {
+  @apply px-3 py-1 rounded-full text-xs font-medium bg-green-100 text-green-800;
+}
+
+.badge-warning {
+  @apply px-3 py-1 rounded-full text-xs font-medium bg-yellow-100 text-yellow-800;
+}
+
+.badge-error {
+  @apply px-3 py-1 rounded-full text-xs font-medium bg-red-100 text-red-800;
+}
+
+.badge-info {
+  @apply px-3 py-1 rounded-full text-xs font-medium bg-blue-100 text-blue-800;
+}
+
+/* Animaciones suaves */
+.transition-all {
+  transition: all 0.3s ease;
+}
+
+/* Efectos hover personalizados */
+.hover\:scale-102:hover {
+  transform: scale(1.02);
+}
+
+/* Estilos para las tarjetas expandibles */
+.card-expand {
+  transition: all 0.5s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+/* Degradados personalizados */
+.bg-gradient-purple-blue {
+  background: linear-gradient(135deg, #f3e8ff 0%, #dbeafe 100%);
+}
+
+.bg-gradient-primary {
+  background: linear-gradient(135deg, var(--primary-blue) 0%, var(--primary-purple) 100%);
+}
+
+/* Sombras personalizadas */
+.shadow-custom {
+  box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
+}
+
+/* Efectos de máscara para iconos */
+.icon-mask {
+  -webkit-mask-size: contain;
+  mask-size: contain;
+  -webkit-mask-repeat: no-repeat;
+  mask-repeat: no-repeat;
+  -webkit-mask-position: center;
+  mask-position: center;
+}
+
+/* Links unificados */
+.link-primary {
+  @apply text-[var(--primary-blue)] hover:text-[#4a7ae8] transition-colors duration-200;
+}
+
+.link-secondary {
+  @apply text-[var(--text-secondary)] hover:text-[var(--text-primary)] transition-colors duration-200;
+}

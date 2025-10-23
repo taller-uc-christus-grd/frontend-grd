@@ -48,99 +48,294 @@ export default function PlanillaFinal(){
   const canEdit = (key: string) => FINAL_COLUMNS.find(c => c[1] === key)?.[2] === true;
 
   return (
-    <main className="max-w-7xl mx-auto px-4 py-8">
-      <div className="flex flex-wrap items-center gap-3">
-        <h1 className="text-xl font-semibold flex-1">Planilla final</h1>
-        <input className="border rounded px-2 py-1" placeholder="Buscar episodio o nombre…" value={q} onChange={e=>setQ(e.target.value)} />
-        <label className="text-sm flex items-center gap-2">
-          <input type="checkbox" checked={onlyOutliers} onChange={e=>setOnlyOutliers(e.target.checked)} />
-          Solo Outliers
-        </label>
-        <button className="px-3 py-2 rounded bg-slate-100 border" onClick={()=>exportToCSV(list)}>Exportar CSV</button>
-        <button className="px-3 py-2 rounded bg-indigo-600 text-white" onClick={()=>exportToExcel(list)}>Exportar Excel</button>
+    <main className="main-container">
+      <header className="mb-8">
+        <h1 className="title-primary">Planilla Final</h1>
+        <p className="text-[var(--text-secondary)] mt-2">
+          Gestión y edición de la planilla final para exportación a FONASA
+        </p>
+      </header>
+
+      {/* Controles de filtrado y exportación */}
+      <div className="card p-6 mb-6">
+        <div className="flex flex-wrap items-center gap-4">
+          <div className="flex-1 min-w-[300px]">
+            <input 
+              className="form-input" 
+              placeholder="Buscar episodio o nombre…" 
+              value={q} 
+              onChange={e=>setQ(e.target.value)} 
+            />
+          </div>
+          
+          <label className="flex items-center gap-2 text-sm">
+            <input 
+              type="checkbox" 
+              checked={onlyOutliers} 
+              onChange={e=>setOnlyOutliers(e.target.checked)}
+              className="rounded"
+            />
+            Solo Outliers
+          </label>
+          
+          <div className="flex gap-3">
+            <button 
+              className="btn-secondary" 
+              onClick={()=>exportToCSV(list)}
+            >
+              Exportar CSV
+            </button>
+            <button 
+              className="btn-accent btn-blue" 
+              onClick={()=>exportToExcel(list)}
+            >
+              Exportar Excel
+            </button>
+          </div>
+        </div>
       </div>
 
-      <div className="mt-4 bg-white rounded-xl border overflow-auto">
-        <table className="w-full text-sm min-w-[1200px]">
-          <thead className="bg-slate-100">
-            <tr>
-              {FINAL_COLUMNS.map(([h]) => <th key={h} className="text-left p-2">{h}</th>)}
-            </tr>
-          </thead>
-          <tbody>
-            {list.map(ep => (
-              <tr key={ep.episodio} className="border-t">
-                {FINAL_COLUMNS.map(([header, key]) => {
-                  const path = key.split('.');
-                  const value = path.reduce((acc: any, k)=>acc?.[k], ep as any);
-                  const editable = canEdit(key);
+      {/* Tarjetas de episodios en estilo Landing */}
+      <div className="grid gap-6">
+        {list.map(ep => (
+          <div className="card-elevated p-6 border-l-4" style={{ borderLeftColor: 'var(--primary-blue)' }}>
+          {/* Header del episodio */}
+          <div className="flex items-center justify-between mb-6">
+              <div className="flex items-center gap-4">
+                <div className="w-12 h-12 rounded-xl bg-[var(--primary-blue)] flex items-center justify-center">
+                  <span className="text-white font-bold text-lg">📋</span>
+                </div>
+                <div>
+                  <h3 className="title-secondary">Episodio #{ep.episodio}</h3>
+                  <p className="text-sm text-[var(--text-secondary)]">
+                    {ep.nombre} • {ep.rut}
+                  </p>
+                </div>
+              </div>
+              <div className="flex items-center gap-3">
+                {ep.validado ? (
+                  <span className="badge-success flex items-center gap-1">
+                    <div className="w-1.5 h-1.5 rounded-full bg-white"></div>
+                    Validado
+                  </span>
+                ) : (
+                  <span className="badge-warning flex items-center gap-1">
+                    <div className="w-1.5 h-1.5 rounded-full bg-white"></div>
+                    Pendiente
+                  </span>
+                )}
+                {ep.inlierOutlier === 'Outlier' && (
+                  <span className="badge-error flex items-center gap-1">
+                    <div className="w-1.5 h-1.5 rounded-full bg-white"></div>
+                    Outlier
+                  </span>
+                )}
+              </div>
+            </div>
 
-                  // Render por tipo simple (checkbox / select / input / lectura)
-                  if (editable && (key === 'validado' || key.startsWith('docs.'))) {
-                    const checked = Boolean(value);
-                    return <td key={header} className="p-2">
-                      <input type="checkbox" checked={checked} onChange={e=>setField(ep, key, e.target.checked)} />
-                    </td>;
-                  }
+            {/* Grid de campos */}
+            <div className="grid md:grid-cols-3 gap-6">
+              {/* Información del paciente */}
+              <div className="space-y-4 p-4 rounded-xl" style={{ backgroundColor: 'rgba(91, 139, 255, 0.05)' }}>
+                <h4 className="font-medium text-[var(--primary-blue)] mb-3 flex items-center gap-2">
+                  <div className="w-2 h-2 rounded-full" style={{ backgroundColor: 'var(--primary-blue)' }}></div>
+                  Información del Paciente
+                </h4>
+                
+                <div className="space-y-3">
+                  <div>
+                    <label className="form-label">Centro</label>
+                    {canEdit('centro') ? (
+                      <input 
+                        className="form-input" 
+                        value={ep.centro ?? ''} 
+                        onChange={e=>setField(ep, 'centro', e.target.value)} 
+                      />
+                    ) : (
+                      <p className="text-[var(--text-secondary)]">{ep.centro ?? '—'}</p>
+                    )}
+                  </div>
 
-                  if (editable && key === 'estadoRN') {
-                    return <td key={header} className="p-2">
-                      <select className="border rounded px-2 py-1" value={value ?? ''} onChange={e=>setField(ep, key, e.target.value || null)}>
+                  <div>
+                    <label className="form-label">N° Folio</label>
+                    {canEdit('folio') ? (
+                      <input 
+                        className="form-input" 
+                        value={ep.folio ?? ''} 
+                        onChange={e=>setField(ep, 'folio', e.target.value)} 
+                      />
+                    ) : (
+                      <p className="text-[var(--text-secondary)]">{ep.folio ?? '—'}</p>
+                    )}
+                  </div>
+
+                  <div>
+                    <label className="form-label">Tipo Episodio</label>
+                    {canEdit('tipoEpisodio') ? (
+                      <select 
+                        className="form-input" 
+                        value={ep.tipoEpisodio ?? ''} 
+                        onChange={e=>setField(ep, 'tipoEpisodio', e.target.value || null)}
+                      >
+                        <option value="">—</option>
+                        <option>Hospitalario</option>
+                        <option>Ambulatorio</option>
+                      </select>
+                    ) : (
+                      <p className="text-[var(--text-secondary)]">{ep.tipoEpisodio ?? '—'}</p>
+                    )}
+                  </div>
+                </div>
+              </div>
+
+              {/* Información GRD */}
+              <div className="space-y-4 p-4 rounded-xl" style={{ backgroundColor: 'rgba(155, 121, 255, 0.05)' }}>
+                <h4 className="font-medium text-[var(--primary-purple)] mb-3 flex items-center gap-2">
+                  <div className="w-2 h-2 rounded-full" style={{ backgroundColor: 'var(--primary-purple)' }}></div>
+                  Información GRD
+                </h4>
+                
+                <div className="space-y-3">
+                  <div>
+                    <label className="form-label">IR GRD</label>
+                    <p className="text-[var(--text-secondary)]">{ep.grdCodigo ?? '—'}</p>
+                  </div>
+
+                  <div>
+                    <label className="form-label">Peso</label>
+                    <p className="text-[var(--text-secondary)]">{ep.peso ?? '—'}</p>
+                  </div>
+
+                  <div>
+                    <label className="form-label">Estado RN</label>
+                    {canEdit('estadoRN') ? (
+                      <select 
+                        className="form-input" 
+                        value={ep.estadoRN ?? ''} 
+                        onChange={e=>setField(ep, 'estadoRN', e.target.value || null)}
+                      >
                         <option value="">—</option>
                         <option value="Aprobado">Aprobado</option>
                         <option value="Pendiente">Pendiente</option>
                         <option value="Rechazado">Rechazado</option>
                       </select>
-                    </td>;
-                  }
+                    ) : (
+                      <p className="text-[var(--text-secondary)]">{ep.estadoRN ?? '—'}</p>
+                    )}
+                  </div>
+                </div>
+              </div>
 
-                  if (editable && key === 'tipoEpisodio') {
-                    return <td key={header} className="p-2">
-                      <select className="border rounded px-2 py-1" value={value ?? ''} onChange={e=>setField(ep, key, e.target.value || null)}>
-                        <option value="">—</option>
-                        <option>Hospitalario</option>
-                        <option>Ambulatorio</option>
-                      </select>
-                    </td>;
-                  }
+              {/* Información financiera */}
+              <div className="space-y-4 p-4 rounded-xl" style={{ backgroundColor: 'rgba(197, 123, 255, 0.05)' }}>
+                <h4 className="font-medium text-[var(--primary-purple-light)] mb-3 flex items-center gap-2">
+                  <div className="w-2 h-2 rounded-full" style={{ backgroundColor: 'var(--primary-purple-light)' }}></div>
+                  Información Financiera
+                </h4>
+                
+                <div className="space-y-3">
+                  <div>
+                    <label className="form-label">AT (S/N)</label>
+                    {canEdit('at') ? (
+                      <div className="flex items-center gap-2">
+                        <input 
+                          type="checkbox" 
+                          checked={Boolean(ep.at)} 
+                          onChange={e=>setField(ep, 'at', e.target.checked)}
+                          className="rounded"
+                        />
+                        <span className="text-sm text-[var(--text-secondary)]">
+                          {ep.at ? 'Sí' : 'No'}
+                        </span>
+                      </div>
+                    ) : (
+                      <p className="text-[var(--text-secondary)]">{ep.at ? 'Sí' : 'No'}</p>
+                    )}
+                  </div>
 
-                  if (editable && (key === 'precioBase' || key === 'diasDemoraRescate')) {
-                    return <td key={header} className="p-2">
-                      <input className="border rounded px-2 py-1 w-28" type="number" value={value ?? ''} onChange={e=>setField(ep, key, e.target.value === '' ? undefined : Number(e.target.value))} />
-                    </td>;
-                  }
+                  {ep.at && (
+                    <div>
+                      <label className="form-label">AT Detalle</label>
+                      {canEdit('atDetalle') ? (
+                        <input 
+                          className="form-input" 
+                          value={ep.atDetalle ?? ''} 
+                          onChange={e=>setField(ep, 'atDetalle', e.target.value)} 
+                          placeholder="código/desc AT" 
+                        />
+                      ) : (
+                        <p className="text-[var(--text-secondary)]">{ep.atDetalle ?? '—'}</p>
+                      )}
+                    </div>
+                  )}
 
-                  if (editable && key === 'at') {
-                    return <td key={header} className="p-2">
-                      <input type="checkbox" checked={Boolean(value)} onChange={e=>setField(ep, key, e.target.checked)} />
-                    </td>;
-                  }
+                  <div>
+                    <label className="form-label">Días Demora Rescate</label>
+                    {canEdit('diasDemoraRescate') ? (
+                      <input 
+                        className="form-input" 
+                        type="number" 
+                        value={ep.diasDemoraRescate ?? ''} 
+                        onChange={e=>setField(ep, 'diasDemoraRescate', e.target.value === '' ? undefined : Number(e.target.value))} 
+                      />
+                    ) : (
+                      <p className="text-[var(--text-secondary)]">{ep.diasDemoraRescate ?? '—'}</p>
+                    )}
+                  </div>
 
-                  if (editable && key === 'atDetalle') {
-                    return <td key={header} className="p-2">
-                      <input className="border rounded px-2 py-1 w-56" value={value ?? ''} onChange={e=>setField(ep, key, e.target.value)} placeholder="código/desc AT" />
-                    </td>;
-                  }
+                  <div>
+                    <label className="form-label">Monto Final</label>
+                    <p className="text-lg font-semibold text-[var(--primary-blue)]">
+                      ${ep.montoFinal?.toLocaleString() ?? '—'}
+                    </p>
+                  </div>
+                </div>
+              </div>
+            </div>
 
-                  if (editable && (key === 'centro' || key === 'folio')) {
-                    return <td key={header} className="p-2">
-                      <input className="border rounded px-2 py-1 w-40" value={value ?? ''} onChange={e=>setField(ep, key, e.target.value)} />
-                    </td>;
-                  }
-
-                  // Lectura (cálculos y campos de extracto)
-                  return <td key={header} className="p-2">{value ?? ''}</td>;
-                })}
-              </tr>
-            ))}
-          </tbody>
-        </table>
+            {/* Documentación */}
+            <div className="mt-6 pt-6 border-t border-slate-200">
+              <h4 className="font-medium text-[var(--admin-gray)] mb-3 flex items-center gap-2">
+                <div className="w-2 h-2 rounded-full" style={{ backgroundColor: 'var(--admin-gray)' }}></div>
+                Documentación
+              </h4>
+              <div className="grid md:grid-cols-3 gap-4">
+                {['epicrisis', 'protocolo', 'certDefuncion'].map(doc => (
+                  <div key={doc} className="flex items-center gap-2">
+                    <input 
+                      type="checkbox" 
+                      checked={Boolean(ep.docs?.[doc as keyof typeof ep.docs])} 
+                      onChange={e=>setField(ep, `docs.${doc}`, e.target.checked)}
+                      className="rounded"
+                    />
+                    <label className="text-sm text-[var(--text-secondary)] capitalize">
+                      {doc.replace(/([A-Z])/g, ' $1').trim()}
+                    </label>
+                  </div>
+                ))}
+              </div>
+            </div>
+          </div>
+        ))}
       </div>
 
-      <p className="text-xs text-slate-500 mt-2">
-        Campos editables: VALIDADO, Centro, N° Folio, TIPO EPISODIO, ESTADO RN, AT/AT detalle, Días demora rescate, Precio Base, EPICRISIS/PROTOCOLO/CERT. DEFUNCION.
-        Los demás se calculan o provienen del extracto SIGESA.
-      </p>
+      <div className="card p-4 mt-6">
+        <div className="flex items-start gap-3">
+          <div className="w-6 h-6 rounded-full bg-[var(--primary-blue)] flex items-center justify-center flex-shrink-0 mt-0.5">
+            <span className="text-white text-xs font-bold">i</span>
+          </div>
+          <div>
+            <p className="text-sm font-medium text-[var(--text-primary)] mb-2">
+              Información sobre campos editables
+            </p>
+            <p className="text-xs text-[var(--text-secondary)] leading-relaxed">
+              <span className="font-medium text-[var(--primary-blue)]">Campos editables:</span> VALIDADO, Centro, N° Folio, TIPO EPISODIO, ESTADO RN, AT/AT detalle, Días demora rescate, Precio Base, EPICRISIS/PROTOCOLO/CERT. DEFUNCION.
+              <br />
+              <span className="text-[var(--text-muted)]">Los demás se calculan o provienen del extracto SIGESA.</span>
+            </p>
+          </div>
+        </div>
+      </div>
     </main>
   );
 }

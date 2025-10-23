@@ -169,7 +169,7 @@ function PrecheckDialog({
             onClick={() => onConfirm(viewRows)}
             title={hasCritical ? 'Faltan columnas requeridas' : (!canUpload ? 'Corrige las observaciones' : 'Subir al backend')}
           >
-            Subir al backend
+            Subir
           </button>
         </div>
       </div>

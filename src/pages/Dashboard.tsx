@@ -10,41 +10,57 @@ export default function Dashboard() {
     !!role && roles.includes(role);
 
   return (
-    <main className="max-w-6xl mx-auto px-4 py-10">
-      <header>
-        <h1 className="text-xl font-semibold">Bienvenido/a</h1>
-        <p className="text-slate-600 mt-1">
-          Sesión: <b>{user?.email}</b> — Rol: <b>{role}</b>
+    <main className="main-container-lg">
+      <header className="mb-8">
+        <h1 className="title-primary">Bienvenido/a</h1>
+        <p className="text-[var(--text-secondary)] mt-2">
+          Sesión: <span className="font-medium text-[var(--text-primary)]">{user?.email}</span> — 
+          Rol: <span className="font-medium text-[var(--primary-blue)]">{role}</span>
         </p>
       </header>
 
       {/* Módulo: Operación diaria */}
-      <section className="mt-8">
-        <h2 className="text-sm font-medium text-slate-700 mb-3">Operación</h2>
-        <div className="grid md:grid-cols-3 gap-4">
+      <section className="mb-10">
+        <h2 className="title-section">Operación</h2>
+        <div className="grid md:grid-cols-3 gap-6">
           {/* Carga (codificador + admin) */}
           {can(['codificador', 'admin']) && (
-            <Link to="/carga" className="bg-white rounded-xl p-6 border block hover:shadow-sm">
-              <div className="font-medium">Carga archivo maestro</div>
-              <p className="text-sm text-slate-600 mt-1">
+            <Link to="/carga" className="card-interactive p-6 group">
+              <div className="flex items-center mb-4">
+                <div className="w-12 h-12 rounded-xl bg-[var(--primary-blue)] flex items-center justify-center mr-4">
+                  <span className="text-white font-bold text-lg">📁</span>
+                </div>
+                <div className="font-medium text-[var(--text-primary)]">Carga archivo maestro</div>
+              </div>
+              <p className="text-sm text-[var(--text-secondary)]">
                 Subir extracto SIGESA (Excel) para procesar episodios.
               </p>
             </Link>
           )}
 
           {/* Episodios (cualquiera autenticado) */}
-          <Link to="/episodios" className="bg-white rounded-xl p-6 border block hover:shadow-sm">
-            <div className="font-medium">Episodios</div>
-            <p className="text-sm text-slate-600 mt-1">
+          <Link to="/episodios" className="card-interactive p-6 group">
+            <div className="flex items-center mb-4">
+              <div className="w-12 h-12 rounded-xl bg-[var(--primary-purple)] flex items-center justify-center mr-4">
+                <span className="text-white font-bold text-lg">📋</span>
+              </div>
+              <div className="font-medium text-[var(--text-primary)]">Episodios</div>
+            </div>
+            <p className="text-sm text-[var(--text-secondary)]">
               Listado, búsqueda y detalle por episodio.
             </p>
           </Link>
 
           {/* Exportaciones (finanzas + gestión) */}
           {can(['finanzas', 'gestion']) && (
-            <Link to="/exportaciones" className="bg-white rounded-xl p-6 border block hover:shadow-sm">
-              <div className="font-medium">Exportaciones</div>
-              <p className="text-sm text-slate-600 mt-1">
+            <Link to="/exportaciones" className="card-interactive p-6 group">
+              <div className="flex items-center mb-4">
+                <div className="w-12 h-12 rounded-xl bg-[var(--primary-purple-light)] flex items-center justify-center mr-4">
+                  <span className="text-white font-bold text-lg">📊</span>
+                </div>
+                <div className="font-medium text-[var(--text-primary)]">Exportaciones</div>
+              </div>
+              <p className="text-sm text-[var(--text-secondary)]">
                 Generar planilla final para FONASA.
               </p>
             </Link>
@@ -53,14 +69,19 @@ export default function Dashboard() {
       </section>
 
       {/* Módulo: Catálogos y configuración */}
-      <section className="mt-8">
-        <h2 className="text-sm font-medium text-slate-700 mb-3">Configuración</h2>
-        <div className="grid md:grid-cols-3 gap-4">
+      <section className="mb-10">
+        <h2 className="title-section">Configuración</h2>
+        <div className="grid md:grid-cols-3 gap-6">
           {/* Catálogos: admin + finanzas + gestión */}
           {can(['admin', 'finanzas', 'gestion']) && (
-            <Link to="/catalogos" className="bg-white rounded-xl p-6 border block hover:shadow-sm">
-              <div className="font-medium">Catálogos & Norma</div>
-              <p className="text-sm text-slate-600 mt-1">
+            <Link to="/catalogos" className="card-interactive p-6 group">
+              <div className="flex items-center mb-4">
+                <div className="w-12 h-12 rounded-xl bg-[var(--admin-gray)] flex items-center justify-center mr-4">
+                  <span className="text-white font-bold text-lg">📚</span>
+                </div>
+                <div className="font-medium text-[var(--text-primary)]">Catálogos & Norma</div>
+              </div>
+              <p className="text-sm text-[var(--text-secondary)]">
                 Subir Norma MINSAL, AT y Precios Base (Excel).
               </p>
             </Link>
@@ -68,9 +89,14 @@ export default function Dashboard() {
 
           {/* Administración (solo admin) */}
           {can(['admin']) && (
-            <Link to="/admin" className="bg-white rounded-xl p-6 border block hover:shadow-sm">
-              <div className="font-medium">Administración</div>
-              <p className="text-sm text-slate-600 mt-1">
+            <Link to="/admin" className="card-interactive p-6 group">
+              <div className="flex items-center mb-4">
+                <div className="w-12 h-12 rounded-xl bg-[var(--admin-gray)] flex items-center justify-center mr-4">
+                  <span className="text-white font-bold text-lg">⚙️</span>
+                </div>
+                <div className="font-medium text-[var(--text-primary)]">Administración</div>
+              </div>
+              <p className="text-sm text-[var(--text-secondary)]">
                 Usuarios, permisos y configuración global.
               </p>
             </Link>

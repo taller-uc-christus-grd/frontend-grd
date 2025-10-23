@@ -45,7 +45,7 @@ export default function PrecheckDialog({
             <h3 className="font-medium mb-2">Validaciones</h3>
             {issues.length === 0 ? (
               <div className="text-emerald-700 bg-emerald-50 border border-emerald-200 p-2 rounded text-sm">
-                Sin observaciones. Puedes subir al backend.
+                Sin observaciones. Puedes subir el archivo.
               </div>
             ) : (
               <ul className="space-y-1 text-sm">
