@@ -57,7 +57,11 @@ body {
 }
 
 .card-interactive {
-  @apply bg-white rounded-2xl border border-slate-200 shadow-sm hover:shadow-lg hover:scale-102 transition-all duration-300 cursor-pointer;
+  @apply bg-white rounded-2xl border border-slate-200 shadow-sm hover:scale-102 transition-all duration-300 cursor-pointer;
+}
+
+.card-interactive:hover {
+  box-shadow: 0 20px 40px -10px rgba(155, 121, 255, 0.4), 0 15px 25px -5px rgba(155, 121, 255, 0.2);
 }
 
 /* Botones unificados */

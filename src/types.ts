@@ -48,6 +48,11 @@ export interface Episode {
   pagoOutlierSup?: number | null; // TBD: null = pendiente regla
   pagoDemora?: number | null;     // TBD: null = pendiente regla
   montoFinal?: number;           // valorGRD + montoAT + pagos (si no null)
+  montoRN?: number;              // Facturación Total del episodio
+  precioBaseTramo?: number;      // Precio base por tramo correspondiente
+  grupoDentroNorma?: boolean;    // Grupo dentro de norma S/N
+  diasEstada?: number;           // Días de Estada
+  documentacion?: string;        // Documentación necesaria
 
   // Documentos requeridos (estado)
   docs: {

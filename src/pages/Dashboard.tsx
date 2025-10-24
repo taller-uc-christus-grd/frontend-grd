@@ -19,15 +19,15 @@ export default function Dashboard() {
         </p>
       </header>
 
-      {/* Módulo: Operación diaria */}
+      {/* Módulos del sistema */}
       <section className="mb-10">
-        <h2 className="title-section">Operación</h2>
-        <div className="grid md:grid-cols-3 gap-6">
+        <h2 className="title-section">Módulos del Sistema</h2>
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
           {/* Carga (codificador + admin) */}
           {can(['codificador', 'admin']) && (
             <Link to="/carga" className="card-interactive p-6 group">
               <div className="flex items-center mb-4">
-                <div className="w-12 h-12 rounded-xl bg-[var(--primary-blue)] flex items-center justify-center mr-4">
+                <div className="w-12 h-12 rounded-xl bg-purple-800 flex items-center justify-center mr-4">
                   <span className="text-white font-bold text-lg">📁</span>
                 </div>
                 <div className="font-medium text-[var(--text-primary)]">Carga archivo maestro</div>
@@ -41,7 +41,7 @@ export default function Dashboard() {
           {/* Episodios (cualquiera autenticado) */}
           <Link to="/episodios" className="card-interactive p-6 group">
             <div className="flex items-center mb-4">
-              <div className="w-12 h-12 rounded-xl bg-[var(--primary-purple)] flex items-center justify-center mr-4">
+              <div className="w-12 h-12 rounded-xl bg-purple-800 flex items-center justify-center mr-4">
                 <span className="text-white font-bold text-lg">📋</span>
               </div>
               <div className="font-medium text-[var(--text-primary)]">Episodios</div>
@@ -55,7 +55,7 @@ export default function Dashboard() {
           {can(['finanzas', 'gestion']) && (
             <Link to="/exportaciones" className="card-interactive p-6 group">
               <div className="flex items-center mb-4">
-                <div className="w-12 h-12 rounded-xl bg-[var(--primary-purple-light)] flex items-center justify-center mr-4">
+                <div className="w-12 h-12 rounded-xl bg-purple-800 flex items-center justify-center mr-4">
                   <span className="text-white font-bold text-lg">📊</span>
                 </div>
                 <div className="font-medium text-[var(--text-primary)]">Exportaciones</div>
@@ -65,18 +65,12 @@ export default function Dashboard() {
               </p>
             </Link>
           )}
-        </div>
-      </section>
 
-      {/* Módulo: Catálogos y configuración */}
-      <section className="mb-10">
-        <h2 className="title-section">Configuración</h2>
-        <div className="grid md:grid-cols-3 gap-6">
           {/* Catálogos: admin + finanzas + gestión */}
           {can(['admin', 'finanzas', 'gestion']) && (
             <Link to="/catalogos" className="card-interactive p-6 group">
               <div className="flex items-center mb-4">
-                <div className="w-12 h-12 rounded-xl bg-[var(--admin-gray)] flex items-center justify-center mr-4">
+                <div className="w-12 h-12 rounded-xl bg-purple-800 flex items-center justify-center mr-4">
                   <span className="text-white font-bold text-lg">📚</span>
                 </div>
                 <div className="font-medium text-[var(--text-primary)]">Catálogos & Norma</div>
@@ -91,7 +85,7 @@ export default function Dashboard() {
           {can(['admin']) && (
             <Link to="/admin" className="card-interactive p-6 group">
               <div className="flex items-center mb-4">
-                <div className="w-12 h-12 rounded-xl bg-[var(--admin-gray)] flex items-center justify-center mr-4">
+                <div className="w-12 h-12 rounded-xl bg-purple-800 flex items-center justify-center mr-4">
                   <span className="text-white font-bold text-lg">⚙️</span>
                 </div>
                 <div className="font-medium text-[var(--text-primary)]">Administración</div>

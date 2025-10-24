@@ -185,6 +185,8 @@ export default function Carga() {
   const [status, setStatus] = useState('');
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
+  const [uploadProgress, setUploadProgress] = useState(0);
+  const [currentStep, setCurrentStep] = useState('');
 
   // Saber si ya existe una carga previa para mostrar "Reemplazar" y pedir confirmación
   const [hasPrevious, setHasPrevious] = useState(false);
@@ -206,20 +208,74 @@ export default function Carga() {
     setFile(f);
     setError('');
     setStatus('');
+    
+    if (f) {
+      // Validar formato de archivo
+      const allowedTypes = [
+        'application/vnd.ms-excel', // .xls
+        'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet', // .xlsx
+        'text/csv' // .csv
+      ];
+      
+      const allowedExtensions = ['.xls', '.xlsx', '.csv'];
+      const fileExtension = f.name.toLowerCase().substring(f.name.lastIndexOf('.'));
+      
+      if (!allowedTypes.includes(f.type) && !allowedExtensions.includes(fileExtension)) {
+        setError('Solo se permiten archivos .xls, .xlsx o .csv');
+        setFile(null);
+        return;
+      }
+      
+      // Validar tamaño del archivo (máximo 50MB)
+      const maxSize = 50 * 1024 * 1024; // 50MB
+      if (f.size > maxSize) {
+        setError('El archivo es demasiado grande. Máximo 50MB');
+        setFile(null);
+        return;
+      }
+      
+      setStatus(`Archivo seleccionado: ${f.name} (${(f.size / 1024 / 1024).toFixed(2)} MB)`);
+    }
   }
 
   // === Pre-validación: muestra solo columnas necesarias, pero guarda dataset completo ===
   async function startPrecheck() {
     if (!file) return;
-    const buf = await file.arrayBuffer();
-    const wb = XLSX.read(buf, { type: 'array' });
-    const ws = wb.Sheets[wb.SheetNames[0]];
-    const rowsRaw = XLSX.utils.sheet_to_json<any>(ws, { defval: '' });
+    
+    setLoading(true);
+    setError('');
+    setStatus('Validando archivo...');
+    
+    try {
+      const buf = await file.arrayBuffer();
+      const wb = XLSX.read(buf, { type: 'array' });
+      const ws = wb.Sheets[wb.SheetNames[0]];
+      const rowsRaw = XLSX.utils.sheet_to_json<any>(ws, { defval: '' });
 
-    if (!rowsRaw.length) {
-      setError('El archivo está vacío.');
-      return;
-    }
+      if (!rowsRaw.length) {
+        setError('El archivo está vacío.');
+        setLoading(false);
+        return;
+      }
+
+      // Validar columnas requeridas
+      const fileHeaders = Object.keys(rowsRaw[0]);
+      const normalizedFileHeaders = fileHeaders.map(h => normalizeHeader(h));
+      
+      const missingHeaders = REQUIRED_HEADERS.filter(required => 
+        !normalizedFileHeaders.some(fileHeader => 
+          fileHeader.toLowerCase().includes(required.toLowerCase()) ||
+          required.toLowerCase().includes(fileHeader.toLowerCase())
+        )
+      );
+      
+      if (missingHeaders.length > 0) {
+        setError(`Faltan columnas requeridas: ${missingHeaders.join(', ')}`);
+        setLoading(false);
+        return;
+      }
+      
+      setStatus(`Archivo válido. Encontradas ${rowsRaw.length} filas con ${fileHeaders.length} columnas.`);
 
     // Normaliza headers y filas (dataset completo)
     const _rawHeaders = Object.keys(rowsRaw[0]).map(h => normalizeHeader(h));
@@ -244,6 +300,11 @@ export default function Carga() {
     setViewHeaders(REQUIRED_HEADERS.slice());
     setViewRows(rowsForView);
     setOpenPrecheck(true);
+    
+    } catch (e: any) {
+      setError(`Error al procesar el archivo: ${e.message}`);
+      setLoading(false);
+    }
   }
 
   // Convierte filas corregidas (SOLO necesarias) a cambios en el dataset COMPLETO y sube
@@ -273,11 +334,6 @@ export default function Carga() {
     setOpenPrecheck(false);
   }
 
-  // === Subir directo (sin precheck) ===
-  async function upload() {
-    if (!file) return;
-    await uploadToBackend(file);
-  }
 
   async function uploadToBackend(theFile: File) {
     if (hasPrevious) {
@@ -292,20 +348,42 @@ export default function Carga() {
     setError('');
     setStatus(hasPrevious ? 'Reemplazando...' : 'Subiendo...');
     setLoading(true);
+    setUploadProgress(0);
+    setCurrentStep('Preparando archivo...');
 
     try {
-      const res = await importEpisodes(theFile, { replace: hasPrevious });
+      // Simular progreso de validación
+      setUploadProgress(10);
+      setCurrentStep('Validando estructura...');
+      await new Promise(resolve => setTimeout(resolve, 500));
+      
+      setUploadProgress(30);
+      setCurrentStep('Enviando al servidor...');
+      
+      const res = await importEpisodes(theFile, { 
+        replace: hasPrevious
+      });
+
+      setUploadProgress(70);
+      setCurrentStep('Procesando datos...');
 
       if ('summary' in res) {
+        setUploadProgress(100);
+        setCurrentStep('Completado');
         apply(res, hasPrevious);
       } else {
         setStatus('Procesando en servidor...');
+        setCurrentStep('Procesando en segundo plano...');
         const done = await pollImport(res.jobId);
+        setUploadProgress(100);
+        setCurrentStep('Completado');
         apply(done, hasPrevious);
       }
     } catch (e: any) {
       setError(e.message ?? 'Error al procesar el archivo');
       setStatus('');
+      setUploadProgress(0);
+      setCurrentStep('');
     } finally {
       setLoading(false);
     }
@@ -325,30 +403,30 @@ export default function Carga() {
     <main className="max-w-4xl mx-auto px-4 py-10">
       <h1 className="text-xl font-semibold">Carga de archivo maestro</h1>
 
-      <div className="bg-white rounded-xl p-6 border mt-4 space-y-3">
-        <input
-          type="file"
-          accept=".csv,.xls,.xlsx"
-          onChange={(e) => onPickFile(e.target.files?.[0] || null)}
-          disabled={loading}
-        />
+      <div className="bg-white rounded-xl p-6 border mt-4 space-y-4">
+        <div>
+          <label className="block text-sm font-medium text-gray-700 mb-2">
+            Seleccionar archivo maestro
+          </label>
+          <input
+            type="file"
+            accept=".csv,.xls,.xlsx"
+            onChange={(e) => onPickFile(e.target.files?.[0] || null)}
+            disabled={loading}
+            className="block w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-lg file:border-0 file:text-sm file:font-medium file:bg-indigo-50 file:text-indigo-700 hover:file:bg-indigo-100"
+          />
+          <p className="mt-1 text-xs text-gray-500">
+            Formatos permitidos: .xls, .xlsx, .csv (máximo 50MB)
+          </p>
+        </div>
 
         <div className="flex items-center gap-2">
           <button
             onClick={startPrecheck}
-            className="px-3 py-2 rounded-lg border bg-white hover:bg-slate-50 disabled:opacity-60"
+            className="px-4 py-2 rounded-lg bg-indigo-600 text-white hover:bg-indigo-700 disabled:opacity-60 disabled:cursor-not-allowed"
             disabled={!file || loading}
           >
-            Previsualizar
-          </button>
-
-          <button
-            onClick={upload}
-            className="px-3 py-2 rounded-lg bg-indigo-600 text-white disabled:opacity-60"
-            disabled={!file || loading}
-            title={hasPrevious ? 'Sobrescribe la carga anterior' : 'Sube una nueva carga'}
-          >
-            {loading ? 'Procesando...' : hasPrevious ? 'Reemplazar archivo' : 'Subir'}
+            {loading ? 'Validando...' : 'Previsualizar y Corregir'}
           </button>
         </div>
 
@@ -360,6 +438,27 @@ export default function Carga() {
             </Link>
           </p>
         )}
+        
+        {/* Barra de progreso */}
+        {loading && (
+          <div className="mt-4">
+            <div className="flex items-center justify-between mb-2">
+              <span className="text-sm font-medium text-gray-700">
+                {currentStep}
+              </span>
+              <span className="text-sm text-gray-500">
+                {uploadProgress}%
+              </span>
+            </div>
+            <div className="w-full bg-gray-200 rounded-full h-2">
+              <div 
+                className="bg-indigo-600 h-2 rounded-full transition-all duration-300 ease-out"
+                style={{ width: `${uploadProgress}%` }}
+              ></div>
+            </div>
+          </div>
+        )}
+        
         {error && <p className="text-sm text-red-600">{error}</p>}
 
         {lastImport?.missingHeaders?.length ? (
@@ -368,6 +467,29 @@ export default function Carga() {
           </div>
         ) : null}
 
+        <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
+          <h3 className="text-sm font-medium text-blue-800 mb-2">Columnas requeridas:</h3>
+          <div className="text-xs text-blue-700 space-y-1">
+            <p>• N° episodio (Episodio CMBD)</p>
+            <p>• GRD (IR GRD - Código)</p>
+            <p>• Diagnóstico principal</p>
+            <p>• Procedimiento principal</p>
+            <p>• Fecha de ingreso</p>
+            <p>• Fecha de alta</p>
+            <p>• Peso medio [Norma IR]</p>
+            <p>• Estancia real del episodio</p>
+          </div>
+        </div>
+        
+        <div className="bg-amber-50 border border-amber-200 rounded-lg p-4">
+          <h3 className="text-sm font-medium text-amber-800 mb-2">Proceso de carga:</h3>
+          <div className="text-xs text-amber-700 space-y-1">
+            <p>1. <strong>Selecciona</strong> tu archivo maestro (.xls, .xlsx, .csv)</p>
+            <p>2. <strong>Previsualiza</strong> y corrige los datos si es necesario</p>
+            <p>3. <strong>Confirma</strong> para subir el archivo corregido</p>
+          </div>
+        </div>
+        
         <p className="text-xs text-slate-500">
           El archivo se valida y normaliza en el servidor. Acepta .xlsx/.xls/.csv.
         </p>
