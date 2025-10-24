@@ -1,7 +1,10 @@
 import { Link } from 'react-router-dom';
+import { useAuth } from '@/hooks/useAuth';
 import logo from '@/assets/logo.png';
 
 export default function Footer() {
+  const { user } = useAuth();
+  
   return (
     <footer className="bg-gray-200 text-gray-800">
       <div className="max-w-7xl mx-auto px-6 py-12">
@@ -19,48 +22,65 @@ export default function Footer() {
             </div>
           </div>
 
-          {/* Enlaces rápidos */}
-          <div>
-            <h3 className="font-semibold text-gray-800 mb-4">Enlaces</h3>
-            <ul className="space-y-2">
-              <li>
-                <Link to="/" className="text-gray-600 hover:text-gray-900 transition-colors text-sm">
-                  Inicio
-                </Link>
-              </li>
-              <li>
-                <Link 
-                  to="/" 
-                  onClick={() => {
-                    setTimeout(() => {
-                      document.getElementById('como-funciona')?.scrollIntoView({ behavior: 'smooth' });
-                    }, 100);
-                  }}
-                  className="text-gray-600 hover:text-gray-900 transition-colors text-sm"
-                >
-                  ¿Cómo funciona?
-                </Link>
-              </li>
-              <li>
-                <Link 
-                  to="/" 
-                  onClick={() => {
-                    setTimeout(() => {
-                      document.getElementById('equipo-grd')?.scrollIntoView({ behavior: 'smooth' });
-                    }, 100);
-                  }}
-                  className="text-gray-600 hover:text-gray-900 transition-colors text-sm"
-                >
-                  Equipo GRD
-                </Link>
-              </li>
-              <li>
-                <Link to="/login" className="text-gray-600 hover:text-gray-900 transition-colors text-sm">
-                  Ingresar al sistema
-                </Link>
-              </li>
-            </ul>
-          </div>
+          {/* Enlaces rápidos - Solo si no está logueado */}
+          {!user && (
+            <div>
+              <h3 className="font-semibold text-gray-800 mb-4">Enlaces</h3>
+              <ul className="space-y-2">
+                <li>
+                  <Link to="/" className="text-gray-600 hover:text-gray-900 transition-colors text-sm">
+                    Inicio
+                  </Link>
+                </li>
+                <li>
+                  <Link 
+                    to="/" 
+                    onClick={() => {
+                      setTimeout(() => {
+                        document.getElementById('como-funciona')?.scrollIntoView({ behavior: 'smooth' });
+                      }, 100);
+                    }}
+                    className="text-gray-600 hover:text-gray-900 transition-colors text-sm"
+                  >
+                    ¿Cómo funciona?
+                  </Link>
+                </li>
+                <li>
+                  <Link 
+                    to="/" 
+                    onClick={() => {
+                      setTimeout(() => {
+                        document.getElementById('equipo-grd')?.scrollIntoView({ behavior: 'smooth' });
+                      }, 100);
+                    }}
+                    className="text-gray-600 hover:text-gray-900 transition-colors text-sm"
+                  >
+                    Equipo GRD
+                  </Link>
+                </li>
+                <li>
+                  <Link to="/login" className="text-gray-600 hover:text-gray-900 transition-colors text-sm">
+                    Ingresar al sistema
+                  </Link>
+                </li>
+              </ul>
+            </div>
+          )}
+
+          {/* Información adicional si está logueado */}
+          {user && (
+            <div>
+              <h3 className="font-semibold text-gray-800 mb-4">Sistema</h3>
+              <div className="space-y-2">
+                <p className="text-gray-600 text-sm">
+                  Sesión activa como: <span className="font-medium">{user.email}</span>
+                </p>
+                <p className="text-gray-600 text-sm">
+                  Rol: <span className="font-medium capitalize">{user.role}</span>
+                </p>
+              </div>
+            </div>
+          )}
         </div>
 
         {/* Línea separadora */}

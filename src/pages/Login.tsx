@@ -13,9 +13,26 @@ export default function Login() {
   async function onSubmit(e: FormEvent) {
     e.preventDefault();
     setLoading(true);
-    await login(email, password);
-    nav('/dashboard');
+    const role = await login(email, password);
     setLoading(false);
+    
+    // Redirección según rol
+    switch(role) {
+      case 'codificador':
+        nav('/codificador');
+        break;
+      case 'finanzas':
+        nav('/finanzas');
+        break;
+      case 'gestion':
+        nav('/gestion');
+        break;
+      case 'admin':
+        nav('/admin');
+        break;
+      default:
+        nav('/dashboard');
+    }
   }
 
   return (

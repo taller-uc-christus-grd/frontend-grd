@@ -5,6 +5,9 @@ import Footer from '@/components/Footer'
 import Landing from '@/pages/Landing'
 import Login from '@/pages/Login'
 import Dashboard from '@/pages/Dashboard'
+import Codificador from '@/pages/Codificador'
+import Finanzas from '@/pages/Finanzas'
+import Gestion from '@/pages/Gestion'
 import Carga from '@/pages/Carga'
 import Episodios from '@/pages/Episodios'
 import EpisodioDetalle from '@/pages/EpisodioDetalle'
@@ -34,6 +37,23 @@ export default function App() {
           <Route path="/" element={<Landing />} />
           <Route path="/login" element={<Login />} />
 
+          {/* Rutas específicas por rol */}
+          <Route element={<ProtectedWrapper roles={['codificador']} />}>
+            <Route path="/codificador" element={<Codificador />} />
+          </Route>
+
+          <Route element={<ProtectedWrapper roles={['finanzas']} />}>
+            <Route path="/finanzas" element={<Finanzas />} />
+          </Route>
+
+          <Route element={<ProtectedWrapper roles={['gestion']} />}>
+            <Route path="/gestion" element={<Gestion />} />
+          </Route>
+
+          <Route element={<ProtectedWrapper roles={['admin']} />}>
+            <Route path="/admin" element={<Admin />} />
+          </Route>
+
           {/* Rutas que requieren sesión */}
           <Route element={<ProtectedWrapper />}>
             <Route path="/dashboard" element={<Dashboard />} />
@@ -51,11 +71,6 @@ export default function App() {
             {/* Finanzas y Gestión */}
             <Route element={<ProtectedWrapper roles={['finanzas', 'gestion']} />}>
               <Route path="/exportaciones" element={<Exportaciones />} />
-            </Route>
-
-            {/* Solo Admin */}
-            <Route element={<ProtectedWrapper roles={['admin']} />}>
-              <Route path="/admin" element={<Admin />} />
             </Route>
           </Route>
 
