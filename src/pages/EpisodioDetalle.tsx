@@ -1,5 +1,6 @@
 import { useParams, Link } from 'react-router-dom';
 import { useState, useRef } from 'react';
+import JSZip from 'jszip';
 
 interface Documento {
   id: string;
@@ -7,6 +8,7 @@ interface Documento {
   fecha: string;
   tamaño: string;
   usuario: string;
+  file: File; // Referencia al archivo real
 }
 
 export default function EpisodioDetalle() {
@@ -14,6 +16,8 @@ export default function EpisodioDetalle() {
   const [isDocumentosOpen, setIsDocumentosOpen] = useState(false);
   const [documentos, setDocumentos] = useState<Documento[]>([]);
   const [isDragOver, setIsDragOver] = useState(false);
+  const [showSuccessMessage, setShowSuccessMessage] = useState<string | null>(null);
+  const [replaceModal, setReplaceModal] = useState<{show: boolean, oldFile: string, newFile: string, documentoId: string} | null>(null);
   
   const fileInputRef = useRef<HTMLInputElement>(null);
   const replaceInputRef = useRef<HTMLInputElement>(null);
@@ -24,7 +28,8 @@ export default function EpisodioDetalle() {
       nombre: file.name,
       fecha: new Date().toISOString().split('T')[0],
       tamaño: `${(file.size / 1024 / 1024).toFixed(1)} MB`,
-      usuario: 'Usuario Actual' // En producción vendría del contexto de autenticación
+      usuario: 'Usuario Actual', // En producción vendría del contexto de autenticación
+      file: file // Guardar la referencia al archivo real
     }));
     setDocumentos(prev => [...prev, ...newDocumentos]);
   };
@@ -57,36 +62,77 @@ export default function EpisodioDetalle() {
   };
 
   const handleReplaceFile = (documentoId: string) => {
+    const documento = documentos.find(doc => doc.id === documentoId);
+    if (!documento) return;
+
     if (replaceInputRef.current) {
-      replaceInputRef.current.click();
       replaceInputRef.current.onchange = (event) => {
         const files = (event.target as HTMLInputElement).files;
         if (files && files.length > 0) {
           const file = files[0];
-          setDocumentos(prev => prev.map(doc => 
-            doc.id === documentoId 
-              ? {
-                  ...doc,
-                  nombre: file.name,
-                  fecha: new Date().toISOString().split('T')[0],
-                  tamaño: `${(file.size / 1024 / 1024).toFixed(1)} MB`,
-                  usuario: 'Usuario Actual'
-                }
-              : doc
-          ));
+          
+          // Mostrar modal de confirmación
+          setReplaceModal({
+            show: true,
+            oldFile: documento.nombre,
+            newFile: file.name,
+            documentoId: documentoId
+          });
         }
       };
+
+      // Abrir el explorador de archivos
+      replaceInputRef.current.click();
+    }
+  };
+
+  const handleConfirmReplace = () => {
+    if (!replaceModal) return;
+
+    const documentoId = replaceModal.documentoId;
+    const newFileName = replaceModal.newFile;
+    const files = replaceInputRef.current?.files;
+    
+    if (files && files.length > 0) {
+      const file = files[0];
+
+      setDocumentos(prev => prev.map(doc => 
+        doc.id === documentoId 
+          ? {
+              ...doc,
+              nombre: newFileName,
+              fecha: new Date().toISOString().split('T')[0], // Registro de fecha de actualización
+              tamaño: `${(file.size / 1024 / 1024).toFixed(1)} MB`,
+              usuario: 'Usuario Actual',
+              file: file // Actualizar la referencia al archivo
+            }
+          : doc
+      ));
+
+      // Feedback visual de éxito
+      setShowSuccessMessage(`Archivo "${newFileName}" reemplazado exitosamente`);
+      setTimeout(() => {
+        setShowSuccessMessage(null);
+      }, 3000);
+    }
+
+    setReplaceModal(null);
+    if (replaceInputRef.current) {
+      replaceInputRef.current.value = '';
+    }
+  };
+
+  const handleCancelReplace = () => {
+    setReplaceModal(null);
+    if (replaceInputRef.current) {
+      replaceInputRef.current.value = '';
     }
   };
 
   const handleDownloadIndividual = (documento: Documento) => {
     try {
-      // Crear contenido simulado del archivo
-      const content = `Contenido del archivo: ${documento.nombre}\nFecha: ${documento.fecha}\nTamaño: ${documento.tamaño}\nUsuario: ${documento.usuario}\nEpisodio: ${id}`;
-      
-      // Crear blob y descargar
-      const blob = new Blob([content], { type: 'text/plain' });
-      const url = URL.createObjectURL(blob);
+      // Usar el archivo real
+      const url = URL.createObjectURL(documento.file);
       const link = document.createElement('a');
       link.href = url;
       link.download = `episodio-${id}-${documento.nombre}`;
@@ -101,32 +147,37 @@ export default function EpisodioDetalle() {
     }
   };
 
-  const handleDownloadZip = () => {
+  const handleDownloadZip = async () => {
     if (documentos.length === 0) {
       alert('No hay documentos para descargar');
       return;
     }
 
     try {
-      // Crear un archivo de texto con la lista de documentos
-      const content = `Documentos del Episodio ${id}\n\n${documentos.map((doc, index) => 
-        `${index + 1}. ${doc.nombre}\n   Fecha: ${doc.fecha}\n   Tamaño: ${doc.tamaño}\n   Usuario: ${doc.usuario}\n`
-      ).join('\n')}`;
+      const zip = new JSZip();
+
+      // Agregar cada archivo al ZIP
+      for (const doc of documentos) {
+        const fileContent = await doc.file.arrayBuffer();
+        zip.file(doc.nombre, fileContent);
+      }
+
+      // Generar el archivo ZIP
+      const blob = await zip.generateAsync({ type: 'blob' });
       
-      // Crear blob y descargar
-      const blob = new Blob([content], { type: 'text/plain' });
+      // Descargar el archivo ZIP
       const url = URL.createObjectURL(blob);
       const link = document.createElement('a');
       link.href = url;
-      link.download = `lista-documentos-episodio-${id}.txt`;
+      link.download = `documentos-episodio-${id}.zip`;
       document.body.appendChild(link);
       link.click();
       document.body.removeChild(link);
       URL.revokeObjectURL(url);
       
     } catch (error) {
-      console.error('Error al generar archivo:', error);
-      alert('Error al generar el archivo');
+      console.error('Error al generar archivo ZIP:', error);
+      alert('Error al generar el archivo ZIP');
     }
   };
 
@@ -215,6 +266,16 @@ export default function EpisodioDetalle() {
               accept=".pdf,.doc,.docx,.jpg,.jpeg,.png"
             />
             
+            {/* Mensaje de éxito */}
+            {showSuccessMessage && (
+              <div className='mt-4 p-3 bg-green-50 border border-green-200 rounded-lg flex items-center'>
+                <svg className='w-5 h-5 text-green-500 mr-2' fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                </svg>
+                <span className='text-green-700 text-sm'>{showSuccessMessage}</span>
+              </div>
+            )}
+            
             {/* Lista de documentos */}
             <div className='mt-4'>
               {documentos.length > 0 ? (
@@ -283,6 +344,47 @@ export default function EpisodioDetalle() {
           </div>
         )}
       </div>
+
+      {/* Modal de confirmación de reemplazo */}
+      {replaceModal && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+          <div className="bg-white rounded-xl border p-6 max-w-md w-full mx-4">
+            <h3 className="text-lg font-semibold text-slate-900 mb-4">
+              Confirmar reemplazo
+            </h3>
+            <p className="text-sm text-slate-600 mb-4">
+              ¿Estás seguro de que quieres reemplazar este archivo?
+            </p>
+            <div className="bg-slate-50 rounded-lg p-4 mb-4 space-y-2">
+              <div>
+                <span className="text-xs text-slate-500">Archivo actual:</span>
+                <p className="text-sm text-slate-900 font-medium">{replaceModal.oldFile}</p>
+              </div>
+              <div className="border-t pt-2">
+                <span className="text-xs text-slate-500">Nuevo archivo:</span>
+                <p className="text-sm text-slate-900 font-medium">{replaceModal.newFile}</p>
+              </div>
+            </div>
+            <p className="text-xs text-slate-500 mb-4">
+              Se actualizará la fecha del documento a la fecha actual.
+            </p>
+            <div className="flex gap-3 justify-end">
+              <button
+                onClick={handleCancelReplace}
+                className="px-4 py-2 text-sm text-slate-700 bg-slate-100 rounded-lg hover:bg-slate-200 transition-colors"
+              >
+                Cancelar
+              </button>
+              <button
+                onClick={handleConfirmReplace}
+                className="px-4 py-2 text-sm text-white bg-indigo-600 rounded-lg hover:bg-indigo-700 transition-colors"
+              >
+                Confirmar reemplazo
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </main>
   );
 }
