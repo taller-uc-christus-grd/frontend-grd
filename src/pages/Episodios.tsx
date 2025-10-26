@@ -2,9 +2,19 @@ import { useState, useMemo, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { FINAL_COLUMNS } from '@/lib/planillaConfig';
 import type { Episode } from '@/types';
+import { useAuth } from '@/hooks/useAuth';
+import { hasRole } from '@/lib/auth';
+import { 
+  validateFieldValue, 
+  formatCurrency
+} from '@/lib/validations';
 import api from '@/lib/api';
 
 export default function Episodios() {
+  const { user } = useAuth();
+  const isFinanzas = hasRole(user, ['finanzas']);
+  const isGestion = hasRole(user, ['gestion']);
+  
   // TODO: Reemplazar con datos reales del backend
   const [episodios, setEpisodios] = useState<Episode[]>([]);
   const [loading, setLoading] = useState(false);
@@ -12,6 +22,20 @@ export default function Episodios() {
   const [searchTerm, setSearchTerm] = useState('');
   const [filterValidated, setFilterValidated] = useState<'all' | 'validated' | 'pending'>('all');
   const [filterOutlier, setFilterOutlier] = useState<'all' | 'inlier' | 'outlier'>('all');
+  
+  // Estados para edición
+  const [editingCell, setEditingCell] = useState<{row: number, field: string} | null>(null);
+  const [editValue, setEditValue] = useState<string>('');
+  const [saving, setSaving] = useState(false);
+  
+  // Los catálogos se manejan en el backend
+  
+  // Estados para validaciones
+  const [validationErrors, setValidationErrors] = useState<{[key: string]: string[]}>({});
+  const [validationWarnings, setValidationWarnings] = useState<{[key: string]: string[]}>({});
+  
+  // Estado para mensajes de confirmación
+  const [saveMessage, setSaveMessage] = useState<string>('');
 
   // Filtros y búsqueda
   const filteredEpisodios = useMemo(() => {
@@ -44,12 +68,208 @@ export default function Episodios() {
     return filtered;
   }, [episodios, searchTerm, filterValidated, filterOutlier]);
 
+  // Campos editables según rol del usuario
+  const getEditableFields = () => {
+    const editableFields = new Set<string>();
+    
+    if (isFinanzas) {
+      // Finanzas puede editar campos financieros
+      FINAL_COLUMNS.forEach(([header, key, editable]) => {
+        if (editable && key !== 'validado') { // validado es solo para gestión
+          editableFields.add(key);
+        }
+      });
+    }
+    
+    if (isGestion) {
+      // Gestión puede editar el campo validado
+      editableFields.add('validado');
+    }
+    
+    return editableFields;
+  };
+
+  const editableFields = getEditableFields();
+
+  // Función para iniciar edición
+  const startEdit = (rowIndex: number, field: string, currentValue: any) => {
+    if ((!isFinanzas && !isGestion) || !editableFields.has(field)) return;
+    
+    setEditingCell({ row: rowIndex, field });
+    
+    // Para el campo validado, convertir boolean a string apropiado
+    if (field === 'validado') {
+      setEditValue(currentValue === true ? 'true' : currentValue === false ? 'false' : '');
+    } else {
+      setEditValue(currentValue?.toString() || '');
+    }
+  };
+
+  // Función para guardar cambios
+  const saveEdit = async () => {
+    if (!editingCell || saving) return;
+    
+    setSaving(true);
+    try {
+      const { row, field } = editingCell;
+      const episodio = filteredEpisodios[row];
+      
+      // Validar el valor según el tipo de campo
+      const fieldValidation = validateFieldValue(field, editValue);
+      if (!fieldValidation.isValid) {
+        throw new Error(fieldValidation.errors.join(', '));
+      }
+      
+      let validatedValue: any = editValue;
+      
+      if (field.includes('monto') || field.includes('pago') || field.includes('precio') || field.includes('valor')) {
+        validatedValue = parseFloat(editValue);
+      }
+      
+      if (field === 'diasDemoraRescate') {
+        validatedValue = parseInt(editValue);
+      }
+      
+      if (field === 'validado') {
+        validatedValue = editValue === 'true' ? true : editValue === 'false' ? false : null;
+      }
+
+      // Actualizar el episodio localmente
+      const updatedEpisodios = [...episodios];
+      const originalIndex = episodios.findIndex(ep => ep.episodio === episodio.episodio);
+      if (originalIndex !== -1) {
+        const updatedEpisodio = {
+          ...updatedEpisodios[originalIndex],
+          [field]: validatedValue
+        };
+
+        // Enviar solo el campo editado al backend
+        // El backend se encarga de todos los cálculos usando los catálogos
+        try {
+          const response = await api.patch(`/api/episodes/${episodio.episodio}`, { 
+            [field]: validatedValue
+          });
+          
+          console.log(`Campo ${field} actualizado exitosamente para episodio ${episodio.episodio}`);
+          
+          // El backend devuelve el episodio completo con todos los campos recalculados
+          const updatedEpisodioFromBackend = response.data;
+          
+          // Actualizar la lista local con los datos del backend
+          updatedEpisodios[originalIndex] = updatedEpisodioFromBackend;
+          setEpisodios(updatedEpisodios);
+          
+          // Mostrar mensaje de confirmación
+          setSaveMessage(`✅ Campo ${field} guardado exitosamente`);
+          setTimeout(() => setSaveMessage(''), 3000);
+          
+        } catch (backendError: any) {
+          console.error('Error al guardar en backend:', backendError);
+          // Revertir cambios locales si falla el backend
+          setEpisodios(episodios);
+          throw new Error(`Error al guardar: ${backendError.response?.data?.message || backendError.message}`);
+        }
+      }
+      
+      setEditingCell(null);
+      setEditValue('');
+    } catch (error: any) {
+      alert(`Error: ${error.message}`);
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  // Función para cancelar edición
+  const cancelEdit = () => {
+    setEditingCell(null);
+    setEditValue('');
+  };
+
   // Función para renderizar valores de celdas con formato apropiado
-  const renderCellValue = (key: string, value: any, episodio: Episode) => {
+  const renderCellValue = (key: string, value: any, episodio: Episode, rowIndex: number) => {
+    const isEditing = editingCell?.row === rowIndex && editingCell?.field === key;
+    const isEditable = editableFields.has(key);
+    const episodioKey = episodio.episodio;
+    const hasErrors = validationErrors[episodioKey]?.length > 0;
+    const hasWarnings = validationWarnings[episodioKey]?.length > 0;
+    
+    if (isEditing) {
+      return (
+        <div className="flex items-center gap-1">
+          {key === 'estadoRN' ? (
+            <select
+              value={editValue}
+              onChange={(e) => setEditValue(e.target.value)}
+              className="px-2 py-1 text-xs border rounded"
+              autoFocus
+            >
+              <option value="">Seleccionar...</option>
+              <option value="Aprobado">Aprobado</option>
+              <option value="Pendiente">Pendiente</option>
+              <option value="Rechazado">Rechazado</option>
+            </select>
+          ) : key === 'validado' ? (
+            <select
+              value={editValue}
+              onChange={(e) => setEditValue(e.target.value)}
+              className="px-2 py-1 text-xs border rounded"
+              autoFocus
+            >
+              <option value="">Seleccionar...</option>
+              <option value="true">Aprobar</option>
+              <option value="false">Rechazar</option>
+            </select>
+          ) : (
+            <input
+              type={key.includes('monto') || key.includes('pago') || key.includes('precio') || key.includes('valor') ? 'number' : 'text'}
+              value={editValue}
+              onChange={(e) => setEditValue(e.target.value)}
+              className="px-2 py-1 text-xs border rounded w-20"
+              autoFocus
+              min="0"
+              step="0.01"
+            />
+          )}
+          <button
+            onClick={saveEdit}
+            disabled={saving}
+            className="px-2 py-1 text-xs bg-green-600 text-white rounded hover:bg-green-700 disabled:opacity-50"
+            title={saving ? 'Guardando en servidor...' : 'Guardar cambios'}
+          >
+            {saving ? '⏳' : '✓'}
+          </button>
+          <button
+            onClick={cancelEdit}
+            className="px-2 py-1 text-xs bg-gray-600 text-white rounded hover:bg-gray-700"
+          >
+            ✕
+          </button>
+        </div>
+      );
+    }
+    
     if (value === null || value === undefined) return '-';
     
     switch (key) {
       case 'validado':
+        // Para gestión, mostrar estado de revisión con badges más descriptivos
+        if (isGestion) {
+          return (
+            <span className={`px-2 py-1 rounded-full text-xs font-medium ${
+              value === true 
+                ? 'bg-green-100 text-green-800' 
+                : value === false
+                ? 'bg-red-100 text-red-800'
+                : 'bg-yellow-100 text-yellow-800'
+            }`}>
+              {value === true ? '✅ Aprobado' :
+               value === false ? '❌ Rechazado' : 
+               '⏳ Pendiente'}
+            </span>
+          );
+        }
+        // Para otros roles, mostrar el badge simple original
         return (
           <span className={`badge-${value ? 'success' : 'warning'}`}>
             {value ? '✓' : '○'}
@@ -96,7 +316,16 @@ export default function Episodios() {
       case 'precioBaseTramo':
       case 'valorGRD':
       case 'montoFinal':
-        return value ? `$${value.toLocaleString()}` : '-';
+        const formattedValue = value ? formatCurrency(value) : '-';
+        return (
+          <div className="flex items-center gap-1">
+            <span className={hasErrors ? 'text-red-600' : hasWarnings ? 'text-yellow-600' : ''}>
+              {formattedValue}
+            </span>
+            {hasErrors && <span className="text-red-500 text-xs">⚠️</span>}
+            {hasWarnings && !hasErrors && <span className="text-yellow-500 text-xs">⚠️</span>}
+          </div>
+        );
       
       case 'peso':
         return value ? value.toFixed(2) : '-';
@@ -179,7 +408,10 @@ export default function Episodios() {
             protocolo: true,
             certDefuncion: false
           },
-          completeness: 'ready'
+          completeness: 'ready',
+          comentariosGestion: 'Episodio revisado y aprobado. Documentación completa.',
+          fechaRevision: '2024-01-22T10:30:00Z',
+          revisadoPor: 'gestión@ucchristus.cl'
         },
         {
           episodio: 'EP002',
@@ -215,7 +447,10 @@ export default function Episodios() {
             protocolo: false,
             certDefuncion: false
           },
-          completeness: 'incompleto'
+          completeness: 'incompleto',
+          comentariosGestion: 'Episodio rechazado por documentación incompleta. Falta epicrisis.',
+          fechaRevision: '2024-01-26T14:15:00Z',
+          revisadoPor: 'gestión@ucchristus.cl'
         },
         {
           episodio: 'EP003',
@@ -251,7 +486,10 @@ export default function Episodios() {
             protocolo: true,
             certDefuncion: false
           },
-          completeness: 'ready'
+          completeness: 'ready',
+          comentariosGestion: '',
+          fechaRevision: undefined,
+          revisadoPor: undefined
         }
       ];
       
@@ -264,10 +502,24 @@ export default function Episodios() {
   return (
     <main className="main-container-lg">
       <header className="mb-8">
+        <div className="flex items-center justify-between">
+          <div>
         <h1 className="title-primary">Episodios</h1>
         <p className="text-[var(--text-secondary)] mt-2">
           Listado completo de episodios hospitalarios procesados
         </p>
+          </div>
+          {isFinanzas && (
+            <div className="bg-green-50 border border-green-200 rounded-lg px-4 py-2">
+              <div className="flex items-center gap-2">
+                <span className="text-green-600">💰</span>
+                <span className="text-green-800 font-medium text-sm">
+                  Modo Finanzas - Campos editables
+                </span>
+              </div>
+            </div>
+          )}
+        </div>
       </header>
 
       {/* Filtros y búsqueda */}
@@ -339,6 +591,65 @@ export default function Episodios() {
         </div>
       )}
 
+      {/* Mensaje de confirmación de guardado */}
+      {saveMessage && (
+        <div className="bg-green-50 border border-green-200 rounded-lg p-4 mb-6">
+          <div className="flex items-center">
+            <div className="text-green-600 mr-3">✅</div>
+            <div>
+              <p className="text-green-800 font-medium">Cambios guardados</p>
+              <p className="text-green-700 text-sm">{saveMessage}</p>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Información sobre campos editables */}
+      {isFinanzas && (
+        <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 mb-6">
+          <h3 className="text-sm font-medium text-blue-800 mb-2">Campos editables para Finanzas:</h3>
+          <div className="grid md:grid-cols-2 gap-2 text-xs text-blue-700">
+            <div className="space-y-1">
+              <p>• <strong>Estado RN</strong> - Estado del reembolso</p>
+              <p>• <strong>AT (S/N)</strong> - Ajuste por Tecnología</p>
+              <p>• <strong>AT Detalle</strong> - Detalle del AT</p>
+              <p>• <strong>Monto RN</strong> - Monto de reembolso</p>
+              <p>• <strong>Días Demora Rescate</strong> - Días de demora</p>
+            </div>
+            <div className="space-y-1">
+              <p>• <strong>Pago Demora Rescate</strong> - Pago por demora</p>
+              <p>• <strong>Pago Outlier Superior</strong> - Pago por outlier</p>
+              <p>• <strong>Precio Base por Tramo</strong> - Precio base</p>
+              <p>• <strong>Valor GRD</strong> - Valor calculado GRD</p>
+              <p>• <strong>Monto Final</strong> - Monto final</p>
+              <p>• <strong>Documentación</strong> - Documentación necesaria</p>
+            </div>
+          </div>
+          <p className="text-xs text-blue-600 mt-2">
+            💡 Haz clic en cualquier campo editable para modificarlo. Los campos calculados se actualizan automáticamente.
+          </p>
+          <p className="text-xs text-green-600 mt-1">
+            💾 Los cambios se guardan automáticamente en el servidor al confirmar la edición.
+          </p>
+        </div>
+      )}
+
+      {/* Información sobre campos editables para Gestión */}
+      {isGestion && (
+        <div className="bg-purple-50 border border-purple-200 rounded-lg p-4 mb-6">
+          <h3 className="text-sm font-medium text-purple-800 mb-2">Campos editables para Gestión:</h3>
+          <div className="text-xs text-purple-700">
+            <p>• <strong>VALIDADO</strong> - Aprobar o rechazar episodios</p>
+          </div>
+          <p className="text-xs text-purple-600 mt-2">
+            💡 Haz clic en el campo VALIDADO para aprobar o rechazar episodios. Los cambios se reflejan inmediatamente en el sistema.
+          </p>
+          <p className="text-xs text-purple-600 mt-1">
+            💾 Los cambios se guardan automáticamente en el servidor al confirmar la edición.
+          </p>
+        </div>
+      )}
+
       {/* Tabla de episodios */}
       <div className="table-container">
         {loading ? (
@@ -361,10 +672,10 @@ export default function Episodios() {
             </Link>
           </div>
         ) : (
-          <div className="overflow-x-auto">
-            <table className="w-full text-sm">
-              <thead className="table-header">
-                <tr>
+        <div className="overflow-x-auto">
+          <table className="w-full text-sm">
+            <thead className="table-header">
+              <tr>
                   {FINAL_COLUMNS.map(([header, key, editable]) => (
                     <th 
                       key={key}
@@ -376,27 +687,30 @@ export default function Episodios() {
                       {header}
                     </th>
                   ))}
-                  <th className="table-cell font-medium text-[var(--text-primary)]">Acciones</th>
-                </tr>
-              </thead>
-              <tbody>
-                {filteredEpisodios.map((episodio) => (
+                <th className="table-cell font-medium text-[var(--text-primary)]">Acciones</th>
+              </tr>
+            </thead>
+            <tbody>
+                {filteredEpisodios.map((episodio, rowIndex) => (
                   <tr key={episodio.episodio} className="table-row">
                     {FINAL_COLUMNS.map(([header, key, editable]) => {
                       const value = key.split('.').reduce((acc: any, k) => acc?.[k], episodio as any);
+                      const isEditable = editableFields.has(key);
                       
                       return (
                         <td 
                           key={key}
                           className={`table-cell ${
-                            editable ? 'bg-blue-50 font-medium' : ''
+                            isEditable ? 'bg-blue-50 font-medium cursor-pointer hover:bg-blue-100' : ''
                           }`}
+                          onClick={() => isEditable && startEdit(rowIndex, key, value)}
+                          title={isEditable ? 'Hacer clic para editar' : ''}
                         >
-                          {renderCellValue(key, value, episodio)}
-                        </td>
+                          {renderCellValue(key, value, episodio, rowIndex)}
+                  </td>
                       );
                     })}
-                    <td className="table-cell">
+                  <td className="table-cell">
                       <div className="flex gap-2">
                         <Link
                           to={`/episodios/${episodio.episodio}`}
@@ -404,19 +718,34 @@ export default function Episodios() {
                         >
                           Ver
                         </Link>
-                        <Link
+                    <Link 
                           to={`/respaldos/${episodio.episodio}`}
                           className="link-secondary font-medium text-sm"
-                        >
+                    >
                           Docs
-                        </Link>
+                    </Link>
                       </div>
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
+                      {/* Indicadores de validación */}
+                      {(validationErrors[episodio.episodio]?.length > 0 || validationWarnings[episodio.episodio]?.length > 0) && (
+                        <div className="mt-1">
+                          {validationErrors[episodio.episodio]?.map((error, idx) => (
+                            <div key={idx} className="text-xs text-red-600" title={error}>
+                              ⚠️ {error}
+                            </div>
+                          ))}
+                          {validationWarnings[episodio.episodio]?.map((warning, idx) => (
+                            <div key={idx} className="text-xs text-yellow-600" title={warning}>
+                              ⚠️ {warning}
+                            </div>
+                          ))}
+                        </div>
+                      )}
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
         )}
       </div>
 

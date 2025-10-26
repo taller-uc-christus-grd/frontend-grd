@@ -63,6 +63,11 @@ export interface Episode {
 
   // Estado para export
   completeness?: 'incompleto' | 'ready';
+
+  // Campos de gestión
+  comentariosGestion?: string;
+  fechaRevision?: string;
+  revisadoPor?: string;
 }
 
 // === NUEVO: fila consolidada para la planilla final (lo que se lista/edita/exporta) ===

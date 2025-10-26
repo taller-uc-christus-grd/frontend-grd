@@ -329,7 +329,7 @@ export default function PlanillaFinal(){
               Información sobre campos editables
             </p>
             <p className="text-xs text-[var(--text-secondary)] leading-relaxed">
-              <span className="font-medium text-[var(--primary-blue)]">Campos editables:</span> VALIDADO, Centro, N° Folio, TIPO EPISODIO, ESTADO RN, AT/AT detalle, Días demora rescate, Precio Base, EPICRISIS/PROTOCOLO/CERT. DEFUNCION.
+              <span className="font-medium text-[var(--primary-blue)]">Campos editables:</span> Centro, N° Folio, TIPO EPISODIO, ESTADO RN, AT/AT detalle, Días demora rescate, Precio Base, EPICRISIS/PROTOCOLO/CERT. DEFUNCION. <span className="text-purple-600 font-medium">VALIDADO (solo Gestión)</span>.
               <br />
               <span className="text-[var(--text-muted)]">Los demás se calculan o provienen del extracto SIGESA.</span>
             </p>

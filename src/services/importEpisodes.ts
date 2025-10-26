@@ -79,3 +79,54 @@ export async function getEpisodesMeta(): Promise<{ count: number; lastImportedAt
     }
   }
 }
+
+/**
+ * 📋 Obtener detalle de un episodio específico por ID
+ * Si falla el backend, devuelve datos mock para desarrollo
+ */
+export async function getEpisodeDetail(id: string): Promise<Episode> {
+  try {
+    const { data } = await api.get(`/api/episodes/${id}`);
+    return data as Episode;
+  } catch (error) {
+    console.warn('Error al cargar episodio desde backend, usando datos mock:', error);
+    
+    // Datos mock para desarrollo
+    return {
+      episodio: id,
+      nombre: 'Paciente Ejemplo',
+      rut: '12.345.678-9',
+      centro: 'Hospital UC Christus',
+      folio: `FOL${id}`,
+      tipoEpisodio: 'Hospitalización',
+      fechaIngreso: '2024-01-15',
+      fechaAlta: '2024-01-20',
+      servicioAlta: 'Medicina Interna',
+      estadoRN: 'Aprobado',
+      at: true,
+      atDetalle: 'BASTON-ADULTO',
+      montoAT: 18000,
+      motivoEgreso: 'Alta médica',
+      grdCodigo: 'G045',
+      peso: 1.25,
+      montoRN: 150000,
+      inlierOutlier: 'Inlier',
+      grupoDentroNorma: true,
+      diasEstada: 5,
+      precioBaseTramo: 125000,
+      valorGRD: 156250,
+      pagoOutlierSup: 0,
+      montoFinal: 174250,
+      validado: true,
+      diasDemoraRescate: 0,
+      pagoDemora: 0,
+      documentacion: 'Epicrisis completa',
+      docs: {
+        epicrisis: true,
+        protocolo: true,
+        certDefuncion: false
+      },
+      completeness: 'ready'
+    };
+  }
+}
