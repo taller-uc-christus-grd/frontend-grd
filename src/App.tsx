@@ -10,7 +10,6 @@ import Episodios from '@/pages/Episodios'
 import EpisodioDetalle from '@/pages/EpisodioDetalle'
 import Exportaciones from '@/pages/Exportaciones'
 import Admin from '@/pages/Admin'
-import Respaldos from '@/pages/Respaldos'
 import Protected from '@/components/Protected'
 
 // Wrapper para poder anidar rutas protegidas con roles opcionales
@@ -46,7 +45,6 @@ export default function App() {
             {/* Episodios (visibles autenticado cualquiera) */}
             <Route path="/episodios" element={<Episodios />} />
             <Route path="/episodios/:id" element={<EpisodioDetalle />} />
-            <Route path="/respaldos/:episodio" element={<Respaldos />} />
 
             {/* Finanzas y Gestión */}
             <Route element={<ProtectedWrapper roles={['finanzas', 'gestion']} />}>
