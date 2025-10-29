@@ -24,4 +24,21 @@ html { scroll-behavior: smooth; }
     background-size: 300% 300%;
     animation: gradientShift 10s ease-in-out infinite;
   }
+
+/* Dashboard styles */
+.main-container-lg {
+  @apply max-w-7xl mx-auto px-4 py-8;
+}
+
+.title-primary {
+  @apply text-3xl font-open-sauce font-light bg-gradient-to-r from-purple-600 to-blue-500 bg-clip-text text-transparent;
+}
+
+.title-section {
+  @apply text-xl font-semibold text-slate-900 mb-4;
+}
+
+.card-interactive {
+  @apply bg-white rounded-xl border border-slate-200 shadow-sm hover:shadow-md transition-all duration-200 hover:border-purple-200;
+}
     
