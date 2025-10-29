@@ -510,11 +510,21 @@ export default function Episodios() {
         </p>
           </div>
           {isFinanzas && (
-            <div className="bg-green-50 border border-green-200 rounded-lg px-4 py-2">
+            <div className="bg-gradient-to-r from-green-50 to-emerald-50 border border-green-300 rounded-lg px-4 py-3 shadow-sm">
               <div className="flex items-center gap-2">
-                <span className="text-green-600">💰</span>
-                <span className="text-green-800 font-medium text-sm">
+                <span className="text-green-600 text-lg">💰</span>
+                <span className="text-green-900 font-semibold text-sm">
                   Modo Finanzas - Campos editables
+                </span>
+              </div>
+            </div>
+          )}
+          {isGestion && (
+            <div className="bg-gradient-to-r from-purple-50 to-indigo-50 border border-purple-300 rounded-lg px-4 py-3 shadow-sm">
+              <div className="flex items-center gap-2">
+                <span className="text-purple-600 text-lg">👥</span>
+                <span className="text-purple-900 font-semibold text-sm">
+                  Modo Gestión - Aprobar/Rechazar
                 </span>
               </div>
             </div>
@@ -720,7 +730,7 @@ export default function Episodios() {
                           Ver
                         </Link>
                     <Link 
-                          to={`/respaldos/${episodio.episodio}`}
+                          to={`/episodios/${episodio.episodio}#documentos`}
                           className="link-secondary font-medium text-sm"
                     >
                           Docs
