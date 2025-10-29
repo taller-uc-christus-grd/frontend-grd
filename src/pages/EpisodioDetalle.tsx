@@ -5,11 +5,13 @@ import { useAuth } from '@/hooks/useAuth';
 import { hasRole } from '@/lib/auth';
 import api from '@/lib/api';
 import type { Episode } from '@/types';
+import { validateFieldValue, formatCurrency } from '@/lib/validations';
 
 export default function EpisodioDetalle() {
   const { id } = useParams();
   const { user } = useAuth();
   const isGestion = hasRole(user, ['gestion']);
+  const isFinanzas = hasRole(user, ['finanzas']);
   
   const [episodio, setEpisodio] = useState<Episode | null>(null);
   const [loading, setLoading] = useState(true);
@@ -19,6 +21,11 @@ export default function EpisodioDetalle() {
   const [comentarios, setComentarios] = useState('');
   const [saving, setSaving] = useState(false);
   const [saveMessage, setSaveMessage] = useState('');
+  
+  // Estados para edición de campos financieros
+  const [editingField, setEditingField] = useState<string | null>(null);
+  const [editValue, setEditValue] = useState<string>('');
+  const [savingField, setSavingField] = useState(false);
 
   useEffect(() => {
     if (id) {
@@ -73,6 +80,170 @@ export default function EpisodioDetalle() {
     }
   };
 
+  // Función para iniciar edición de campo financiero
+  const startEditField = (field: string, currentValue: any) => {
+    if (!isFinanzas) return;
+    
+    setEditingField(field);
+    if (field === 'at') {
+      setEditValue(currentValue ? 'true' : 'false');
+    } else if (field === 'estadoRN') {
+      setEditValue(currentValue || '');
+    } else {
+      setEditValue(currentValue?.toString() || '');
+    }
+  };
+
+  // Función para guardar campo editado
+  const saveField = async (field: string) => {
+    if (!episodio || !isFinanzas || savingField) return;
+    
+    setSavingField(true);
+    setSaveMessage('');
+    
+    try {
+      // Validar el valor según el tipo de campo
+      const fieldValidation = validateFieldValue(field, editValue);
+      if (!fieldValidation.isValid) {
+        throw new Error(fieldValidation.errors.join(', '));
+      }
+      
+      let validatedValue: any = editValue;
+      
+      // Convertir tipos según el campo
+      if (field.includes('monto') || field.includes('pago') || field.includes('precio') || field.includes('valor')) {
+        validatedValue = parseFloat(editValue);
+      } else if (field === 'diasDemoraRescate') {
+        validatedValue = parseInt(editValue);
+      } else if (field === 'at') {
+        validatedValue = editValue === 'true';
+      }
+
+      // Enviar actualización al backend
+      const response = await api.patch(`/api/episodes/${episodio.episodio}`, { 
+        [field]: validatedValue
+      });
+      
+      // Actualizar el episodio local con la respuesta del backend
+      setEpisodio(response.data);
+      
+      setSaveMessage(`✅ Campo ${field} actualizado exitosamente`);
+      setTimeout(() => setSaveMessage(''), 3000);
+      
+      setEditingField(null);
+      setEditValue('');
+      
+    } catch (error: any) {
+      console.error('Error al actualizar campo:', error);
+      setSaveMessage(`❌ Error: ${error.response?.data?.message || error.message}`);
+      setTimeout(() => setSaveMessage(''), 5000);
+    } finally {
+      setSavingField(false);
+    }
+  };
+
+  // Función para cancelar edición
+  const cancelEdit = () => {
+    setEditingField(null);
+    setEditValue('');
+  };
+
+  // Renderizar campo editable
+  const renderEditableField = (field: string, label: string, currentValue: any, isCurrency: boolean = false) => {
+    if (!isFinanzas) {
+      // Si no es finanzas, mostrar solo lectura
+      return (
+        <div>
+          <span className="text-sm text-[var(--text-secondary)]">{label}:</span>
+          <p className="font-medium text-[var(--text-primary)]">
+            {currentValue !== null && currentValue !== undefined 
+              ? (isCurrency ? formatCurrency(currentValue) : currentValue.toString())
+              : 'No disponible'}
+          </p>
+        </div>
+      );
+    }
+
+    const isEditing = editingField === field;
+
+    if (isEditing) {
+      return (
+        <div>
+          <span className="text-sm text-[var(--text-secondary)] mb-1 block">{label}:</span>
+          <div className="flex items-center gap-2">
+            {field === 'estadoRN' ? (
+              <select
+                value={editValue}
+                onChange={(e) => setEditValue(e.target.value)}
+                className="px-3 py-2 border rounded-lg flex-1"
+                autoFocus
+              >
+                <option value="">Seleccionar...</option>
+                <option value="Aprobado">Aprobado</option>
+                <option value="Pendiente">Pendiente</option>
+                <option value="Rechazado">Rechazado</option>
+              </select>
+            ) : field === 'at' ? (
+              <select
+                value={editValue}
+                onChange={(e) => setEditValue(e.target.value)}
+                className="px-3 py-2 border rounded-lg flex-1"
+                autoFocus
+              >
+                <option value="true">Sí</option>
+                <option value="false">No</option>
+              </select>
+            ) : (
+              <input
+                type={isCurrency ? 'number' : 'text'}
+                value={editValue}
+                onChange={(e) => setEditValue(e.target.value)}
+                className="px-3 py-2 border rounded-lg flex-1"
+                autoFocus
+                min={isCurrency ? "0" : undefined}
+                step={isCurrency ? "0.01" : undefined}
+              />
+            )}
+            <button
+              onClick={() => saveField(field)}
+              disabled={savingField}
+              className="px-3 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 disabled:opacity-50"
+            >
+              {savingField ? '⏳' : '✓'}
+            </button>
+            <button
+              onClick={cancelEdit}
+              className="px-3 py-2 bg-gray-600 text-white rounded-lg hover:bg-gray-700"
+            >
+              ✕
+            </button>
+          </div>
+        </div>
+      );
+    }
+
+    return (
+      <div>
+        <span className="text-sm text-[var(--text-secondary)]">{label}:</span>
+        <div className="flex items-center gap-2">
+          <p className="font-medium text-[var(--text-primary)] flex-1">
+            {currentValue !== null && currentValue !== undefined 
+              ? (isCurrency ? formatCurrency(currentValue) : 
+                 field === 'at' ? (currentValue ? 'Sí' : 'No') : 
+                 currentValue.toString())
+              : 'No disponible'}
+          </p>
+          <button
+            onClick={() => startEditField(field, currentValue)}
+            className="px-3 py-1 text-sm bg-blue-600 text-white rounded hover:bg-blue-700"
+          >
+            Editar
+          </button>
+        </div>
+      </div>
+    );
+  };
+
   if (loading) {
     return (
       <main className="main-container-sm">
@@ -118,11 +289,36 @@ export default function EpisodioDetalle() {
       </div>
       
       <header className="mb-8">
-        <h1 className="title-primary">Episodio #{episodio.episodio}</h1>
-        <p className="text-[var(--text-secondary)] mt-2">
-          Información detallada del episodio hospitalario
-        </p>
+        <div className="flex items-center justify-between">
+          <div>
+            <h1 className="title-primary">Episodio #{episodio.episodio}</h1>
+            <p className="text-[var(--text-secondary)] mt-2">
+              Información detallada del episodio hospitalario
+            </p>
+          </div>
+          {isFinanzas && (
+            <div className="bg-blue-50 border border-blue-200 rounded-lg px-4 py-2">
+              <div className="flex items-center gap-2">
+                <span className="text-blue-600">💰</span>
+                <span className="text-blue-800 font-medium text-sm">
+                  Modo Finanzas - Haz clic en "Editar" para modificar campos
+                </span>
+              </div>
+            </div>
+          )}
+        </div>
       </header>
+
+      {/* Mensaje de confirmación de guardado */}
+      {saveMessage && (
+        <div className={`mb-6 p-4 rounded-lg text-sm ${
+          saveMessage.includes('✅') 
+            ? 'bg-green-50 text-green-700 border border-green-200' 
+            : 'bg-red-50 text-red-700 border border-red-200'
+        }`}>
+          {saveMessage}
+        </div>
+      )}
 
       <div className="grid md:grid-cols-2 gap-6">
         {/* Información del paciente */}
@@ -209,67 +405,57 @@ export default function EpisodioDetalle() {
         </div>
 
         <div className="card p-6">
-          <h2 className="title-secondary mb-4">Información Financiera</h2>
-          <div className="space-y-3">
-            <div>
-              <span className="text-sm text-[var(--text-secondary)]">Estado RN:</span>
-              <span className={`badge-${
-                episodio.estadoRN === 'Aprobado' ? 'success' : 
-                episodio.estadoRN === 'Pendiente' ? 'warning' : 'error'
-              }`}>
-                {episodio.estadoRN || 'No disponible'}
+          <div className="flex items-center justify-between mb-4">
+            <h2 className="title-secondary">Información Financiera</h2>
+            {isFinanzas && (
+              <span className="text-xs bg-blue-100 text-blue-800 px-2 py-1 rounded-full">
+                Campos editables
               </span>
-            </div>
-            <div>
-              <span className="text-sm text-[var(--text-secondary)]">Monto RN:</span>
-              <p className="font-medium text-[var(--text-primary)]">
-                {episodio.montoRN ? `$${episodio.montoRN.toLocaleString()}` : 'No disponible'}
-              </p>
-            </div>
-            <div>
-              <span className="text-sm text-[var(--text-secondary)]">Valor GRD:</span>
-              <p className="font-medium text-[var(--text-primary)]">
-                {episodio.valorGRD ? `$${episodio.valorGRD.toLocaleString()}` : 'No disponible'}
-              </p>
-            </div>
-            <div>
-              <span className="text-sm text-[var(--text-secondary)]">Monto Final:</span>
-              <p className="font-medium text-[var(--text-primary)]">
-                {episodio.montoFinal ? `$${episodio.montoFinal.toLocaleString()}` : 'No disponible'}
-              </p>
-            </div>
+            )}
+          </div>
+          <div className="space-y-4">
+            {renderEditableField('estadoRN', 'Estado RN', episodio.estadoRN)}
+            {renderEditableField('montoRN', 'Monto RN', episodio.montoRN, true)}
+            {renderEditableField('precioBaseTramo', 'Precio Base por Tramo', episodio.precioBaseTramo, true)}
+            {renderEditableField('valorGRD', 'Valor GRD', episodio.valorGRD, true)}
+            {renderEditableField('montoFinal', 'Monto Final', episodio.montoFinal, true)}
           </div>
         </div>
       </div>
 
-      {/* Ajustes por Tecnología */}
-      {episodio.at && (
-        <div className="card p-6 mt-6">
-          <h2 className="title-secondary mb-4">Ajustes por Tecnología (AT)</h2>
-          <div className="grid md:grid-cols-2 gap-4">
-            <div>
-              <span className="text-sm text-[var(--text-secondary)]">AT Detalle:</span>
-              <p className="font-medium text-[var(--text-primary)]">{episodio.atDetalle || 'No disponible'}</p>
-            </div>
-            <div>
-              <span className="text-sm text-[var(--text-secondary)]">Monto AT:</span>
-              <p className="font-medium text-[var(--text-primary)]">
-                {episodio.montoAT ? `$${episodio.montoAT.toLocaleString()}` : 'No disponible'}
-              </p>
-            </div>
-          </div>
+      {/* Ajustes por Tecnología y Pagos Adicionales */}
+      <div className="card p-6 mt-6">
+        <div className="flex items-center justify-between mb-4">
+          <h2 className="title-secondary">Ajustes y Pagos Adicionales</h2>
+          {isFinanzas && (
+            <span className="text-xs bg-blue-100 text-blue-800 px-2 py-1 rounded-full">
+              Campos editables
+            </span>
+          )}
         </div>
-      )}
+        <div className="grid md:grid-cols-2 gap-4">
+          {renderEditableField('at', 'Ajuste por Tecnología (AT)', episodio.at)}
+          {episodio.at && renderEditableField('atDetalle', 'AT Detalle', episodio.atDetalle)}
+          {episodio.at && renderEditableField('montoAT', 'Monto AT', episodio.montoAT, true)}
+          {renderEditableField('diasDemoraRescate', 'Días Demora Rescate', episodio.diasDemoraRescate)}
+          {renderEditableField('pagoDemora', 'Pago Demora Rescate', episodio.pagoDemora, true)}
+          {renderEditableField('pagoOutlierSup', 'Pago Outlier Superior', episodio.pagoOutlierSup, true)}
+        </div>
+      </div>
 
       {/* Documentación */}
       <div className="card p-6 mt-6">
-        <h2 className="title-secondary mb-4">Documentación</h2>
+        <div className="flex items-center justify-between mb-4">
+          <h2 className="title-secondary">Documentación</h2>
+          {isFinanzas && (
+            <span className="text-xs bg-blue-100 text-blue-800 px-2 py-1 rounded-full">
+              Campo editable
+            </span>
+          )}
+        </div>
         <div className="space-y-3">
-          <div>
-            <span className="text-sm text-[var(--text-secondary)]">Documentación necesaria:</span>
-            <p className="font-medium text-[var(--text-primary)]">{episodio.documentacion || 'No disponible'}</p>
-          </div>
-          <div className="grid md:grid-cols-3 gap-4">
+          {renderEditableField('documentacion', 'Documentación necesaria', episodio.documentacion)}
+          <div className="grid md:grid-cols-3 gap-4 mt-4">
             <div className="flex items-center">
               <span className={`badge-${episodio.docs?.epicrisis ? 'success' : 'error'} mr-2`}>
                 {episodio.docs?.epicrisis ? '✓' : '✗'}
