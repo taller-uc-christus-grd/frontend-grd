@@ -18,6 +18,7 @@ export default function EpisodioDetalle() {
   const [isDragOver, setIsDragOver] = useState(false);
   const [showSuccessMessage, setShowSuccessMessage] = useState<string | null>(null);
   const [replaceModal, setReplaceModal] = useState<{show: boolean, oldFile: string, newFile: string, documentoId: string} | null>(null);
+  const [deleteModal, setDeleteModal] = useState<{show: boolean, documentoId: string, fileName: string} | null>(null);
   
   const fileInputRef = useRef<HTMLInputElement>(null);
   const replaceInputRef = useRef<HTMLInputElement>(null);
@@ -127,6 +128,34 @@ export default function EpisodioDetalle() {
     if (replaceInputRef.current) {
       replaceInputRef.current.value = '';
     }
+  };
+
+  const handleDeleteFile = (documentoId: string) => {
+    const documento = documentos.find(doc => doc.id === documentoId);
+    if (!documento) return;
+    
+    setDeleteModal({
+      show: true,
+      documentoId: documentoId,
+      fileName: documento.nombre
+    });
+  };
+
+  const handleConfirmDelete = () => {
+    if (!deleteModal) return;
+
+    setDocumentos(prev => prev.filter(doc => doc.id !== deleteModal.documentoId));
+
+    setShowSuccessMessage(`Archivo "${deleteModal.fileName}" eliminado exitosamente`);
+    setTimeout(() => {
+      setShowSuccessMessage(null);
+    }, 3000);
+
+    setDeleteModal(null);
+  };
+
+  const handleCancelDelete = () => {
+    setDeleteModal(null);
   };
 
   const handleDownloadIndividual = (documento: Documento) => {
@@ -306,23 +335,30 @@ export default function EpisodioDetalle() {
                             <div className='flex gap-2 justify-center'>
                               <button
                                 onClick={() => handleDownloadIndividual(doc)}
-                                className='px-3 py-1 text-xs bg-indigo-100 text-indigo-700 rounded hover:bg-indigo-200 transition-colors'
+                                className='p-2 bg-indigo-100 text-indigo-700 rounded hover:bg-indigo-200 transition-colors'
                                 title='Descargar archivo'
                               >
-                                <svg className='w-3 h-3 inline mr-1' fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <svg className='w-4 h-4' fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
                                 </svg>
-                                Descargar
                               </button>
                               <button
                                 onClick={() => handleReplaceFile(doc.id)}
-                                className='px-3 py-1 text-xs bg-slate-100 text-slate-700 rounded hover:bg-slate-200 transition-colors'
+                                className='p-2 bg-slate-100 text-slate-700 rounded hover:bg-slate-200 transition-colors'
                                 title='Reemplazar archivo'
                               >
-                                <svg className='w-3 h-3 inline mr-1' fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12" />
+                                <svg className='w-4 h-4' fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
                                 </svg>
-                                Reemplazar
+                              </button>
+                              <button
+                                onClick={() => handleDeleteFile(doc.id)}
+                                className='p-2 bg-red-100 text-red-700 rounded hover:bg-red-200 transition-colors'
+                                title='Eliminar archivo'
+                              >
+                                <svg className='w-4 h-4' fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                                </svg>
                               </button>
                             </div>
                           </td>
@@ -380,6 +416,49 @@ export default function EpisodioDetalle() {
                 className="px-4 py-2 text-sm text-white bg-indigo-600 rounded-lg hover:bg-indigo-700 transition-colors"
               >
                 Confirmar reemplazo
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Modal de confirmación de eliminación */}
+      {deleteModal && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+          <div className="bg-white rounded-xl border p-6 max-w-md w-full mx-4">
+            <h3 className="text-lg font-semibold text-slate-900 mb-4">
+              Confirmar eliminación
+            </h3>
+            <p className="text-sm text-slate-600 mb-4">
+              ¿Estás seguro de que quieres eliminar este archivo?
+            </p>
+            <div className="bg-red-50 border border-red-200 rounded-lg p-4 mb-4">
+              <div className="flex items-start">
+                <svg className="w-5 h-5 text-red-600 mr-2 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856a2 2 0 002-2V8a2 2 0 00-2-2H6a2 2 0 00-2 2v8a2 2 0 002 2z" />
+                </svg>
+                <div>
+                  <p className="text-sm font-medium text-red-900">Esta acción no se puede deshacer</p>
+                  <p className="text-xs text-red-700 mt-1">El archivo se eliminará permanentemente</p>
+                </div>
+              </div>
+            </div>
+            <div className="bg-slate-50 rounded-lg p-4 mb-4">
+              <span className="text-xs text-slate-500">Archivo a eliminar:</span>
+              <p className="text-sm text-slate-900 font-medium">{deleteModal.fileName}</p>
+            </div>
+            <div className="flex gap-3 justify-end">
+              <button
+                onClick={handleCancelDelete}
+                className="px-4 py-2 text-sm text-slate-700 bg-slate-100 rounded-lg hover:bg-slate-200 transition-colors"
+              >
+                Cancelar
+              </button>
+              <button
+                onClick={handleConfirmDelete}
+                className="px-4 py-2 text-sm text-white bg-red-600 rounded-lg hover:bg-red-700 transition-colors"
+              >
+                Eliminar archivo
               </button>
             </div>
           </div>
