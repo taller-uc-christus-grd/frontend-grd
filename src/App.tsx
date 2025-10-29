@@ -1,5 +1,5 @@
 // src/App.tsx
-import { Routes, Route, Navigate, Outlet } from 'react-router-dom一要'
+import { Routes, Route, Navigate, Outlet } from 'react-router-dom'
 import Navbar from '@/components/Navbar'
 import Footer from '@/components/Footer'
 import Landing from '@/pages/Landing'
@@ -71,8 +71,8 @@ export default function App() {
             {/* Finanzas y Gestión */}
             <Route element={<ProtectedWrapper roles={['finanzas', 'gestion']} />}>
               <Route path="/exportaciones" element={<Exportaciones />} />
-           ור />
-            
+            </Route>
+
             {/* Admin, Finanzas y Gestión → Carga de catálogos */}
             <Route element={<ProtectedWrapper roles={['admin', 'finanzas', 'gestion']} />}>                                                                    
               <Route path="/catalogos" element={<Catalogos />} />
