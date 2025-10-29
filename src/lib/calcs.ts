@@ -1,36 +1,34 @@
 import type { Episode } from '@/types';
 
 /**
- * Calcula los valores derivados de un episodio
+ * NOTA: Los cálculos de precios, ajustes y montos finales son ahora responsabilidad del backend
+ * o se ingresan manualmente por el equipo de Finanzas. Este archivo mantiene solo funciones
+ * de utilidad para validaciones.
  */
-export function computeValores(ep: Episode, preciosTramo: Map<string, number>, atPrecios: Map<string, number>) {
-  const base = preciosTramo.get(ep.grdCodigo || '') || 0;
-  const at = ep.at ? (atPrecios.get(ep.atDetalle || '') || 0) : 0;
-  const valorGRD = (ep.peso || 0) * base;
-  const pagoOutlierSup = ep.inlierOutlier === 'Outlier' ? valorGRD * 0.1 : 0; // Ejemplo
-  const pagoDemora = ep.diasDemoraRescate ? ep.diasDemoraRescate * 1000 : 0; // Ejemplo
-  const montoFinal = valorGRD + at + pagoOutlierSup + pagoDemora;
-
-  return {
-    base,
-    at,
-    valorGRD,
-    pagoOutlierSup,
-    pagoDemora,
-    montoFinal
-  };
-}
 
 /**
- * Verifica si un episodio está listo para exportación
+ * Verifica si un episodio tiene los campos mínimos requeridos para exportación
  */
 export function isReady(ep: Episode): boolean {
   return !!(
     ep.validado &&
     ep.centro &&
     ep.folio &&
+    ep.episodio &&
+    ep.rut &&
+    ep.nombre
+  );
+}
+
+/**
+ * Verifica si un episodio tiene la información financiera completa
+ */
+export function hasCompleteFinancialData(ep: Episode): boolean {
+  return !!(
     ep.estadoRN &&
     ep.at !== undefined &&
-    ep.diasDemoraRescate !== undefined
+    ep.montoRN !== undefined &&
+    ep.valorGRD !== undefined &&
+    ep.montoFinal !== undefined
   );
 }
