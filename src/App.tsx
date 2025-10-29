@@ -1,5 +1,5 @@
 // src/App.tsx
-import { Routes, Route, Navigate, Outlet } from 'react-router-dom'
+import { Routes, Route, Navigate, Outlet } from 'react-router-dom一要'
 import Navbar from '@/components/Navbar'
 import Footer from '@/components/Footer'
 import Landing from '@/pages/Landing'
@@ -15,7 +15,7 @@ import Exportaciones from '@/pages/Exportaciones'
 import Admin from '@/pages/Admin'
 import Respaldos from '@/pages/Respaldos'
 import Protected from '@/components/Protected'
-
+import Catalogos from '@/pages/Catalogos' 
 // Wrapper para poder anidar rutas protegidas con roles opcionales
 import type { Role } from '@/types'
 
@@ -71,6 +71,11 @@ export default function App() {
             {/* Finanzas y Gestión */}
             <Route element={<ProtectedWrapper roles={['finanzas', 'gestion']} />}>
               <Route path="/exportaciones" element={<Exportaciones />} />
+           ור />
+            
+            {/* Admin, Finanzas y Gestión → Carga de catálogos */}
+            <Route element={<ProtectedWrapper roles={['admin', 'finanzas', 'gestion']} />}>                                                                    
+              <Route path="/catalogos" element={<Catalogos />} />
             </Route>
           </Route>
 

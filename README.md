@@ -6,6 +6,7 @@ Sistema integral de gestión GRD que automatiza y simplifica los procesos de cod
 1) Crea `.env` copiando desde `.env.example`.
 2) `npm install`
 3) `npm run dev`
+4) `npm install zustand`
 
 ## 🔐 Credenciales de Prueba
 
