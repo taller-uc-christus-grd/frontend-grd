@@ -1,6 +1,7 @@
 import { useParams, Link } from 'react-router-dom';
 import { useState, useRef } from 'react';
 import JSZip from 'jszip';
+import { useAuth } from '@/hooks/useAuth';
 
 interface Documento {
   id: string;
@@ -13,6 +14,7 @@ interface Documento {
 
 export default function EpisodioDetalle() {
   const { id } = useParams();
+  const { user } = useAuth();
   const [isDocumentosOpen, setIsDocumentosOpen] = useState(false);
   const [documentos, setDocumentos] = useState<Documento[]>([]);
   const [isDragOver, setIsDragOver] = useState(false);
@@ -29,7 +31,7 @@ export default function EpisodioDetalle() {
       nombre: file.name,
       fecha: new Date().toISOString().split('T')[0],
       tamaño: `${(file.size / 1024 / 1024).toFixed(1)} MB`,
-      usuario: 'Usuario Actual', // En producción vendría del contexto de autenticación
+      usuario: user?.email || 'Usuario desconocido',
       file: file // Guardar la referencia al archivo real
     }));
     setDocumentos(prev => [...prev, ...newDocumentos]);
@@ -104,7 +106,7 @@ export default function EpisodioDetalle() {
               nombre: newFileName,
               fecha: new Date().toISOString().split('T')[0], // Registro de fecha de actualización
               tamaño: `${(file.size / 1024 / 1024).toFixed(1)} MB`,
-              usuario: 'Usuario Actual',
+              usuario: user?.email || 'Usuario desconocido',
               file: file // Actualizar la referencia al archivo
             }
           : doc
