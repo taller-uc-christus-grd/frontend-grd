@@ -607,12 +607,13 @@ export default function Episodios() {
       {/* Información sobre campos editables */}
       {isFinanzas && (
         <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 mb-6">
-          <h3 className="text-sm font-medium text-blue-800 mb-2">Campos editables para Finanzas:</h3>
+          <h3 className="text-sm font-medium text-blue-800 mb-2">Campos editables para Finanzas (ingreso manual):</h3>
           <div className="grid md:grid-cols-2 gap-2 text-xs text-blue-700">
             <div className="space-y-1">
               <p>• <strong>Estado RN</strong> - Estado del reembolso</p>
               <p>• <strong>AT (S/N)</strong> - Ajuste por Tecnología</p>
               <p>• <strong>AT Detalle</strong> - Detalle del AT</p>
+              <p>• <strong>Monto AT</strong> - Monto de ajuste (manual)</p>
               <p>• <strong>Monto RN</strong> - Monto de reembolso</p>
               <p>• <strong>Días Demora Rescate</strong> - Días de demora</p>
             </div>
@@ -620,8 +621,8 @@ export default function Episodios() {
               <p>• <strong>Pago Demora Rescate</strong> - Pago por demora</p>
               <p>• <strong>Pago Outlier Superior</strong> - Pago por outlier</p>
               <p>• <strong>Precio Base por Tramo</strong> - Precio base</p>
-              <p>• <strong>Valor GRD</strong> - Valor calculado GRD</p>
-              <p>• <strong>Monto Final</strong> - Monto final</p>
+              <p>• <strong>Valor GRD</strong> - Valor GRD</p>
+              <p>• <strong>Monto Final</strong> - Monto final (calculado por backend)</p>
               <p>• <strong>Documentación</strong> - Documentación necesaria</p>
             </div>
           </div>

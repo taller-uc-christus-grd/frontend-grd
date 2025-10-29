@@ -2,7 +2,7 @@ import { useMemo, useState } from 'react';
 import { useEpisodes } from '@/hooks/useEpisodes';
 import { FINAL_COLUMNS } from '@/lib/planillaConfig';
 import { exportToExcel, exportToCSV } from '@/lib/exporters';
-import { computeValores, isReady } from '@/lib/calcs';
+import { isReady } from '@/lib/calcs';
 import type { Episode } from '@/types';
 
 export default function PlanillaFinal(){
@@ -31,16 +31,9 @@ export default function PlanillaFinal(){
     for (let i = 0; i < path.length - 1; i++) cur = cur[path[i]] ?? (cur[path[i]] = {});
     cur[path[path.length - 1]] = raw;
 
-    // recalcular derivados
-    const preciosTramo = new Map<string, number>(); // Aquí irá tu catálogo real
-    const atPrecios = new Map<string, number>();    // Aquí irá tu catálogo real
-    const r = computeValores(clone, preciosTramo, atPrecios);
-    clone.precioBase = clone.precioBase ?? r.base;
-    clone.montoAT = r.at;
-    clone.valorGRD = r.valorGRD;
-    clone.pagoOutlierSup = r.pagoOutlierSup;
-    clone.pagoDemora = r.pagoDemora;
-    clone.montoFinal = r.montoFinal;
+    // NOTA: Ya no calculamos valores derivados aquí.
+    // Los cálculos los realiza el backend o se ingresan manualmente por Finanzas.
+    // Solo actualizamos el estado de completitud para exportación.
     clone.completeness = isReady(clone) ? 'ready' : 'incompleto';
     upsertEpisode(clone);
   }

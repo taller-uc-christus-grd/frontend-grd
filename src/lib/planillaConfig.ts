@@ -3,8 +3,15 @@ export type ManualField =
   | 'validado'
   | 'at'
   | 'atDetalle'
+  | 'montoAT'
+  | 'estadoRN'
+  | 'montoRN'
   | 'diasDemoraRescate'
   | 'pagoDemora'
+  | 'pagoOutlierSup'
+  | 'precioBaseTramo'
+  | 'valorGRD'
+  | 'montoFinal'
   | 'documentacion';
 
 /**
@@ -25,7 +32,7 @@ export const FINAL_COLUMNS = [
   ['ESTADO RN', 'estadoRN', true], // editable solo para finanzas
   ['AT (S/N)', 'at', true],
   ['AT detalle', 'atDetalle', true],
-  ['Monto AT', 'montoAT', false], // calculado por backend
+  ['Monto AT', 'montoAT', true], // EDITABLE - ingreso manual por finanzas
   ['Tipo de Alta', 'motivoEgreso', false],
   ['IR - GRD', 'grdCodigo', false],
   ['PESO', 'peso', false],

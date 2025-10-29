@@ -73,10 +73,10 @@ export default function Dashboard() {
                 <div className="w-12 h-12 rounded-xl bg-purple-800 flex items-center justify-center mr-4">
                   <span className="text-white font-bold text-lg">📚</span>
                 </div>
-                <div className="font-medium text-[var(--text-primary)]">Catálogos & Norma</div>
+                <div className="font-medium text-[var(--text-primary)]">Carga de Norma MINSAL</div>
               </div>
               <p className="text-sm text-[var(--text-secondary)]">
-                Subir Norma MINSAL, AT y Precios Base (Excel).
+                Subir Norma MINSAL (Excel).
               </p>
             </Link>
           )}
