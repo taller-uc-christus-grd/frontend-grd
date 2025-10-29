@@ -1,16 +1,15 @@
 import { useAuth } from '@/hooks/useAuth';
 import { useState, useEffect } from 'react';
 import type { Role } from '@/types';
-
-interface User {
-  id: string;
-  name: string;
-  email: string;
-  role: Role;
-  status: 'active' | 'inactive';
-  createdAt: string;
-  lastLogin?: string;
-}
+import { 
+  getUsers, 
+  createUser, 
+  updateUser, 
+  deleteUser, 
+  toggleUserStatus,
+  type User,
+  type CreateUserData 
+} from '@/services/users';
 
 export default function Admin() {
   const { user } = useAuth();
@@ -18,6 +17,10 @@ export default function Admin() {
   const [showUserForm, setShowUserForm] = useState(false);
   const [editingUser, setEditingUser] = useState<User | null>(null);
   const [feedback, setFeedback] = useState<{ type: 'success' | 'error'; message: string } | null>(null);
+  
+  // Estado de usuarios
+  const [users, setUsers] = useState<User[]>([]);
+  const [loading, setLoading] = useState(true);
 
   // Estado de configuración del sistema
   const [config, setConfig] = useState({
@@ -129,7 +132,7 @@ export default function Admin() {
   const [logFilter, setLogFilter] = useState('all');
   const [logSearch, setLogSearch] = useState('');
 
-  // Cargar configuración desde localStorage al montar el componente
+  // Cargar configuración y usuarios al montar el componente
   useEffect(() => {
     const savedConfig = localStorage.getItem('grd_config');
     if (savedConfig) {
@@ -140,38 +143,24 @@ export default function Admin() {
         console.error('Error al cargar configuración:', error);
       }
     }
+
+    // Cargar usuarios desde el backend
+    loadUsers();
   }, []);
 
-  // Estado mock de usuarios
-  const [users, setUsers] = useState<User[]>([
-    {
-      id: '1',
-      name: 'Juan Pérez',
-      email: 'juan.perez@ucchristus.cl',
-      role: 'codificador',
-      status: 'active',
-      createdAt: '2024-01-15',
-      lastLogin: '2024-01-20'
-    },
-    {
-      id: '2',
-      name: 'María González',
-      email: 'maria.gonzalez@ucchristus.cl',
-      role: 'finanzas',
-      status: 'active',
-      createdAt: '2024-01-10',
-      lastLogin: '2024-01-19'
-    },
-    {
-      id: '3',
-      name: 'Carlos López',
-      email: 'carlos.lopez@ucchristus.cl',
-      role: 'gestion',
-      status: 'inactive',
-      createdAt: '2024-01-05',
-      lastLogin: '2024-01-15'
+  // Función para cargar usuarios
+  const loadUsers = async () => {
+    try {
+      setLoading(true);
+      const usersData = await getUsers();
+      setUsers(usersData);
+    } catch (error: any) {
+      console.error('Error al cargar usuarios:', error);
+      setFeedback({ type: 'error', message: error.message });
+    } finally {
+      setLoading(false);
     }
-  ]);
+  };
 
   const [formData, setFormData] = useState({
     name: '',
@@ -287,37 +276,45 @@ export default function Admin() {
     setTimeout(() => setFeedback(null), 3000);
   };
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     
-    if (editingUser) {
-      // Editar usuario existente
-      setUsers(prev => prev.map(u => 
-        u.id === editingUser.id 
-          ? { ...u, ...formData }
-          : u
-      ));
-      setFeedback({ type: 'success', message: 'Usuario actualizado correctamente' });
-    } else {
-      // Crear nuevo usuario
-      const newUser: User = {
-        id: Date.now().toString(),
-        name: formData.name,
-        email: formData.email,
-        role: formData.role,
-        status: formData.status,
-        createdAt: new Date().toISOString().split('T')[0]
-      };
-      setUsers(prev => [...prev, newUser]);
-      setFeedback({ type: 'success', message: 'Usuario creado correctamente' });
-    }
+    try {
+      if (editingUser) {
+        // Editar usuario existente
+        await updateUser({
+          id: editingUser.id,
+          name: formData.name,
+          email: formData.email,
+          role: formData.role,
+          status: formData.status
+        });
+        setFeedback({ type: 'success', message: 'Usuario actualizado correctamente' });
+      } else {
+        // Crear nuevo usuario
+        await createUser({
+          name: formData.name,
+          email: formData.email,
+          role: formData.role,
+          status: formData.status
+        });
+        setFeedback({ type: 'success', message: 'Usuario creado correctamente' });
+      }
 
-    setShowUserForm(false);
-    setEditingUser(null);
-    setFormData({ name: '', email: '', role: 'codificador', status: 'active' });
+      // Recargar usuarios desde el backend
+      await loadUsers();
+
+      setShowUserForm(false);
+      setEditingUser(null);
+      setFormData({ name: '', email: '', role: 'codificador', status: 'active' });
+      
+    } catch (error: any) {
+      console.error('Error al guardar usuario:', error);
+      setFeedback({ type: 'error', message: error.message });
+    }
     
-    // Limpiar feedback después de 3 segundos
-    setTimeout(() => setFeedback(null), 3000);
+    // Limpiar feedback después de 5 segundos
+    setTimeout(() => setFeedback(null), 5000);
   };
 
   const handleEdit = (user: User) => {
@@ -331,21 +328,41 @@ export default function Admin() {
     setShowUserForm(true);
   };
 
-  const handleToggleStatus = (userId: string) => {
-    setUsers(prev => prev.map(u => 
-      u.id === userId 
-        ? { ...u, status: u.status === 'active' ? 'inactive' : 'active' }
-        : u
-    ));
-    setFeedback({ type: 'success', message: 'Estado del usuario actualizado' });
-    setTimeout(() => setFeedback(null), 3000);
+  const handleToggleStatus = async (userId: string) => {
+    try {
+      const user = users.find(u => u.id === userId);
+      if (!user) return;
+
+      const newStatus = user.status === 'active' ? 'inactive' : 'active';
+      await toggleUserStatus(userId, newStatus);
+      
+      // Recargar usuarios desde el backend
+      await loadUsers();
+      
+      setFeedback({ type: 'success', message: 'Estado del usuario actualizado' });
+    } catch (error: any) {
+      console.error('Error al cambiar estado del usuario:', error);
+      setFeedback({ type: 'error', message: error.message });
+    }
+    
+    setTimeout(() => setFeedback(null), 5000);
   };
 
-  const handleDelete = (userId: string) => {
+  const handleDelete = async (userId: string) => {
     if (confirm('¿Estás seguro de que quieres eliminar este usuario?')) {
-      setUsers(prev => prev.filter(u => u.id !== userId));
-      setFeedback({ type: 'success', message: 'Usuario eliminado correctamente' });
-      setTimeout(() => setFeedback(null), 3000);
+      try {
+        await deleteUser(userId);
+        
+        // Recargar usuarios desde el backend
+        await loadUsers();
+        
+        setFeedback({ type: 'success', message: 'Usuario eliminado correctamente' });
+      } catch (error: any) {
+        console.error('Error al eliminar usuario:', error);
+        setFeedback({ type: 'error', message: error.message });
+      }
+      
+      setTimeout(() => setFeedback(null), 5000);
     }
   };
 
@@ -435,8 +452,14 @@ export default function Admin() {
                 </div>
 
                 {/* Tabla de usuarios */}
-                <div className="overflow-x-auto">
-                  <table className="min-w-full divide-y divide-slate-200">
+                {loading ? (
+                  <div className="text-center py-8">
+                    <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-purple-600 mx-auto mb-4"></div>
+                    <p className="text-gray-600">Cargando usuarios...</p>
+                  </div>
+                ) : (
+                  <div className="overflow-x-auto">
+                    <table className="min-w-full divide-y divide-slate-200">
                     <thead className="bg-slate-50">
                       <tr>
                         <th className="px-6 py-3 text-left text-xs font-medium text-slate-500 uppercase tracking-wider">
@@ -505,8 +528,9 @@ export default function Admin() {
                         </tr>
                       ))}
                     </tbody>
-                  </table>
-                </div>
+                    </table>
+                  </div>
+                )}
               </div>
             )}
 

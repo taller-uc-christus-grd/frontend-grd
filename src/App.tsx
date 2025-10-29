@@ -58,23 +58,25 @@ export default function App() {
           <Route element={<ProtectedWrapper />}>
             <Route path="/dashboard" element={<Dashboard />} />
 
-            {/* Codificador y Admin */}
-            <Route element={<ProtectedWrapper roles={['codificador', 'admin']} />}>
+            {/* Solo Codificador */}
+            <Route element={<ProtectedWrapper roles={['codificador']} />}>
               <Route path="/carga" element={<Carga />} />
             </Route>
 
-            {/* Episodios (visibles autenticado cualquiera) */}
-            <Route path="/episodios" element={<Episodios />} />
-            <Route path="/episodios/:id" element={<EpisodioDetalle />} />
-            <Route path="/respaldos/:episodio" element={<Respaldos />} />
+            {/* Episodios (codificador, finanzas, gestión) - sin admin */}
+            <Route element={<ProtectedWrapper roles={['codificador', 'finanzas', 'gestion']} />}>
+              <Route path="/episodios" element={<Episodios />} />
+              <Route path="/episodios/:id" element={<EpisodioDetalle />} />
+              <Route path="/respaldos/:episodio" element={<Respaldos />} />
+            </Route>
 
-            {/* Finanzas y Gestión */}
+            {/* Finanzas y Gestión - sin admin */}
             <Route element={<ProtectedWrapper roles={['finanzas', 'gestion']} />}>
               <Route path="/exportaciones" element={<Exportaciones />} />
             </Route>
 
-            {/* Admin, Finanzas y Gestión → Carga de catálogos */}
-            <Route element={<ProtectedWrapper roles={['admin', 'finanzas', 'gestion']} />}>                                                                    
+            {/* Solo Codificador → Carga de catálogos */}
+            <Route element={<ProtectedWrapper roles={['codificador']} />}>                                                                    
               <Route path="/catalogos" element={<Catalogos />} />
             </Route>
           </Route>
