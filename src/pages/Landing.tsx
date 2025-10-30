@@ -1,5 +1,6 @@
 import { Link } from 'react-router-dom';
 import { useState } from 'react';
+import { useAuth } from '@/hooks/useAuth';
 import ucFoto from '@/assets/uc_foto.jpg';
 import letras from '@/assets/letras.png'; // <— imagen "ConectaGRD" grande
 import icon1 from '@/assets/icon1.png';
@@ -9,6 +10,7 @@ import icon4 from '@/assets/icon4.png';
 import adminIcon from '@/assets/admin.png';
 
 export default function Landing() {
+  const { user } = useAuth();
   const [hovered, setHovered] = useState<number | null>(null);
   const [expandedCard, setExpandedCard] = useState<number | null>(null);
   
@@ -103,7 +105,7 @@ export default function Landing() {
         <div className="w-full flex justify-end">
         <div className="w-full md:max-w-[440px] mt-16 lg:mt-40">
             <Link
-            to="/login"
+            to={user ? '/dashboard' : '/login'}
             className="block w-full text-center px-6 py-3 rounded-2xl bg-black text-white text-base font-medium"
             >
             Ingresar al sistema

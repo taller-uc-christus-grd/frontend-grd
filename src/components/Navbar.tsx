@@ -2,6 +2,7 @@ import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { useAuth } from '@/hooks/useAuth';
 import { useEffect, useState } from 'react';
 import logo from '@/assets/logo.png';
+import userIcon from '@/assets/user.png';
 
 export default function Navbar() {
   const { user, logout } = useAuth();
@@ -95,46 +96,88 @@ useEffect(() => {
     }
   };
 
-  // Modo perfiles - navbar solo con cerrar sesión (para páginas específicas de rol)
+  // Modo perfiles - navbar con acciones derechas (para páginas específicas de rol)
   const profileRoutes = ['/codificador', '/finanzas', '/gestion', '/admin', '/dashboard'];
   if (profileRoutes.includes(pathname)) {
     return (
       <header className="bg-white/90 backdrop-blur border-b border-slate-200 sticky top-0 z-50">
         <div className="max-w-6xl mx-auto px-4 py-3 flex items-center justify-between">
-          {/* Logo - lleva a la página específica del rol */}
-          <Link to={getRoleRoute()} className="flex items-center">
+          {/* Logo - Conecta GRD → si autenticado va a dashboard, si no a landing */}
+          <Link to={user ? '/dashboard' : '/'} className="flex items-center">
             <img src={logo} alt="ConectaGRD" className="h-10 md:h-12 w-auto" />
           </Link>
 
-          {/* Solo botón de cerrar sesión */}
-          <button 
-            onClick={logout} 
-            className="px-4 py-2 rounded-xl bg-gradient-to-r from-gray-400 to-gray-500 text-white hover:from-purple-300 hover:to-blue-300 transition-all duration-300 shadow-md hover:shadow-xl"
-          >
-            Cerrar Sesión
-          </button>
+          {/* Acciones derechas: correo, ícono y Cerrar sesión */}
+          <div className="flex items-center gap-3">
+            {user && (
+              <>
+                <button
+                  onClick={() => navigate('/dashboard')}
+                  className="text-sm font-light text-slate-500 hover:text-slate-900 transition-colors"
+                >
+                  {user.email}
+                </button>
+                <button
+                  onClick={() => navigate('/dashboard')}
+                  className="group p-1 rounded-full hover:bg-slate-100 transition-colors"
+                  aria-label="Ir al dashboard"
+                >
+                  <img
+                    src={userIcon}
+                    alt="Usuario"
+                    className="h-6 w-6 select-none pointer-events-none filter brightness-0 opacity-60 group-hover:opacity-100"
+                  />
+                </button>
+              </>
+            )}
+            <button 
+              onClick={logout} 
+              className="px-4 py-2 rounded-xl bg-gradient-to-r from-gray-400 to-gray-500 text-white hover:from-purple-300 hover:to-blue-300 transition-all duration-300 shadow-md hover:shadow-xl"
+            >
+              Cerrar Sesión
+            </button>
+          </div>
         </div>
       </header>
     );
   }
 
-  // Modo autenticado - navbar con logo que redirige por rol (para todas las demás páginas)
+  // Modo autenticado - navbar con logo que redirige al dashboard (para todas las demás páginas)
   if (user) {
     return (
       <header className="bg-white/90 backdrop-blur border-b border-slate-200 sticky top-0 z-50">
         <div className="max-w-6xl mx-auto px-4 py-3 flex items-center justify-between">
-          {/* Logo - lleva a la página específica del rol */}
-          <Link to={getRoleRoute()} className="flex items-center">
+          {/* Logo - Conecta GRD → dashboard si hay sesión */}
+          <Link to={'/dashboard'} className="flex items-center">
             <img src={logo} alt="ConectaGRD" className="h-10 md:h-12 w-auto" />
           </Link>
 
-          {/* Solo botón de cerrar sesión */}
-          <button 
-            onClick={logout} 
-            className="px-4 py-2 rounded-xl bg-gradient-to-r from-gray-400 to-gray-500 text-white hover:from-purple-300 hover:to-blue-300 transition-all duration-300 shadow-md hover:shadow-xl"
-          >
-            Cerrar Sesión
-          </button>
+          {/* Acciones derechas: correo, ícono y Cerrar sesión */}
+          <div className="flex items-center gap-3">
+            <button
+              onClick={() => navigate('/dashboard')}
+              className="text-sm font-light text-slate-500 hover:text-slate-900 transition-colors"
+            >
+              {user.email}
+            </button>
+            <button
+              onClick={() => navigate('/dashboard')}
+              className="group p-1 rounded-full hover:bg-slate-100 transition-colors"
+              aria-label="Ir al dashboard"
+            >
+              <img
+                src={userIcon}
+                alt="Usuario"
+                className="h-6 w-6 select-none pointer-events-none filter brightness-0 opacity-60 group-hover:opacity-100"
+              />
+            </button>
+            <button 
+              onClick={logout} 
+              className="px-4 py-2 rounded-xl bg-gradient-to-r from-gray-400 to-gray-500 text-white hover:from-purple-300 hover:to-blue-300 transition-all duration-300 shadow-md hover:shadow-xl"
+            >
+              Cerrar Sesión
+            </button>
+          </div>
         </div>
       </header>
     );
@@ -144,8 +187,8 @@ useEffect(() => {
     <header className="bg-white/90 backdrop-blur border-b border-slate-200 sticky top-0 z-50">
       <div className="max-w-6xl mx-auto px-4 py-3 flex items-center justify-between">
         
-        {/* Solo logo grande */}
-        <button onClick={() => go('inicio')} className="flex items-center">
+        {/* Logo: si no hay sesión → siempre a landing */}
+        <button onClick={() => navigate('/')} className="flex items-center">
           <img src={logo} alt="ConectaGRD" className="h-10 md:h-12 w-auto" />
         </button>
 

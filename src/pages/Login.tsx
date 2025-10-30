@@ -1,10 +1,10 @@
-import { FormEvent, useState } from 'react';
+import { FormEvent, useEffect, useState } from 'react';
 import { useAuth } from '@/hooks/useAuth';
 import { useNavigate, Link } from 'react-router-dom';
 import logo from '@/assets/logo.png';
 
 export default function Login() {
-  const { login } = useAuth();
+  const { login, user } = useAuth();
   const nav = useNavigate();
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
@@ -34,6 +34,11 @@ export default function Login() {
         nav('/dashboard');
     }
   }
+
+  // Si ya hay sesión, nunca mostrar login → ir al dashboard
+  useEffect(() => {
+    if (user) nav('/dashboard', { replace: true });
+  }, [user, nav]);
 
   return (
     <div className="min-h-screen bg-slate-50 flex flex-col">
