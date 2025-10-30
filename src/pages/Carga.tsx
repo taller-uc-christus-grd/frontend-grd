@@ -400,102 +400,107 @@ export default function Carga() {
   }
 
   return (
-    <main className="max-w-4xl mx-auto px-4 py-10">
-      <h1 className="text-xl font-semibold">Carga de archivo maestro</h1>
+    <main className="max-w-3xl mx-auto px-6 py-10">
+      {/* Botón volver al dashboard */}
+      <div className='mb-6'>
+        <Link to='/dashboard' className='text-xs px-3 py-1 rounded-full bg-slate-100 text-slate-700 hover:bg-slate-200 ring-1 ring-slate-300/80 shadow-sm transition-all duration-300 inline-block'>← Volver al Dashboard</Link>
+      </div>
 
-      <div className="bg-white rounded-xl p-6 border mt-4 space-y-4">
-        <div>
-          <label className="block text-sm font-medium text-gray-700 mb-2">
-            Seleccionar archivo maestro
-          </label>
-          <input
-            type="file"
-            accept=".csv,.xls,.xlsx"
-            onChange={(e) => onPickFile(e.target.files?.[0] || null)}
-            disabled={loading}
-            className="block w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-lg file:border-0 file:text-sm file:font-medium file:bg-indigo-50 file:text-indigo-700 hover:file:bg-indigo-100"
-          />
-          <p className="mt-1 text-xs text-gray-500">
-            Formatos permitidos: .xls, .xlsx, .csv (máximo 50MB)
-          </p>
+      {/* Div 1: Header */}
+      <div className='mb-6 rounded-2xl border border-slate-200 bg-white shadow-sm px-6 py-5'>
+        <h1 className='text-3xl font-open-sauce font-light bg-gradient-to-r from-purple-600 to-blue-500 bg-clip-text text-transparent'>Carga de archivo maestro</h1>
+        <p className='text-slate-600 mt-2'>Sube el archivo maestro y realiza una pre-validación antes de enviar al servidor.</p>
+      </div>
+
+      {/* Div 2: Proceso de carga */}
+      <div className='mb-6 rounded-2xl border border-slate-200 bg-white shadow-sm p-6'>
+        <h3 className="text-base font-open-sauce font-medium text-amber-900 mb-3">Proceso de carga</h3>
+        <div className="grid md:grid-cols-3 gap-3 text-sm">
+          <div className="bg-amber-50 border border-amber-200 rounded-lg p-3">1. <strong>Selecciona</strong> tu archivo maestro (.xls, .xlsx, .csv)</div>
+          <div className="bg-amber-50 border border-amber-200 rounded-lg p-3">2. <strong>Previsualiza</strong> y corrige los datos si es necesario</div>
+          <div className="bg-amber-50 border border-amber-200 rounded-lg p-3">3. <strong>Confirma</strong> para subir el archivo corregido</div>
         </div>
+      </div>
 
-        <div className="flex items-center gap-2">
-          <button
-            onClick={startPrecheck}
-            className="px-4 py-2 rounded-lg bg-indigo-600 text-white hover:bg-indigo-700 disabled:opacity-60 disabled:cursor-not-allowed"
-            disabled={!file || loading}
-          >
-            {loading ? 'Validando...' : 'Previsualizar y Corregir'}
-          </button>
-        </div>
-
-        {status && (
-          <p className="mt-3 text-sm text-slate-700">
-            {status} •{' '}
-            <Link className="text-indigo-600 underline" to="/episodios">
-              Ver episodios
-            </Link>
-          </p>
-        )}
-        
-        {/* Barra de progreso */}
-        {loading && (
-          <div className="mt-4">
-            <div className="flex items-center justify-between mb-2">
-              <span className="text-sm font-medium text-gray-700">
-                {currentStep}
-              </span>
-              <span className="text-sm text-gray-500">
-                {uploadProgress}%
-              </span>
-            </div>
-            <div className="w-full bg-gray-200 rounded-full h-2">
-              <div 
-                className="bg-indigo-600 h-2 rounded-full transition-all duration-300 ease-out"
-                style={{ width: `${uploadProgress}%` }}
-              ></div>
-            </div>
-          </div>
-        )}
-        
-        {error && <p className="text-sm text-red-600">{error}</p>}
-
-        {lastImport?.missingHeaders?.length ? (
-          <div className="text-sm text-amber-700 bg-amber-50 border border-amber-200 p-2 rounded">
-            Faltan columnas: {lastImport.missingHeaders.join(', ')}
-          </div>
-        ) : null}
-
-        <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
-          <h3 className="text-sm font-medium text-blue-800 mb-2">Columnas requeridas:</h3>
-          <div className="text-xs text-blue-700 space-y-1">
+      {/* Div 3: Columnas requeridas */}
+      <div className='mb-6 rounded-2xl border border-slate-200 bg-white shadow-sm p-6'>
+        <h3 className="text-base font-open-sauce font-medium text-blue-900 mb-3">Columnas requeridas</h3>
+        <div className="grid md:grid-cols-2 gap-2 text-sm text-blue-800">
+          <div className="space-y-1">
             <p>• N° episodio (Episodio CMBD)</p>
             <p>• GRD (IR GRD - Código)</p>
             <p>• Diagnóstico principal</p>
             <p>• Procedimiento principal</p>
+          </div>
+          <div className="space-y-1">
             <p>• Fecha de ingreso</p>
             <p>• Fecha de alta</p>
             <p>• Peso medio [Norma IR]</p>
             <p>• Estancia real del episodio</p>
           </div>
         </div>
-        
-        <div className="bg-amber-50 border border-amber-200 rounded-lg p-4">
-          <h3 className="text-sm font-medium text-amber-800 mb-2">Proceso de carga:</h3>
-          <div className="text-xs text-amber-700 space-y-1">
-            <p>1. <strong>Selecciona</strong> tu archivo maestro (.xls, .xlsx, .csv)</p>
-            <p>2. <strong>Previsualiza</strong> y corrige los datos si es necesario</p>
-            <p>3. <strong>Confirma</strong> para subir el archivo corregido</p>
-          </div>
-        </div>
-        
-        <p className="text-xs text-slate-500">
-          El archivo se valida y normaliza en el servidor. Acepta .xlsx/.xls/.csv.
-        </p>
       </div>
 
-      {/* Modal de pre-check: muestra solo necesarias, pero sube TODO el dataset con correcciones */}
+      {/* Div 4: Seleccionar archivo y acciones */}
+      <div className='mb-6 rounded-2xl border border-slate-200 bg-white shadow-sm p-6'>
+        <div className="grid md:grid-cols-3 gap-6">
+          {/* Selección de archivo */}
+          <div className='md:col-span-2'>
+            <label className="block text-sm font-medium text-gray-700 mb-2">Seleccionar archivo maestro</label>
+            <input
+              type="file"
+              accept=".csv,.xls,.xlsx"
+              onChange={(e) => onPickFile(e.target.files?.[0] || null)}
+              disabled={loading}
+              className="block w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-lg file:border-0 file:text-sm file:font-medium file:bg-indigo-50 file:text-indigo-700 hover:file:bg-indigo-100"
+            />
+            <p className="mt-1 text-xs text-gray-500">Formatos: .xls, .xlsx, .csv (máximo 50MB)</p>
+          </div>
+
+          {/* Acción principal */}
+          <div className='flex items-end'>
+            <button
+              onClick={startPrecheck}
+              className="w-full px-4 py-2 rounded-xl bg-indigo-600 text-white font-medium hover:bg-indigo-700 disabled:opacity-60 disabled:cursor-not-allowed"
+              disabled={!file || loading}
+            >
+              {loading ? 'Validando...' : 'Previsualizar y Corregir'}
+            </button>
+          </div>
+        </div>
+
+        {/* Estado actual */}
+        {(status || error) && (
+          <div className='mt-4 grid md:grid-cols-2 gap-4'>
+            {status && (
+              <div className="rounded-lg border border-slate-200 bg-slate-50 px-4 py-3 text-sm text-slate-700">
+                {status} • <Link className="text-indigo-600 underline" to="/episodios">Ver episodios</Link>
+              </div>
+            )}
+            {error && (
+              <div className="rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">{error}</div>
+            )}
+          </div>
+        )}
+
+        {/* Barra de progreso */}
+        {loading && (
+          <div className="mt-4">
+            <div className="flex items-center justify-between mb-2">
+              <span className="text-sm font-medium text-gray-700">{currentStep}</span>
+              <span className="text-sm text-gray-500">{uploadProgress}%</span>
+            </div>
+            <div className="w-full bg-gray-200 rounded-full h-2">
+              <div className="bg-indigo-600 h-2 rounded-full transition-all duration-300 ease-out" style={{ width: `${uploadProgress}%` }}></div>
+            </div>
+          </div>
+        )}
+      </div>
+
+      {/* Nota */}
+      <div className='text-xs text-slate-500'>El archivo se valida y normaliza en el servidor. Acepta .xlsx/.xls/.csv.</div>
+
+      {/* Modal de pre-check */}
       <PrecheckDialog
         open={openPrecheck}
         headers={viewHeaders}

@@ -9,11 +9,15 @@ import {
   formatCurrency
 } from '@/lib/validations';
 import api from '@/lib/api';
+import icon3 from '@/assets/icon3.png';
+import icon4 from '@/assets/icon4.png';
+import icon1 from '@/assets/icon1.png';
 
 export default function Episodios() {
   const { user } = useAuth();
   const isFinanzas = hasRole(user, ['finanzas']);
   const isGestion = hasRole(user, ['gestion']);
+  const isCodificador = hasRole(user, ['codificador']);
   
   // TODO: Reemplazar con datos reales del backend
   const [episodios, setEpisodios] = useState<Episode[]>([]);
@@ -500,47 +504,199 @@ export default function Episodios() {
   };
 
   return (
-    <main className="main-container-lg">
-      <header className="mb-8">
+    <main className="max-w-[1400px] mx-auto px-6 py-10">
+      {/* Botón volver al dashboard */}
+      <div className='mb-6'>
+        <Link to='/dashboard' className='text-xs px-3 py-1 rounded-full bg-slate-100 text-slate-700 hover:bg-slate-200 ring-1 ring-slate-300/80 shadow-sm transition-all duration-300 inline-block'>← Volver al Dashboard</Link>
+      </div>
+
+      {/* Div 1: Header con título y botón modo */}
+      <div className='mb-6 rounded-2xl border border-slate-200 bg-white shadow-sm px-6 py-5'>
+      <header>
         <div className="flex items-center justify-between">
           <div>
-        <h1 className="title-primary">Episodios</h1>
-        <p className="text-[var(--text-secondary)] mt-2">
-          Listado completo de episodios hospitalarios procesados
-        </p>
+            <h1 className="text-3xl font-open-sauce font-light bg-gradient-to-r from-purple-600 to-blue-500 bg-clip-text text-transparent">Episodios</h1>
+            <p className="text-slate-600 mt-2">
+              Listado completo de episodios hospitalarios procesados
+            </p>
           </div>
           {isFinanzas && (
-            <div className="bg-gradient-to-r from-green-50 to-emerald-50 border border-green-300 rounded-lg px-4 py-3 shadow-sm">
+            <div className="bg-gradient-to-r from-purple-50 to-indigo-50 border border-purple-300 rounded-lg px-4 py-3 shadow-sm">
               <div className="flex items-center gap-2">
-                <span className="text-green-600 text-lg">💰</span>
-                <span className="text-green-900 font-semibold text-sm">
-                  Modo Finanzas - Campos editables
+                <img src={icon3} alt="Finanzas" className="w-6 h-6 object-contain" />
+                <span className="text-purple-900 font-semibold text-sm">
+                  Modo Finanzas
                 </span>
               </div>
             </div>
           )}
           {isGestion && (
-            <div className="bg-gradient-to-r from-purple-50 to-indigo-50 border border-purple-300 rounded-lg px-4 py-3 shadow-sm">
+            <div className="bg-gradient-to-r from-fuchsia-50 to-pink-50 border border-fuchsia-300 rounded-lg px-4 py-3 shadow-sm">
               <div className="flex items-center gap-2">
-                <span className="text-purple-600 text-lg">👥</span>
-                <span className="text-purple-900 font-semibold text-sm">
-                  Modo Gestión - Aprobar/Rechazar
-                </span>
+                <img src={icon4} alt="Gestión" className="w-6 h-6 object-contain" style={{ filter: 'invert(17%) sepia(96%) saturate(5067%) hue-rotate(300deg) brightness(95%) contrast(96%)' }} />
+                <span className="text-fuchsia-900 font-semibold text-sm">Modo Gestión</span>
+              </div>
+            </div>
+          )}
+          {isCodificador && (
+            <div className="bg-gradient-to-r from-sky-50 to-blue-50 border border-sky-300 rounded-lg px-4 py-3 shadow-sm">
+              <div className="flex items-center gap-2">
+                <img src={icon1} alt="Codificador" className="w-6 h-6 object-contain" style={{ filter: 'invert(27%) sepia(94%) saturate(1406%) hue-rotate(188deg) brightness(96%) contrast(95%)' }} />
+                <span className="text-sky-900 font-semibold text-sm">Modo Codificador</span>
               </div>
             </div>
           )}
         </div>
       </header>
+      </div>
 
-      {/* Filtros y búsqueda */}
-      <div className="card mb-6 p-6">
-        <div className="grid md:grid-cols-4 gap-4">
+      {/* Div 2: Instrucciones */}
+      <div className='mb-6 rounded-2xl border border-slate-200 bg-white shadow-sm overflow-hidden'>
+        {error && (
+          <div className="bg-yellow-50 border-b border-yellow-200 px-6 py-4">
+            <div className="flex items-center gap-3">
+              <div className="text-yellow-600 text-xl">⚠️</div>
+              <div>
+                <p className="text-yellow-800 font-semibold">Modo de demostración</p>
+                <p className="text-yellow-700 text-sm mt-1">{error}</p>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {saveMessage && (
+          <div className="bg-green-50 border-b border-green-200 px-6 py-4">
+            <div className="flex items-center gap-3">
+              <div className="text-green-600 text-xl">✅</div>
+              <div>
+                <p className="text-green-800 font-semibold">Cambios guardados</p>
+                <p className="text-green-700 text-sm mt-1">{saveMessage}</p>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {isFinanzas && (
+          <div className="bg-gradient-to-br from-purple-50 via-blue-50 to-purple-50 border-t border-purple-200/50 px-6 py-6">
+            <div className="flex items-start gap-3 mb-4">
+              <img src={icon3} alt="Finanzas" className="w-8 h-8 object-contain mt-1" style={{ filter: 'invert(23%) sepia(92%) saturate(7475%) hue-rotate(261deg) brightness(93%) contrast(96%)' }} />
+              <div className="flex-1">
+                <h3 className="text-base font-open-sauce font-medium text-purple-900 mb-4">Campos editables para Finanzas (ingreso manual)</h3>
+                
+                {/* Instrucciones primero */}
+                <div className="mb-6 -mx-6 px-6 py-4 bg-white/80 border-l-4 border-purple-500 rounded-r-lg shadow-sm">
+                  <h4 className="text-sm font-semibold text-purple-900 mb-3">Instrucciones</h4>
+                  <div className="space-y-2.5">
+                    <p className="text-sm text-slate-700 flex items-start gap-2.5">
+                      <span className="text-purple-500 mt-0.5 font-bold">•</span>
+                      <span>Haz clic en cualquier campo editable para modificarlo. Los campos calculados se actualizan automáticamente.</span>
+                    </p>
+                    <p className="text-sm text-slate-700 flex items-start gap-2.5">
+                      <span className="text-purple-500 mt-0.5 font-bold">•</span>
+                      <span>Los cambios se guardan automáticamente en el servidor al confirmar la edición.</span>
+                    </p>
+                  </div>
+                </div>
+                
+                {/* Lista de campos editables */}
+                <div className="grid md:grid-cols-2 gap-x-8 gap-y-2.5 text-sm text-slate-700">
+                  <div className="space-y-2.5">
+                    <p className="flex items-start gap-2">
+                      <span className="text-purple-500 mt-1">•</span>
+                      <span><strong className="font-semibold text-slate-900">Estado RN</strong> - Estado del reembolso</span>
+                    </p>
+                    <p className="flex items-start gap-2">
+                      <span className="text-purple-500 mt-1">•</span>
+                      <span><strong className="font-semibold text-slate-900">AT (S/N)</strong> - Ajuste por Tecnología</span>
+                    </p>
+                    <p className="flex items-start gap-2">
+                      <span className="text-purple-500 mt-1">•</span>
+                      <span><strong className="font-semibold text-slate-900">AT Detalle</strong> - Detalle del AT</span>
+                    </p>
+                    <p className="flex items-start gap-2">
+                      <span className="text-purple-500 mt-1">•</span>
+                      <span><strong className="font-semibold text-slate-900">Monto AT</strong> - Monto de ajuste (manual)</span>
+                    </p>
+                    <p className="flex items-start gap-2">
+                      <span className="text-purple-500 mt-1">•</span>
+                      <span><strong className="font-semibold text-slate-900">Monto RN</strong> - Monto de reembolso</span>
+                    </p>
+                    <p className="flex items-start gap-2">
+                      <span className="text-purple-500 mt-1">•</span>
+                      <span><strong className="font-semibold text-slate-900">Días Demora Rescate</strong> - Días de demora</span>
+                    </p>
+                  </div>
+                  <div className="space-y-2.5">
+                    <p className="flex items-start gap-2">
+                      <span className="text-purple-500 mt-1">•</span>
+                      <span><strong className="font-semibold text-slate-900">Pago Demora Rescate</strong> - Pago por demora</span>
+                    </p>
+                    <p className="flex items-start gap-2">
+                      <span className="text-purple-500 mt-1">•</span>
+                      <span><strong className="font-semibold text-slate-900">Pago Outlier Superior</strong> - Pago por outlier</span>
+                    </p>
+                    <p className="flex items-start gap-2">
+                      <span className="text-purple-500 mt-1">•</span>
+                      <span><strong className="font-semibold text-slate-900">Precio Base por Tramo</strong> - Precio base</span>
+                    </p>
+                    <p className="flex items-start gap-2">
+                      <span className="text-purple-500 mt-1">•</span>
+                      <span><strong className="font-semibold text-slate-900">Valor GRD</strong> - Valor GRD</span>
+                    </p>
+                    <p className="flex items-start gap-2">
+                      <span className="text-purple-500 mt-1">•</span>
+                      <span><strong className="font-semibold text-slate-900">Monto Final</strong> - Monto final (calculado por backend)</span>
+                    </p>
+                    <p className="flex items-start gap-2">
+                      <span className="text-purple-500 mt-1">•</span>
+                      <span><strong className="font-semibold text-slate-900">Documentación</strong> - Documentación necesaria</span>
+                    </p>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {isGestion && (
+          <div className="bg-gradient-to-br from-fuchsia-50 to-pink-50 border-t border-fuchsia-200 px-6 py-6">
+            <div className="flex items-center gap-3 mb-3">
+              <img src={icon4} alt="Gestión" className="w-7 h-7 object-contain" style={{ filter: 'invert(17%) sepia(96%) saturate(5067%) hue-rotate(300deg) brightness(95%) contrast(96%)' }} />
+              <h3 className="text-base font-open-sauce font-medium text-fuchsia-900">Campos editables para Gestión</h3>
+            </div>
+            <div className="text-sm text-slate-700 mb-4">
+              <p className="flex items-start gap-2">
+                <span className="text-fuchsia-500 mt-1">•</span>
+                <span><strong className="font-semibold text-slate-900">VALIDADO</strong> - Aprobar o rechazar episodios</span>
+              </p>
+            </div>
+            {/* Instrucciones primero */}
+            <div className="mb-6 -mx-6 px-6 py-4 bg-white/80 border-l-4 border-fuchsia-500 rounded-r-lg shadow-sm">
+              <h4 className="text-sm font-semibold text-fuchsia-900 mb-3">Instrucciones</h4>
+              <div className="space-y-2.5">
+                <p className="text-sm text-slate-700 flex items-start gap-2.5">
+                  <span className="text-fuchsia-500 mt-0.5 font-bold">•</span>
+                  <span>Haz clic en el campo VALIDADO para aprobar o rechazar episodios. Los cambios se reflejan inmediatamente en el sistema.</span>
+                </p>
+                <p className="text-sm text-slate-700 flex items-start gap-2.5">
+                  <span className="text-fuchsia-500 mt-0.5 font-bold">•</span>
+                  <span>Los cambios se guardan automáticamente en el servidor al confirmar la edición.</span>
+                </p>
+              </div>
+            </div>
+          </div>
+        )}
+      </div>
+
+      {/* Div 3: Filtros y búsqueda */}
+      <div className="mb-6 rounded-2xl border border-slate-200 bg-white shadow-sm p-6">
+        <div className="grid md:grid-cols-4 gap-6">
           {/* Búsqueda */}
           <div>
-            <label className="form-label">Buscar</label>
+            <label className="block text-sm font-medium text-slate-700 mb-2">Buscar</label>
             <input
               type="text"
-              className="form-input"
+              className="w-full px-4 py-2.5 border border-slate-300 rounded-xl focus:ring-2 focus:ring-purple-500 focus:border-transparent transition-all"
               placeholder="Episodio, nombre, RUT..."
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
@@ -549,9 +705,9 @@ export default function Episodios() {
 
           {/* Filtro por validación */}
           <div>
-            <label className="form-label">Estado</label>
+            <label className="block text-sm font-medium text-slate-700 mb-2">Estado</label>
             <select
-              className="form-input"
+              className="w-full px-4 py-2.5 border border-slate-300 rounded-xl focus:ring-2 focus:ring-purple-500 focus:border-transparent transition-all bg-white"
               value={filterValidated}
               onChange={(e) => setFilterValidated(e.target.value as any)}
             >
@@ -563,9 +719,9 @@ export default function Episodios() {
 
           {/* Filtro por outlier */}
           <div>
-            <label className="form-label">Tipo</label>
+            <label className="block text-sm font-medium text-slate-700 mb-2">Tipo</label>
             <select
-              className="form-input"
+              className="w-full px-4 py-2.5 border border-slate-300 rounded-xl focus:ring-2 focus:ring-purple-500 focus:border-transparent transition-all bg-white"
               value={filterOutlier}
               onChange={(e) => setFilterOutlier(e.target.value as any)}
             >
@@ -580,7 +736,7 @@ export default function Episodios() {
             <button
               onClick={loadEpisodios}
               disabled={loading}
-              className="btn-primary w-full disabled:opacity-50"
+              className="w-full px-4 py-2 rounded-xl border border-indigo-200 bg-indigo-50 text-indigo-700 shadow-sm hover:bg-indigo-100 hover:border-indigo-300 active:translate-y-px transition-all disabled:opacity-50 disabled:cursor-not-allowed"
             >
               {loading ? 'Cargando...' : 'Recargar Episodios'}
             </button>
@@ -588,109 +744,41 @@ export default function Episodios() {
         </div>
       </div>
 
-      {/* Mensaje de error */}
-      {error && (
-        <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-4 mb-6">
-          <div className="flex items-center">
-            <div className="text-yellow-600 mr-3">⚠️</div>
-            <div>
-              <p className="text-yellow-800 font-medium">Modo de demostración</p>
-              <p className="text-yellow-700 text-sm">{error}</p>
-            </div>
-          </div>
-        </div>
-      )}
 
-      {/* Mensaje de confirmación de guardado */}
-      {saveMessage && (
-        <div className="bg-green-50 border border-green-200 rounded-lg p-4 mb-6">
-          <div className="flex items-center">
-            <div className="text-green-600 mr-3">✅</div>
-            <div>
-              <p className="text-green-800 font-medium">Cambios guardados</p>
-              <p className="text-green-700 text-sm">{saveMessage}</p>
-            </div>
-          </div>
-        </div>
-      )}
-
-      {/* Información sobre campos editables */}
-      {isFinanzas && (
-        <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 mb-6">
-          <h3 className="text-sm font-medium text-blue-800 mb-2">Campos editables para Finanzas (ingreso manual):</h3>
-          <div className="grid md:grid-cols-2 gap-2 text-xs text-blue-700">
-            <div className="space-y-1">
-              <p>• <strong>Estado RN</strong> - Estado del reembolso</p>
-              <p>• <strong>AT (S/N)</strong> - Ajuste por Tecnología</p>
-              <p>• <strong>AT Detalle</strong> - Detalle del AT</p>
-              <p>• <strong>Monto AT</strong> - Monto de ajuste (manual)</p>
-              <p>• <strong>Monto RN</strong> - Monto de reembolso</p>
-              <p>• <strong>Días Demora Rescate</strong> - Días de demora</p>
-            </div>
-            <div className="space-y-1">
-              <p>• <strong>Pago Demora Rescate</strong> - Pago por demora</p>
-              <p>• <strong>Pago Outlier Superior</strong> - Pago por outlier</p>
-              <p>• <strong>Precio Base por Tramo</strong> - Precio base</p>
-              <p>• <strong>Valor GRD</strong> - Valor GRD</p>
-              <p>• <strong>Monto Final</strong> - Monto final (calculado por backend)</p>
-              <p>• <strong>Documentación</strong> - Documentación necesaria</p>
-            </div>
-          </div>
-          <p className="text-xs text-blue-600 mt-2">
-            💡 Haz clic en cualquier campo editable para modificarlo. Los campos calculados se actualizan automáticamente.
-          </p>
-          <p className="text-xs text-green-600 mt-1">
-            💾 Los cambios se guardan automáticamente en el servidor al confirmar la edición.
-          </p>
-        </div>
-      )}
-
-      {/* Información sobre campos editables para Gestión */}
-      {isGestion && (
-        <div className="bg-purple-50 border border-purple-200 rounded-lg p-4 mb-6">
-          <h3 className="text-sm font-medium text-purple-800 mb-2">Campos editables para Gestión:</h3>
-          <div className="text-xs text-purple-700">
-            <p>• <strong>VALIDADO</strong> - Aprobar o rechazar episodios</p>
-          </div>
-          <p className="text-xs text-purple-600 mt-2">
-            💡 Haz clic en el campo VALIDADO para aprobar o rechazar episodios. Los cambios se reflejan inmediatamente en el sistema.
-          </p>
-          <p className="text-xs text-purple-600 mt-1">
-            💾 Los cambios se guardan automáticamente en el servidor al confirmar la edición.
-          </p>
-        </div>
-      )}
-
-      {/* Tabla de episodios */}
-      <div className="table-container">
-        {loading ? (
+      {/* Div 4: Tabla de episodios */}
+      <div className="mb-3">
+        <p className="text-sm font-light text-slate-500 italic">Desliza hacia el lado para ver todos los campos</p>
+      </div>
+      <div className="rounded-2xl border border-slate-200 bg-white shadow-sm overflow-hidden">
+        <div className="p-6">
+          {loading ? (
           <div className="text-center py-12">
             <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-purple-600 mx-auto mb-4"></div>
-            <h3 className="title-secondary mb-2">Cargando episodios...</h3>
-            <p className="text-[var(--text-secondary)]">
+              <h3 className="text-lg font-semibold text-slate-900 mb-2">Cargando episodios...</h3>
+              <p className="text-slate-600">
               Conectando con el servidor para obtener los datos
             </p>
           </div>
         ) : episodios.length === 0 ? (
           <div className="text-center py-12">
             <div className="text-6xl mb-4">📋</div>
-            <h3 className="title-secondary mb-2">No hay episodios cargados</h3>
-            <p className="text-[var(--text-secondary)] mb-6">
+            <h3 className="text-lg font-semibold text-slate-900 mb-2">No hay episodios cargados</h3>
+            <p className="text-slate-600 mb-6">
               Los episodios aparecerán aquí una vez que se carguen desde el backend
             </p>
-            <Link to="/carga" className="btn-primary">
+            <Link to="/carga" className="px-4 py-2 rounded-lg bg-purple-600 text-white hover:bg-purple-700">
               Cargar Archivo
             </Link>
           </div>
         ) : (
-        <div className="overflow-x-auto">
-          <table className="w-full text-sm">
-            <thead className="table-header">
-              <tr>
+          <div className="overflow-x-auto">
+          <table className="w-full text-sm border-collapse">
+            <thead>
+              <tr className="bg-slate-50 border-b-2 border-slate-200">
                   {FINAL_COLUMNS.map(([header, key, editable]) => (
                     <th 
                       key={key}
-                      className={`table-cell font-medium text-[var(--text-primary)] ${
+                      className={`px-4 py-3 text-left font-semibold text-slate-700 whitespace-nowrap ${
                         editable ? 'bg-blue-50' : ''
                       }`}
                       title={editable ? 'Campo editable' : 'Campo de solo lectura'}
@@ -698,12 +786,12 @@ export default function Episodios() {
                       {header}
                     </th>
                   ))}
-                <th className="table-cell font-medium text-[var(--text-primary)]">Acciones</th>
+                <th className="px-4 py-3 text-left font-semibold text-slate-700 whitespace-nowrap">Acciones</th>
               </tr>
             </thead>
             <tbody>
                 {filteredEpisodios.map((episodio, rowIndex) => (
-                  <tr key={episodio.episodio} className="table-row">
+                  <tr key={episodio.episodio} className="border-b border-slate-100 hover:bg-slate-50/50 transition-colors">
                     {FINAL_COLUMNS.map(([header, key, editable]) => {
                       const value = key.split('.').reduce((acc: any, k) => acc?.[k], episodio as any);
                       const isEditable = editableFields.has(key);
@@ -711,8 +799,8 @@ export default function Episodios() {
                       return (
                         <td 
                           key={key}
-                          className={`table-cell ${
-                            isEditable ? 'bg-blue-50 font-medium cursor-pointer hover:bg-blue-100' : ''
+                          className={`px-4 py-3 text-slate-700 ${
+                            isEditable ? 'bg-blue-50/50 font-medium cursor-pointer hover:bg-blue-100/70 transition-colors' : ''
                           }`}
                           onClick={() => isEditable && startEdit(rowIndex, key, value)}
                           title={isEditable ? 'Hacer clic para editar' : ''}
@@ -721,31 +809,31 @@ export default function Episodios() {
                   </td>
                       );
                     })}
-                  <td className="table-cell">
-                      <div className="flex gap-2">
+                  <td className="px-4 py-3">
+                      <div className="flex gap-3 items-center">
                         <Link
                           to={`/episodios/${episodio.episodio}`}
-                          className="link-primary font-medium text-sm"
+                          className="text-indigo-600 hover:text-indigo-700 font-medium text-sm hover:underline transition-colors"
                         >
                           Ver
                         </Link>
                     <Link 
                           to={`/episodios/${episodio.episodio}#documentos`}
-                          className="link-secondary font-medium text-sm"
+                          className="text-purple-600 hover:text-purple-700 font-medium text-sm hover:underline transition-colors"
                     >
                           Docs
                     </Link>
                       </div>
                       {/* Indicadores de validación */}
                       {(validationErrors[episodio.episodio]?.length > 0 || validationWarnings[episodio.episodio]?.length > 0) && (
-                        <div className="mt-1">
+                        <div className="mt-2 space-y-1">
                           {validationErrors[episodio.episodio]?.map((error, idx) => (
-                            <div key={idx} className="text-xs text-red-600" title={error}>
+                            <div key={idx} className="text-xs text-red-600 bg-red-50 px-2 py-1 rounded" title={error}>
                               ⚠️ {error}
                             </div>
                           ))}
                           {validationWarnings[episodio.episodio]?.map((warning, idx) => (
-                            <div key={idx} className="text-xs text-yellow-600" title={warning}>
+                            <div key={idx} className="text-xs text-yellow-600 bg-yellow-50 px-2 py-1 rounded" title={warning}>
                               ⚠️ {warning}
                             </div>
                           ))}
@@ -755,17 +843,18 @@ export default function Episodios() {
                 </tr>
               ))}
             </tbody>
-          </table>
+            </table>
+            </div>
+          )}
         </div>
+        
+        {/* Información de resultados */}
+        {episodios.length > 0 && (
+          <div className="px-6 py-4 border-t border-slate-200 bg-slate-50 text-sm text-slate-600">
+            Mostrando {filteredEpisodios.length} de {episodios.length} episodios
+          </div>
         )}
       </div>
-
-      {/* Información de resultados */}
-      {episodios.length > 0 && (
-        <div className="mt-4 text-sm text-[var(--text-secondary)]">
-          Mostrando {filteredEpisodios.length} de {episodios.length} episodios
-        </div>
-      )}
     </main>
   );
 }

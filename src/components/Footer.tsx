@@ -1,12 +1,13 @@
 import { Link } from 'react-router-dom';
 import { useAuth } from '@/hooks/useAuth';
+ 
 import logo from '@/assets/logo.png';
 
 export default function Footer() {
   const { user } = useAuth();
   
   return (
-    <footer className="bg-gray-200 text-gray-800">
+    <footer className={`bg-gray-200 text-gray-800`}>
       <div className="max-w-7xl mx-auto px-6 py-12">
         <div className="grid md:grid-cols-3 gap-8">
           {/* Logo y descripción */}

@@ -3,6 +3,10 @@ import { Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '@/hooks/useAuth';
 import { hasRole } from '@/lib/auth';
 import { useEffect } from 'react';
+import exportImg from '@/assets/export.png';
+import documentImg from '@/assets/document.png';
+import folderImg from '@/assets/folder.png';
+import minsalImg from '@/assets/minsal.png';
 
 export default function Dashboard() {
   const { user } = useAuth();
@@ -40,82 +44,91 @@ export default function Dashboard() {
   }
 
   return (
-    <main className="main-container-lg">
-      <header className="mb-8">
-        <h1 className="title-primary">Bienvenido/a</h1>
-        <p className="text-[var(--text-secondary)] mt-2">
-          Sesión: <span className="font-medium text-[var(--text-primary)]">{user?.email || 'No autenticado'}</span> — 
-          Rol: <span className="font-medium text-[var(--primary-blue)]">{user?.role || 'Sin rol'}</span>
-        </p>
-      </header>
+    <main className="max-w-[1400px] mx-auto px-6 py-14 md:py-20">
+      {/* Header: tarjeta superior mostrando rol real (no Admin) */}
+      <div className="mb-6 rounded-2xl border border-slate-200 bg-white shadow-sm px-6 py-5">
+        <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-2">
+          <div>
+            <h1 className="text-3xl md:text-4xl font-open-sauce font-light bg-gradient-to-r from-purple-600 to-blue-500 bg-clip-text text-transparent">
+              {formatRole(user?.role)}
+            </h1>
+            <p className="text-sm text-slate-600 mt-2">
+              Sesión: <span className="font-medium text-slate-900">{user?.email || 'No autenticado'}</span> · Rol: <span className="font-medium text-purple-600 capitalize">{user?.role || 'Sin rol'}</span>
+            </p>
+          </div>
+        </div>
+      </div>
 
-      {/* Módulos del sistema */}
+      {/* Contenedor de Módulos: título más grande y delgado */}
       <section className="mb-10">
-        <h2 className="title-section">Módulos del Sistema</h2>
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+        <div className="rounded-2xl border border-slate-200 bg-white shadow-sm">
+          <div className="px-6 py-4 border-b border-slate-200/70">
+            <h2 className="text-xl md:text-2xl font-open-sauce font-light text-slate-900">Módulos del Sistema</h2>
+          </div>
+          <div className="p-6 grid grid-cols-1 sm:grid-cols-2 gap-6">
           
           {/* Carga (solo codificador) */}
           {hasRole(user, ['codificador']) && (
-            <Link to="/carga" className="card-interactive p-6 group">
-              <div className="flex items-center mb-4">
-                <div className="w-12 h-12 rounded-xl bg-purple-800 flex items-center justify-center mr-4">
-                  <span className="text-white font-bold text-lg">📁</span>
-                </div>
-                <div className="font-medium text-[var(--text-primary)]">Carga archivo maestro</div>
+            <Link to="/carga" className="rounded-2xl border border-slate-200 bg-white/90 shadow-sm p-6 transition-all hover:shadow-md hover:-translate-y-0.5 hover:ring-1 hover:ring-purple-200 group">
+              <div className="flex items-center mb-3">
+                <img src={folderImg} alt="Carga archivo maestro" className="w-8 h-8 mr-3 select-none object-contain" style={{ filter: 'invert(23%) sepia(92%) saturate(7475%) hue-rotate(261deg) brightness(93%) contrast(96%)' }} />
+                <div className="text-purple-600 text-lg font-medium">Carga archivo maestro</div>
               </div>
-              <p className="text-sm text-[var(--text-secondary)]">
-                Subir extracto SIGESA (Excel) para procesar episodios.
-              </p>
+              <p className="text-sm text-slate-600 mb-4">Subir extracto SIGESA (Excel) para procesar episodios.</p>
+              <button className="text-xs px-3 py-1 rounded-full bg-gray-100 text-gray-600 hover:bg-gray-200 transition-colors duration-300">Haz click para entrar</button>
             </Link>
           )}
 
           {/* Episodios (codificador, finanzas, gestión) */}
           {hasRole(user, ['codificador', 'finanzas', 'gestion']) && (
-            <Link to="/episodios" className="card-interactive p-6 group">
-              <div className="flex items-center mb-4">
-                <div className="w-12 h-12 rounded-xl bg-purple-800 flex items-center justify-center mr-4">
-                  <span className="text-white font-bold text-lg">📋</span>
-                </div>
-                <div className="font-medium text-[var(--text-primary)]">Episodios</div>
+            <Link to="/episodios" className="rounded-2xl border border-slate-200 bg-white/90 shadow-sm p-6 transition-all hover:shadow-md hover:-translate-y-0.5 hover:ring-1 hover:ring-sky-200 group">
+              <div className="flex items-center mb-3">
+                <img src={documentImg} alt="Episodios" className="w-8 h-8 mr-3 select-none object-contain" style={{ filter: 'invert(35%) sepia(67%) saturate(1121%) hue-rotate(181deg) brightness(94%) contrast(92%)' }} />
+                <div className="text-sky-600 text-lg font-medium">Episodios</div>
               </div>
-              <p className="text-sm text-[var(--text-secondary)]">
-                Listado, búsqueda y detalle por episodio.
-              </p>
+              <p className="text-sm text-slate-600 mb-4">Listado, búsqueda y detalle por episodio.</p>
+              <button className="text-xs px-3 py-1 rounded-full bg-gray-100 text-gray-600 hover:bg-gray-200 transition-colors duration-300">Haz click para entrar</button>
             </Link>
           )}
 
           {/* Exportaciones (finanzas + gestión) */}
           {hasRole(user, ['finanzas', 'gestion']) && (
-            <Link to="/exportaciones" className="card-interactive p-6 group">
-              <div className="flex items-center mb-4">
-                <div className="w-12 h-12 rounded-xl bg-purple-800 flex items-center justify-center mr-4">
-                  <span className="text-white font-bold text-lg">📊</span>
-                </div>
-                <div className="font-medium text-[var(--text-primary)]">Exportaciones</div>
+            <Link to="/exportaciones" className="rounded-2xl border border-slate-200 bg-white/90 shadow-sm p-6 transition-all hover:shadow-md hover:-translate-y-0.5 hover:ring-1 hover:ring-purple-200 group">
+              <div className="flex items-center mb-3">
+                <img src={exportImg} alt="Exportaciones" className="w-8 h-8 mr-3 select-none object-contain" style={{ filter: 'invert(23%) sepia(92%) saturate(7475%) hue-rotate(261deg) brightness(93%) contrast(96%)' }} />
+                <div className="text-purple-600 text-lg font-medium">Exportaciones</div>
               </div>
-              <p className="text-sm text-[var(--text-secondary)]">
-                Generar planilla final para FONASA.
-              </p>
+              <p className="text-sm text-slate-600 mb-4">Generar planilla final para FONASA.</p>
+              <button className="text-xs px-3 py-1 rounded-full bg-gray-100 text-gray-600 hover:bg-gray-200 transition-colors duration-300">Haz click para entrar</button>
             </Link>
           )}
 
           {/* Catálogos: solo codificador */}
           {hasRole(user, ['codificador']) && (
-            <Link to="/catalogos" className="card-interactive p-6 group">
-              <div className="flex items-center mb-4">
-                <div className="w-12 h-12 rounded-xl bg-purple-800 flex items-center justify-center mr-4">
-                  <span className="text-white font-bold text-lg">📚</span>
-                </div>
-                <div className="font-medium text-[var(--text-primary)]">Carga de Norma MINSAL</div>
+            <Link to="/catalogos" className="rounded-2xl border border-slate-200 bg-white/90 shadow-sm p-6 transition-all hover:shadow-md hover:-translate-y-0.5 hover:ring-1 hover:ring-purple-200 group">
+              <div className="flex items-center mb-3">
+                <img src={minsalImg} alt="Carga de Norma MINSAL" className="w-8 h-8 mr-3 select-none object-contain" style={{ filter: 'invert(44%) sepia(78%) saturate(1926%) hue-rotate(241deg) brightness(97%) contrast(93%)' }} />
+                <div className="text-purple-400 text-lg font-medium">Carga de Norma MINSAL</div>
               </div>
-              <p className="text-sm text-[var(--text-secondary)]">
-                Subir Norma MINSAL (Excel).
-              </p>
+              <p className="text-sm text-slate-600 mb-4">Subir Norma MINSAL (Excel).</p>
+              <button className="text-xs px-3 py-1 rounded-full bg-gray-100 text-gray-600 hover:bg-gray-200 transition-colors duration-300">Haz click para entrar</button>
             </Link>
           )}
 
+          </div>
         </div>
       </section>
     </main>
   );
+}
+
+function formatRole(role?: string) {
+  if (!role) return 'Panel';
+  const map: Record<string, string> = {
+    finanzas: 'Finanzas',
+    gestion: 'Gestión',
+    codificador: 'Codificador',
+    admin: 'Administrador',
+  };
+  return map[role] || role.charAt(0).toUpperCase() + role.slice(1);
 }

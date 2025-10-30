@@ -44,41 +44,27 @@ export default function Catalogos() {
   }
 
   return (
-    <main className="max-w-4xl mx-auto px-4 py-8">
+    <main className="max-w-3xl mx-auto px-6 py-10">
+      {/* Botón volver al dashboard */}
+      <div className='mb-6'>
+        <a href='/dashboard' className='text-xs px-3 py-1 rounded-full bg-slate-100 text-slate-700 hover:bg-slate-200 ring-1 ring-slate-300/80 shadow-sm transition-all duration-300 inline-block'>← Volver al Dashboard</a>
+      </div>
+
       {/* Header */}
-      <div className="mb-8">
-        <h1 className="text-3xl font-bold text-gray-900">Norma MINSAL</h1>
-        <p className="text-gray-600 mt-2">
-          Gestiona el catálogo oficial de la Norma MINSAL para el sistema GRD.
-        </p>
+      <div className='mb-6 rounded-2xl border border-slate-200 bg-white shadow-sm px-6 py-5'>
+        <h1 className='text-3xl font-open-sauce font-light bg-gradient-to-r from-purple-600 to-blue-500 bg-clip-text text-transparent'>Norma MINSAL</h1>
+        <p className='text-slate-600 mt-2'>Gestiona el catálogo oficial de la Norma MINSAL para el sistema GRD.</p>
       </div>
 
       {/* Tarjeta de Norma MINSAL */}
       <div className="grid grid-cols-1 gap-6">
-        
         {/* Norma MINSAL */}
         <div className="card-interactive bg-white rounded-2xl border border-slate-200 shadow-sm p-8">
-          <div className="flex items-start justify-between mb-6">
-            <div className="flex items-center gap-4">
-              <div className="w-14 h-14 bg-purple-100 rounded-xl flex items-center justify-center">
-                <span className="text-2xl">📋</span>
-              </div>
-              <div>
-                <h2 className="text-xl font-semibold text-gray-900">Norma MINSAL</h2>
-                <p className="text-gray-500">Regulaciones oficiales del sistema GRD</p>
-              </div>
-            </div>
-            <div className="text-right">
-              <div className="text-sm text-gray-500">Filas vigentes</div>
-              <div className="text-2xl font-bold text-purple-600">
-                {normaRows ?? '—'}
-              </div>
-            </div>
-          </div>
           
+
           <div className="space-y-4">
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
+              <label className="block text-base md:text-lg font-medium text-gray-700 mb-2">
                 Seleccionar archivo Excel
               </label>
               <input 
@@ -88,7 +74,7 @@ export default function Catalogos() {
                 className="block w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-lg file:border-0 file:text-sm file:font-semibold file:bg-purple-50 file:text-purple-700 hover:file:bg-purple-100"
               />
             </div>
-            
+
             <button
               onClick={onUploadNorma}
               className="w-full px-4 py-2.5 bg-purple-600 text-white rounded-lg font-medium hover:bg-purple-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors duration-200"
@@ -103,7 +89,7 @@ export default function Catalogos() {
                 'Subir Norma MINSAL'
               )}
             </button>
-            
+
             {sNorma.msg && (
               <div className={`p-3 rounded-lg text-sm ${
                 sNorma.ok 
@@ -113,7 +99,7 @@ export default function Catalogos() {
                 {sNorma.msg}
               </div>
             )}
-            
+
             <div className="text-xs text-gray-500 bg-gray-50 p-3 rounded-lg">
               <strong>Columnas esperadas:</strong> GRD, Tipo GRD, GRAVEDAD, Total Altas, Total Est, Est Media, Altas Depu, Total Est D, N Outliers, Exitus, Percentil 25, Percentil 75, Punto Corte, Peso Total, etc.
             </div>

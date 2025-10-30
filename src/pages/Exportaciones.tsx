@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import { Link } from 'react-router-dom';
 import * as XLSX from 'xlsx';
 import type { Episode, Exportacion, FiltroExportacion } from '@/types';
 import { FINAL_COLUMNS } from '@/lib/planillaConfig';
@@ -311,19 +312,31 @@ export default function Exportaciones() {
   };
 
   return (
-    <main className='max-w-6xl mx-auto px-4 py-10'>
-      <h1 className='text-xl font-semibold'>Exportaciones FONASA</h1>
-      
+    <main className='max-w-[1400px] mx-auto px-6 py-10'>
+      {/* Botón volver al dashboard */}
+      <div className='mb-6'>
+        <Link to='/dashboard' className='text-xs px-3 py-1 rounded-full bg-slate-100 text-slate-700 hover:bg-slate-200 ring-1 ring-slate-300/80 shadow-sm transition-all duration-300 inline-block'>← Volver al Dashboard</Link>
+      </div>
+
+      {/* Header */}
+      <div className='mb-6 rounded-2xl border border-slate-200 bg-white shadow-sm px-6 py-5'>
+        <h1 className='text-3xl font-open-sauce font-light bg-gradient-to-r from-purple-600 to-blue-500 bg-clip-text text-transparent'>Exportaciones FONASA</h1>
+      </div>
+
+      {/* Exportaciones FONASA */}
+      <div className='rounded-2xl border border-slate-200 bg-white shadow-sm'>
       {/* Sección de generación */}
-      <div className='bg-white rounded-xl border p-6 mt-4'>
-        <div className='flex items-center gap-4 mb-4'>
+      <div className='p-6'>
+        <p className='text-base font-open-sauce font-light text-slate-700 mb-4'>Selecciona los tipos de episodios a incluir en el Excel y haz clic en "Generar Excel"</p>
+        <div className='border-t border-slate-200 pt-6'>
+          <div className='flex items-center gap-4 mb-4'>
           {/* Botón Generar Excel */}
           <button
             onClick={generarExcel}
             disabled={generando || cargandoEpisodios}
-            className='px-4 py-2 rounded-lg bg-indigo-600 text-white hover:bg-indigo-700 disabled:opacity-50 disabled:cursor-not-allowed'
+            className='px-4 py-2 rounded-xl border border-indigo-200 bg-indigo-50 text-indigo-700 shadow-sm hover:bg-indigo-100 hover:border-indigo-300 active:translate-y-px transition-all disabled:opacity-50 disabled:cursor-not-allowed'
           >
-            {generando ? 'Generando...' : 'Generar Excel'}
+            {generando ? 'Generando…' : 'Generar Excel'}
           </button>
 
           {/* Checkboxes de filtro */}
@@ -359,16 +372,13 @@ export default function Exportaciones() {
             </label>
           </div>
         </div>
-        
-        <p className='text-sm text-slate-600'>
-          Selecciona los tipos de episodios a incluir en el Excel y haz clic en "Generar Excel"
-        </p>
+        </div>
       </div>
 
       {/* Tabla de historial */}
       {exportaciones.length > 0 && (
-        <div className='bg-white rounded-xl border mt-4'>
-          <div className='p-6 border-b'>
+        <div className='border-t'>
+          <div className='p-6'>
             <h2 className='text-lg font-semibold text-slate-900'>Historial de Exportaciones</h2>
           </div>
           
@@ -432,6 +442,7 @@ export default function Exportaciones() {
           </div>
         </div>
       )}
+      </div>
 
       {/* Modal: No hay episodios */}
       {modalNoHayEpisodios && (
