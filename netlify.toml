@@ -10,3 +10,8 @@
 [build.environment]
   NODE_VERSION = "18"
 
+[[redirects]]
+  from = "/api/*"
+  to = link_back
+  status = 200
+  force = true
