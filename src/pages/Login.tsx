@@ -9,29 +9,37 @@ export default function Login() {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
   async function onSubmit(e: FormEvent) {
     e.preventDefault();
     setLoading(true);
-    const role = await login(email, password);
-    setLoading(false);
+    setError(null);
     
-    // Redirección según rol
-    switch(role) {
-      case 'codificador':
-        nav('/codificador');
-        break;
-      case 'finanzas':
-        nav('/finanzas');
-        break;
-      case 'gestion':
-        nav('/gestion');
-        break;
-      case 'admin':
-        nav('/admin');
-        break;
-      default:
-        nav('/dashboard');
+    try {
+      const role = await login(email, password);
+      
+      // Redirección según rol
+      switch(role) {
+        case 'codificador':
+          nav('/codificador');
+          break;
+        case 'finanzas':
+          nav('/finanzas');
+          break;
+        case 'gestion':
+          nav('/gestion');
+          break;
+        case 'admin':
+          nav('/admin');
+          break;
+        default:
+          nav('/dashboard');
+      }
+    } catch (err: any) {
+      setError(err.message || 'Error al iniciar sesión. Verifica tus credenciales.');
+    } finally {
+      setLoading(false);
     }
   }
 
@@ -86,6 +94,13 @@ export default function Login() {
                   required
                 />
               </div>
+
+              {/* Mensaje de error */}
+              {error && (
+                <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-xl text-sm">
+                  {error}
+                </div>
+              )}
 
               {/* Botón de envío */}
               <button

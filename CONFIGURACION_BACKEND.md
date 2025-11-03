@@ -70,12 +70,75 @@ El backend debe responder correctamente a las peticiones OPTIONS (preflight) que
 ### 4. Rutas del API
 
 El frontend espera que las rutas del backend sigan este patrón:
+- `/api/auth/login` - **CRÍTICO para autenticación**
+- `/api/auth/logout` - Opcional
 - `/api/users`
 - `/api/episodes`
 - `/api/catalogs`
 - etc.
 
 Asegúrate de que tu backend tenga estas rutas disponibles.
+
+#### Endpoint de Login (`POST /api/auth/login`)
+
+El frontend espera que el backend responda con uno de estos formatos:
+
+**Opción 1 (Recomendada):**
+```json
+{
+  "user": {
+    "id": "user123",
+    "email": "usuario@example.com",
+    "role": "codificador",
+    "token": "jwt-token-here"
+  },
+  "token": "jwt-token-here"
+}
+```
+
+**Opción 2:**
+```json
+{
+  "id": "user123",
+  "email": "usuario@example.com",
+  "role": "codificador",
+  "token": "jwt-token-here"
+}
+```
+
+**Campos requeridos:**
+- `id` o `_id`: Identificador único del usuario
+- `email`: Email del usuario
+- `role`: Uno de `'codificador' | 'finanzas' | 'gestion' | 'admin'`
+- `token`: Token JWT o token de autenticación
+
+**Manejo de errores:**
+El backend debe responder con códigos de estado HTTP apropiados:
+- `200` o `201`: Login exitoso
+- `401`: Credenciales inválidas
+- `400`: Datos inválidos
+
+En caso de error, el backend debe devolver:
+```json
+{
+  "message": "Credenciales inválidas",
+  "error": "Invalid credentials"
+}
+```
+
+El frontend mostrará el mensaje de error al usuario.
+
+#### Autenticación con Token
+
+Después del login exitoso, el frontend envía el token en el header `Authorization`:
+```
+Authorization: Bearer <token>
+```
+
+Todas las peticiones autenticadas incluirán este header. El backend debe:
+1. Validar el token en cada petición protegida
+2. Responder con `401 Unauthorized` si el token es inválido o expiró
+3. El frontend redirigirá automáticamente al login si recibe un 401
 
 ## 🧪 Verificar la Conexión
 
