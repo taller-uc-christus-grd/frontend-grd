@@ -12,6 +12,6 @@
 
 [[redirects]]
   from = "/api/*"
-  to = link_back
+  to = "https://backend-grd-production.up.railway.app/:splat"
   status = 200
   force = true
