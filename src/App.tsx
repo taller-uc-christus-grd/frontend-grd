@@ -5,14 +5,16 @@ import Footer from '@/components/Footer'
 import Landing from '@/pages/Landing'
 import Login from '@/pages/Login'
 import Dashboard from '@/pages/Dashboard'
+import Codificador from '@/pages/Codificador'
+import Finanzas from '@/pages/Finanzas'
+import Gestion from '@/pages/Gestion'
 import Carga from '@/pages/Carga'
 import Episodios from '@/pages/Episodios'
 import EpisodioDetalle from '@/pages/EpisodioDetalle'
 import Exportaciones from '@/pages/Exportaciones'
 import Admin from '@/pages/Admin'
-import Respaldos from '@/pages/Respaldos'
 import Protected from '@/components/Protected'
-
+import Catalogos from '@/pages/Catalogos' 
 // Wrapper para poder anidar rutas protegidas con roles opcionales
 import type { Role } from '@/types'
 
@@ -34,28 +36,46 @@ export default function App() {
           <Route path="/" element={<Landing />} />
           <Route path="/login" element={<Login />} />
 
+          {/* Rutas específicas por rol */}
+          <Route element={<ProtectedWrapper roles={['codificador']} />}>
+            <Route path="/codificador" element={<Codificador />} />
+          </Route>
+
+          <Route element={<ProtectedWrapper roles={['finanzas']} />}>
+            <Route path="/finanzas" element={<Finanzas />} />
+          </Route>
+
+          <Route element={<ProtectedWrapper roles={['gestion']} />}>
+            <Route path="/gestion" element={<Gestion />} />
+          </Route>
+
+          <Route element={<ProtectedWrapper roles={['admin']} />}>
+            <Route path="/admin" element={<Admin />} />
+          </Route>
+
           {/* Rutas que requieren sesión */}
           <Route element={<ProtectedWrapper />}>
             <Route path="/dashboard" element={<Dashboard />} />
 
-            {/* Codificador y Admin */}
-            <Route element={<ProtectedWrapper roles={['codificador', 'admin']} />}>
+            {/* Solo Codificador */}
+            <Route element={<ProtectedWrapper roles={['codificador']} />}>
               <Route path="/carga" element={<Carga />} />
             </Route>
 
-            {/* Episodios (visibles autenticado cualquiera) */}
-            <Route path="/episodios" element={<Episodios />} />
-            <Route path="/episodios/:id" element={<EpisodioDetalle />} />
-            <Route path="/respaldos/:episodio" element={<Respaldos />} />
+            {/* Episodios (codificador, finanzas, gestión) - sin admin */}
+            <Route element={<ProtectedWrapper roles={['codificador', 'finanzas', 'gestion']} />}>
+              <Route path="/episodios" element={<Episodios />} />
+              <Route path="/episodios/:id" element={<EpisodioDetalle />} />
+            </Route>
 
-            {/* Finanzas y Gestión */}
+            {/* Finanzas y Gestión - sin admin */}
             <Route element={<ProtectedWrapper roles={['finanzas', 'gestion']} />}>
               <Route path="/exportaciones" element={<Exportaciones />} />
             </Route>
 
-            {/* Solo Admin */}
-            <Route element={<ProtectedWrapper roles={['admin']} />}>
-              <Route path="/admin" element={<Admin />} />
+            {/* Solo Codificador → Carga de catálogos */}
+            <Route element={<ProtectedWrapper roles={['codificador']} />}>                                                                    
+              <Route path="/catalogos" element={<Catalogos />} />
             </Route>
           </Route>
 
