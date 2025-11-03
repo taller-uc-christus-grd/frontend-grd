@@ -139,3 +139,21 @@ export interface ImportResult {
   errors?: number;
   message?: string;
 }
+
+// === Exportaciones ===
+export type FiltroExportacion = 'validados' | 'no-validados' | 'pendientes';
+
+export interface DescargaExportacion {
+  fecha: string;
+  usuario: string;
+}
+
+export interface Exportacion {
+  id: string;
+  fechaGeneracion: string;
+  usuarioGeneracion: string;
+  cantidadEpisodios: number;
+  filtros: FiltroExportacion[];
+  descargas: DescargaExportacion[];
+  datosExcel: Blob;
+}

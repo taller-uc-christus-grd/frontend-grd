@@ -401,7 +401,7 @@ export default function Exportaciones() {
                     <td className='p-3 text-slate-600'>{exp.usuarioGeneracion}</td>
                     <td className='p-3 text-center text-slate-600'>{exp.cantidadEpisodios}</td>
                     <td className='p-3 text-slate-600'>
-                      {exp.filtros.map(f => {
+                      {exp.filtros.map((f: string) => {
                         const label = f === 'validados' ? 'Aprobados' : f === 'no-validados' ? 'No aprobados' : 'Pendientes';
                         const badgeClass = f === 'validados' ? 'badge-success' : f === 'no-validados' ? 'badge-error' : 'badge-warning';
                         return (
@@ -416,7 +416,7 @@ export default function Exportaciones() {
                         <span className='text-slate-400 italic'>Aún no hay descargas</span>
                       ) : (
                         <div className='space-y-1'>
-                          {exp.descargas.map((desc, idx) => (
+                          {exp.descargas.map((desc: any, idx: number) => (
                             <div key={idx} className='text-xs'>
                               {formatearFecha(desc.fecha)} - {desc.usuario}
                             </div>
