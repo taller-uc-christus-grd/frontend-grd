@@ -2,11 +2,10 @@ import axios from 'axios';
 
 const baseURL = import.meta.env.VITE_API_URL || 'http://localhost:3000';
 
-// Logs de debug (solo en desarrollo)
-if (import.meta.env.DEV) {
-  console.log('🔍 API Base URL:', baseURL);
-  console.log('🔍 VITE_API_URL env:', import.meta.env.VITE_API_URL);
-}
+// Logs de debug (siempre mostrar en consola para debugging)
+console.log('🔍 API Base URL:', baseURL);
+console.log('🔍 VITE_API_URL env:', import.meta.env.VITE_API_URL);
+console.log('🔍 Environment:', import.meta.env.MODE);
 
 const api = axios.create({
   baseURL,
@@ -38,10 +37,21 @@ api.interceptors.response.use(
     if (!error.response) {
       let networkErrorMessage = 'Error de conexión: No se pudo conectar al servidor.';
       
+      // Logs detallados para debugging en producción
+      console.error('❌ Error de red:', {
+        message: error.message,
+        code: error.code,
+        baseURL,
+        url: error.config?.url,
+        fullUrl: error.config?.baseURL + error.config?.url,
+      });
+      
       if (error.code === 'ECONNREFUSED' || error.code === 'ERR_NETWORK') {
-        networkErrorMessage = `Error de conexión: No se pudo conectar al backend en ${baseURL}. Verifica que el servidor esté funcionando.`;
+        networkErrorMessage = `Error de conexión: No se pudo conectar al backend en ${baseURL}. Verifica que el servidor esté funcionando y que la URL sea correcta.`;
       } else if (error.code === 'ETIMEDOUT' || error.message?.includes('timeout')) {
         networkErrorMessage = 'Error de conexión: El servidor tardó demasiado en responder. Intenta nuevamente.';
+      } else if (error.code === 'ERR_CERT_AUTHORITY_INVALID' || error.message?.includes('certificate')) {
+        networkErrorMessage = 'Error de certificado SSL. Verifica que la URL del backend sea correcta.';
       }
       
       const networkError = new Error(networkErrorMessage);
