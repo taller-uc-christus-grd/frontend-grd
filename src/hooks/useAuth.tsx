@@ -51,10 +51,26 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       return authenticatedUser.role;
     } catch (error: any) {
       // Manejar errores de autenticación
-      const errorMessage = error.response?.data?.message || 
-                          error.response?.data?.error || 
-                          error.message || 
-                          'Error al iniciar sesión. Verifica tus credenciales.';
+      let errorMessage = 'Error al iniciar sesión. Verifica tus credenciales.';
+      
+      // Detectar errores de red/conexión
+      if (!error.response) {
+        if (error.message?.includes('Error de conexión') || 
+            error.code === 'ECONNREFUSED' || 
+            error.code === 'ERR_NETWORK' ||
+            error.code === 'ETIMEDOUT') {
+          errorMessage = error.message || `Error de conexión: No se pudo conectar al backend. Verifica que esté funcionando en ${import.meta.env.VITE_API_URL || 'http://localhost:3000'}`;
+        } else {
+          errorMessage = error.message || 'Error de conexión con el servidor.';
+        }
+      } else if (error.response) {
+        // Error con respuesta del servidor
+        errorMessage = error.response?.data?.message || 
+                      error.response?.data?.error || 
+                      errorMessage;
+      } else if (error.message) {
+        errorMessage = error.message;
+      }
       
       throw new Error(errorMessage);
     }
