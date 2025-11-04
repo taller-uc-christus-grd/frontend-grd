@@ -65,9 +65,14 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         }
       } else if (error.response) {
         // Error con respuesta del servidor
-        errorMessage = error.response?.data?.message || 
-                      error.response?.data?.error || 
-                      errorMessage;
+        if (error.response.status === 403) {
+          // Usuario inactivo
+          errorMessage = error.response?.data?.message || 'Usuario inactivo. Contacta al administrador.';
+        } else {
+          errorMessage = error.response?.data?.message || 
+                        error.response?.data?.error || 
+                        errorMessage;
+        }
       } else if (error.message) {
         errorMessage = error.message;
       }

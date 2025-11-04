@@ -110,12 +110,14 @@ function PrecheckDialog({
             <table className="w-full text-xs">
               <thead className="sticky top-0 bg-slate-100">
                 <tr>
+                  <th className="text-left p-2 border-b font-semibold">#</th>
                   {headers.map(h => <th key={h} className="text-left p-2 border-b">{h}</th>)}
                 </tr>
               </thead>
               <tbody>
                 {visibleRows.map((r, idx) => (
                   <tr key={idx} className="border-t">
+                    <td className="p-1 align-top text-slate-600 font-medium">{idx + 1}</td>
                     {headers.map(h => {
                       const absIndex = idx; // coincide con slice
                       const onBlur = (val: string) => {
