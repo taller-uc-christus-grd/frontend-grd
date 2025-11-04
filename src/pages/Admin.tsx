@@ -165,6 +165,7 @@ export default function Admin() {
   const [formData, setFormData] = useState({
     name: '',
     email: '',
+    password: '',
     role: 'codificador' as Role,
     status: 'active' as 'active' | 'inactive'
   });
@@ -292,9 +293,14 @@ export default function Admin() {
         setFeedback({ type: 'success', message: 'Usuario actualizado correctamente' });
       } else {
         // Crear nuevo usuario
+        if (!formData.password) {
+          setFeedback({ type: 'error', message: 'La contraseña es obligatoria para crear un nuevo usuario' });
+          return;
+        }
         await createUser({
           name: formData.name,
           email: formData.email,
+          password: formData.password,
           role: formData.role,
           status: formData.status
         });
@@ -306,7 +312,7 @@ export default function Admin() {
 
       setShowUserForm(false);
       setEditingUser(null);
-      setFormData({ name: '', email: '', role: 'codificador', status: 'active' });
+      setFormData({ name: '', email: '', password: '', role: 'codificador', status: 'active' });
       
     } catch (error: any) {
       console.error('Error al guardar usuario:', error);
@@ -322,6 +328,7 @@ export default function Admin() {
     setFormData({
       name: user.name,
       email: user.email,
+      password: '', // No mostrar contraseña al editar por seguridad
       role: user.role,
       status: user.status
     });
@@ -442,7 +449,7 @@ export default function Admin() {
                   <button
                     onClick={() => {
                       setEditingUser(null);
-                      setFormData({ name: '', email: '', role: 'codificador', status: 'active' });
+                      setFormData({ name: '', email: '', password: '', role: 'codificador', status: 'active' });
                       setShowUserForm(true);
                     }}
                     className="px-4 py-2 bg-black text-white rounded-lg hover:bg-gray-800 hover:scale-105 active:scale-95 transition-all duration-200 shadow-md hover:shadow-lg"
@@ -1090,6 +1097,23 @@ export default function Admin() {
                   />
                 </div>
 
+                {!editingUser && (
+                  <div>
+                    <label className="block text-sm font-medium text-slate-700 mb-1">
+                      Contraseña
+                    </label>
+                    <input
+                      type="password"
+                      name="password"
+                      value={formData.password}
+                      onChange={handleInputChange}
+                      required={!editingUser}
+                      className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                      placeholder="Mínimo 8 caracteres"
+                    />
+                  </div>
+                )}
+
                 <div>
                   <label className="block text-sm font-medium text-slate-700 mb-1">
                     Rol
@@ -1134,7 +1158,7 @@ export default function Admin() {
                     onClick={() => {
                       setShowUserForm(false);
                       setEditingUser(null);
-                      setFormData({ name: '', email: '', role: 'codificador', status: 'active' });
+                      setFormData({ name: '', email: '', password: '', role: 'codificador', status: 'active' });
                     }}
                     className="flex-1 px-4 py-2 bg-slate-300 text-slate-700 rounded-lg hover:bg-slate-400 transition-colors"
                   >
