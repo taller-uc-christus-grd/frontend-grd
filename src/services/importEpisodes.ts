@@ -49,7 +49,7 @@ export async function importEpisodes(
  */
 export async function pollImport(jobId: string, { intervalMs = 1500, maxTries = 60 } = {}) {
   for (let i = 0; i < maxTries; i++) {
-    const res = await api.get(`/api/episodes/import/${jobId}`);
+    const res = await api.get(`/api/upload/${jobId}`);
     if (res.status === 200) return res.data as ImportSyncResponse;
     if (res.status !== 202) throw new Error(`Error HTTP ${res.status}`);
     await new Promise((r) => setTimeout(r, intervalMs));
