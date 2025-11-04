@@ -78,8 +78,28 @@ export async function createUser(userData: CreateUserData): Promise<User> {
 // Actualizar usuario
 export async function updateUser(userData: UpdateUserData): Promise<User> {
   try {
-    const response = await api.put(`/api/users/${userData.id}`, userData);
-    return response.data;
+    // Transformar los datos del frontend al formato que espera el backend
+    const backendData: any = {};
+    
+    if (userData.name !== undefined) backendData.nombre = userData.name;
+    if (userData.email !== undefined) backendData.email = userData.email;
+    if (userData.role !== undefined) backendData.rol = userData.role.toUpperCase();
+    if (userData.status !== undefined) backendData.activo = userData.status === 'active';
+    if (userData.password) backendData.password = userData.password; // Se hashea en el backend
+    
+    const response = await api.put(`/api/users/${userData.id}`, backendData);
+    
+    // Transformar la respuesta del backend al formato del frontend
+    const user = response.data;
+    return {
+      id: user.id.toString(),
+      name: user.nombre || user.name,
+      email: user.email,
+      role: (user.rol || user.role).toLowerCase() as Role,
+      status: user.activo === true || user.activo === 'active' ? 'active' : 'inactive',
+      createdAt: user.createdAt || user.created_at,
+      lastLogin: user.lastLogin || user.last_login
+    };
   } catch (error: any) {
     console.error('Error al actualizar usuario:', error);
     throw new Error(error.response?.data?.message || 'Error al actualizar usuario');
@@ -99,8 +119,24 @@ export async function deleteUser(userId: string): Promise<void> {
 // Cambiar estado del usuario
 export async function toggleUserStatus(userId: string, status: 'active' | 'inactive'): Promise<User> {
   try {
-    const response = await api.patch(`/api/users/${userId}/status`, { status });
-    return response.data;
+    // Transformar el status del frontend al formato que espera el backend
+    const backendData = {
+      activo: status === 'active' // El backend espera 'activo' como boolean
+    };
+    
+    const response = await api.patch(`/api/users/${userId}/status`, backendData);
+    
+    // Transformar la respuesta del backend al formato del frontend
+    const user = response.data;
+    return {
+      id: user.id.toString(),
+      name: user.nombre || user.name,
+      email: user.email,
+      role: (user.rol || user.role).toLowerCase() as Role,
+      status: user.activo === true || user.activo === 'active' ? 'active' : 'inactive',
+      createdAt: user.createdAt || user.created_at,
+      lastLogin: user.lastLogin || user.last_login
+    };
   } catch (error: any) {
     console.error('Error al cambiar estado del usuario:', error);
     throw new Error(error.response?.data?.message || 'Error al cambiar estado del usuario');
