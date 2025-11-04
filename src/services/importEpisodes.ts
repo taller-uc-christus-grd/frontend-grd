@@ -29,7 +29,8 @@ export async function importEpisodes(
   formData.append('file', file);
   if (opts?.replace) formData.append('replace', 'true');
 
-  const res = await api.post('/api/episodes/import', formData, {
+  // const res = await api.post('/api/episodes/import'
+  const res = await api.post('/api/upload', formData, {
     headers: { 'Content-Type': 'multipart/form-data' },
     onUploadProgress: (e) => console.log(Math.round((e.loaded * 100) / (e.total ?? 1))),
   });
