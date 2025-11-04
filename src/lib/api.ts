@@ -16,6 +16,24 @@ const api = axios.create({
   timeout: 30000, // 30 segundos timeout
 });
 
+api.interceptors.request.use(
+  (config) => {
+    // Lee el token del almacenamiento local (ajusta la forma en que lo almacenas)
+    const storedUser = localStorage.getItem('grd_user'); 
+    const user = storedUser ? JSON.parse(storedUser) : null;
+    const token = user?.token; // Asumiendo que el token JWT está en user.token
+
+    if (token) {
+      // CLAVE: Adjuntar el token al header 'Authorization'
+      config.headers.Authorization = `Bearer ${token}`;
+    }
+    return config;
+  },
+  (error) => {
+    return Promise.reject(error);
+  }
+);
+
 // Interceptor para manejar errores globalmente
 api.interceptors.response.use(
   (response) => response,
