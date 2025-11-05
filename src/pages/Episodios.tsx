@@ -186,7 +186,8 @@ export default function Episodios() {
         // El backend devuelve el episodio completo con todos los campos recalculados
         let updatedEpisodioFromBackend = { ...response.data };
         
-        // Normalizar valores de AT
+        // Normalizar TODOS los campos que pueden venir en diferentes formatos
+        // Normalizar AT: convertir boolean a "S"/"N"
         const atValue = updatedEpisodioFromBackend.at as any;
         if (atValue === true || atValue === 'S' || atValue === 's') {
           updatedEpisodioFromBackend.at = 'S' as any;
@@ -195,6 +196,30 @@ export default function Episodios() {
         } else {
           updatedEpisodioFromBackend.at = 'N' as any;
         }
+        
+        // Normalizar estadoRN: asegurar que sea string o null
+        const estadoRNValue = updatedEpisodioFromBackend.estadoRN as any;
+        if (estadoRNValue === null || estadoRNValue === undefined || estadoRNValue === '') {
+          updatedEpisodioFromBackend.estadoRN = null as any;
+        } else {
+          updatedEpisodioFromBackend.estadoRN = String(estadoRNValue) as any;
+        }
+        
+        // Normalizar campos numéricos: asegurar que sean números
+        const numericFields = ['montoAT', 'montoRN', 'pagoOutlierSup', 'pagoDemora', 'precioBaseTramo', 'valorGRD', 'montoFinal', 'diasDemoraRescate'];
+        numericFields.forEach(fieldName => {
+          const value = (updatedEpisodioFromBackend as any)[fieldName];
+          if (value !== null && value !== undefined) {
+            (updatedEpisodioFromBackend as any)[fieldName] = typeof value === 'number' ? value : parseFloat(value);
+          }
+        });
+        
+        console.log('📦 Episodio normalizado después de recibir del backend:', {
+          at: updatedEpisodioFromBackend.at,
+          estadoRN: updatedEpisodioFromBackend.estadoRN,
+          montoRN: updatedEpisodioFromBackend.montoRN,
+          field: field
+        });
         
         // Actualizar la lista local con los datos del backend
         // Buscar el episodio por ID flexible (puede ser id o episodio)
@@ -210,17 +235,7 @@ export default function Episodios() {
             return prevEpisodios; // No cambiar nada si no se encuentra
           }
           
-          // Verificar si realmente cambió algo comparando solo el campo editado
-          const currentEp = prevEpisodios[index];
-          // Comparación rápida: solo el campo que se editó
-          const fieldChanged = (currentEp as any)[field] !== (updatedEpisodioFromBackend as any)[field];
-          
-          if (!fieldChanged && currentEp === prevEpisodios[index]) {
-            // Si el campo no cambió y es la misma referencia, no actualizar
-            console.log('ℹ️ El campo no cambió, evitando re-render');
-            return prevEpisodios;
-          }
-          
+          // SIEMPRE actualizar con los datos del backend (ya están normalizados)
           // Crear un nuevo array solo con el episodio actualizado (optimización)
           // Esto causa un re-render, pero solo actualiza la fila específica gracias a la key estable
           const updated = [
@@ -230,6 +245,15 @@ export default function Episodios() {
           ];
           
           console.log('✅ Episodio actualizado en la lista local (campo:', field, ')');
+          console.log('🔄 Comparación de valores:', {
+            campo: field,
+            valorAnterior: (prevEpisodios[index] as any)[field],
+            valorNuevo: (updatedEpisodioFromBackend as any)[field],
+            tipos: {
+              anterior: typeof (prevEpisodios[index] as any)[field],
+              nuevo: typeof (updatedEpisodioFromBackend as any)[field]
+            }
+          });
           return updated;
         });
         
@@ -482,10 +506,9 @@ export default function Episodios() {
       // El backend debería devolver { items: Episode[], total: number }
       let episodiosData = response.data?.items || response.data || [];
       
-      // Normalizar valores de AT: convertir "S"/"N" a boolean si es necesario
-      // O mantener como string si el backend lo envía así
+      // Normalizar TODOS los valores de campos editables al cargar
       episodiosData = episodiosData.map((ep: any) => {
-        // Normalizar AT: si viene como "S"/"N" mantenerlo, si viene como boolean convertir
+        // Normalizar AT: convertir boolean a "S"/"N"
         if (ep.at === true || ep.at === 'S' || ep.at === 's') {
           ep.at = 'S';
         } else if (ep.at === false || ep.at === 'N' || ep.at === 'n') {
@@ -493,6 +516,23 @@ export default function Episodios() {
         } else {
           ep.at = 'N'; // Default
         }
+        
+        // Normalizar estadoRN: asegurar que sea string o null
+        if (ep.estadoRN === null || ep.estadoRN === undefined || ep.estadoRN === '') {
+          ep.estadoRN = null;
+        } else {
+          ep.estadoRN = String(ep.estadoRN);
+        }
+        
+        // Normalizar campos numéricos: asegurar que sean números
+        const numericFields = ['montoAT', 'montoRN', 'pagoOutlierSup', 'pagoDemora', 'precioBaseTramo', 'valorGRD', 'montoFinal', 'diasDemoraRescate'];
+        numericFields.forEach(fieldName => {
+          const value = ep[fieldName];
+          if (value !== null && value !== undefined) {
+            ep[fieldName] = typeof value === 'number' ? value : parseFloat(value);
+          }
+        });
+        
         return ep;
       });
       

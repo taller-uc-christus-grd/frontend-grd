@@ -83,7 +83,8 @@ export default function EpisodioDetalle() {
       // Agregar timestamp para evitar caché
       let data = await getEpisodeDetail(id);
       
-      // Normalizar valores de AT: convertir "S"/"N" a string consistente
+      // Normalizar TODOS los valores de campos editables al cargar
+      // Normalizar AT: convertir boolean a "S"/"N"
       const atValue = data.at as any;
       if (atValue === true || atValue === 'S' || atValue === 's') {
         data.at = 'S' as any;
@@ -92,6 +93,23 @@ export default function EpisodioDetalle() {
       } else {
         data.at = 'N' as any;
       }
+      
+      // Normalizar estadoRN: asegurar que sea string o null
+      const estadoRNValue = data.estadoRN as any;
+      if (estadoRNValue === null || estadoRNValue === undefined || estadoRNValue === '') {
+        data.estadoRN = null as any;
+      } else {
+        data.estadoRN = String(estadoRNValue) as any;
+      }
+      
+      // Normalizar campos numéricos: asegurar que sean números
+      const numericFields = ['montoAT', 'montoRN', 'pagoOutlierSup', 'pagoDemora', 'precioBaseTramo', 'valorGRD', 'montoFinal', 'diasDemoraRescate'];
+      numericFields.forEach(fieldName => {
+        const value = (data as any)[fieldName];
+        if (value !== null && value !== undefined) {
+          (data as any)[fieldName] = typeof value === 'number' ? value : parseFloat(value);
+        }
+      });
       
       setEpisodio(data);
       // Cargar comentarios existentes
@@ -242,7 +260,9 @@ export default function EpisodioDetalle() {
       
       // Normalizar valores del episodio actualizado del backend
       let updatedEpisodio = { ...response.data };
-      // Normalizar AT
+      
+      // Normalizar TODOS los campos que pueden venir en diferentes formatos
+      // Normalizar AT: convertir boolean a "S"/"N"
       const atValue = updatedEpisodio.at as any;
       if (atValue === true || atValue === 'S' || atValue === 's') {
         updatedEpisodio.at = 'S' as any;
@@ -251,6 +271,30 @@ export default function EpisodioDetalle() {
       } else {
         updatedEpisodio.at = 'N' as any;
       }
+      
+      // Normalizar estadoRN: asegurar que sea string o null
+      const estadoRNValue = updatedEpisodio.estadoRN as any;
+      if (estadoRNValue === null || estadoRNValue === undefined || estadoRNValue === '') {
+        updatedEpisodio.estadoRN = null as any;
+      } else {
+        updatedEpisodio.estadoRN = String(estadoRNValue) as any;
+      }
+      
+      // Normalizar campos numéricos: asegurar que sean números
+      const numericFields = ['montoAT', 'montoRN', 'pagoOutlierSup', 'pagoDemora', 'precioBaseTramo', 'valorGRD', 'montoFinal', 'diasDemoraRescate'];
+      numericFields.forEach(fieldName => {
+        const value = (updatedEpisodio as any)[fieldName];
+        if (value !== null && value !== undefined) {
+          (updatedEpisodio as any)[fieldName] = typeof value === 'number' ? value : parseFloat(value);
+        }
+      });
+      
+      console.log('📦 Episodio normalizado después de recibir del backend:', {
+        at: updatedEpisodio.at,
+        estadoRN: updatedEpisodio.estadoRN,
+        montoRN: updatedEpisodio.montoRN,
+        field: field
+      });
       
       // Cerrar modo edición ANTES de actualizar para que se actualice la visualización
       setEditingField(null);
