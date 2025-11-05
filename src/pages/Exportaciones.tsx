@@ -20,7 +20,7 @@ export default function Exportaciones() {
   const cargarEpisodios = async (): Promise<Episode[]> => {
     setCargandoEpisodios(true);
     try {
-      const response = await api.get('/api/episodes/final', {
+      const response = await api.get('/api/episodios/final', {
         params: { page: 1, pageSize: 1000 }
       });
       const episodiosData = response.data?.items || response.data || [];

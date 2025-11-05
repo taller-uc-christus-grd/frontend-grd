@@ -29,7 +29,7 @@ export async function importEpisodes(
   formData.append('file', file);
   if (opts?.replace) formData.append('replace', 'true');
 
-  const res = await api.post('/api/episodes/import', formData, {
+  const res = await api.post('/api/episodios/import', formData, {
     headers: { 'Content-Type': 'multipart/form-data' },
     onUploadProgress: (e) => console.log(Math.round((e.loaded * 100) / (e.total ?? 1))),
   });
@@ -63,7 +63,7 @@ export async function pollImport(jobId: string, { intervalMs = 1500, maxTries = 
  */
 export async function getEpisodesMeta(): Promise<{ count: number; lastImportedAt?: string }> {
   try {
-    const { data } = await api.get('/api/episodes/meta');
+    const { data } = await api.get('/api/episodios/meta');
     return {
       count: data?.count ?? 0,
       lastImportedAt: data?.lastImportedAt,
@@ -71,7 +71,7 @@ export async function getEpisodesMeta(): Promise<{ count: number; lastImportedAt
   } catch {
     try {
       // Si no existe /meta, intenta listar final y ver si hay algún ítem
-      const { data } = await api.get('/api/episodes/final', { params: { page: 1, pageSize: 1 } });
+      const { data } = await api.get('/api/episodios/final', { params: { page: 1, pageSize: 1 } });
       const items = Array.isArray(data) ? data : data?.items ?? [];
       return { count: Array.isArray(items) ? items.length : 0 };
     } catch {
