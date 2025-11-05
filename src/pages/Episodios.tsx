@@ -150,12 +150,19 @@ export default function Episodios() {
         // Enviar solo el campo editado al backend
         // El backend se encarga de todos los cálculos usando los catálogos
         try {
-          const url = `/api/episodios/${episodio.episodio}`;
+          // Intentar usar id si existe, sino usar episodio
+          const episodeId = (episodio as any).id || episodio.episodio;
+          const url = `/api/episodios/${episodeId}`;
           const payload = { [field]: validatedValue };
           
           console.log('🔄 Enviando PATCH a:', url);
           console.log('📦 Datos enviados:', payload);
-          console.log('🆔 ID del episodio:', episodio.episodio);
+          console.log('🆔 ID del episodio (usado):', episodeId);
+          console.log('🔍 Datos del episodio:', {
+            episodio: episodio.episodio,
+            id: (episodio as any).id,
+            hasId: !!(episodio as any).id
+          });
           
           const response = await api.patch(url, payload);
           
@@ -402,6 +409,15 @@ export default function Episodios() {
       setEpisodios(episodiosData);
       
       console.log('Episodios cargados:', episodiosData.length);
+      
+      // Log para debug: verificar estructura de los episodios
+      if (episodiosData.length > 0) {
+        console.log('📋 Estructura del primer episodio:', {
+          episodio: episodiosData[0].episodio,
+          id: (episodiosData[0] as any).id,
+          keys: Object.keys(episodiosData[0])
+        });
+      }
     } catch (error) {
       console.error('Error cargando episodios:', error);
       setError('Error al cargar episodios. Usando datos de demostración.');

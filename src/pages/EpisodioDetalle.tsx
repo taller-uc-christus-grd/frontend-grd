@@ -98,7 +98,9 @@ export default function EpisodioDetalle() {
     setSaveMessage('');
     
     try {
-      const url = `/api/episodios/${episodio.episodio}`;
+      // Intentar usar id si existe, sino usar episodio
+      const episodeId = (episodio as any).id || episodio.episodio;
+      const url = `/api/episodios/${episodeId}`;
       const payload = {
         validado: nuevoEstado === 'aprobado',
         comentariosGestion: comentarios,
@@ -108,7 +110,12 @@ export default function EpisodioDetalle() {
       
       console.log('🔄 Enviando PATCH a:', url);
       console.log('📦 Datos enviados:', payload);
-      console.log('🆔 ID del episodio:', episodio.episodio);
+      console.log('🆔 ID del episodio (usado):', episodeId);
+      console.log('🔍 Datos del episodio:', {
+        episodio: episodio.episodio,
+        id: (episodio as any).id,
+        hasId: !!(episodio as any).id
+      });
       
       const response = await api.patch(url, payload);
       
@@ -191,12 +198,19 @@ export default function EpisodioDetalle() {
       }
 
       // Enviar actualización al backend
-      const url = `/api/episodios/${episodio.episodio}`;
+      // Intentar usar id si existe, sino usar episodio
+      const episodeId = (episodio as any).id || episodio.episodio;
+      const url = `/api/episodios/${episodeId}`;
       const payload = { [field]: validatedValue };
       
       console.log('🔄 Enviando PATCH a:', url);
       console.log('📦 Datos enviados:', payload);
-      console.log('🆔 ID del episodio:', episodio.episodio);
+      console.log('🆔 ID del episodio (usado):', episodeId);
+      console.log('🔍 Datos del episodio:', {
+        episodio: episodio.episodio,
+        id: (episodio as any).id,
+        hasId: !!(episodio as any).id
+      });
       
       const response = await api.patch(url, payload);
       
