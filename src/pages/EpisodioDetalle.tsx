@@ -7,14 +7,17 @@ import api from '@/lib/api';
 import type { Episode } from '@/types';
 import { validateFieldValue, formatCurrency } from '@/lib/validations';
 import JSZip from 'jszip';
+import {
+  uploadDocumento,
+  getDocumentos,
+  deleteDocumento,
+  replaceDocumento,
+  type DocumentoCloudinary,
+} from '@/services/documents';
 
-interface Documento {
-  id: string;
-  nombre: string;
-  fecha: string;
-  tamaño: string;
-  usuario: string;
-  file: File; // Referencia al archivo real
+interface Documento extends DocumentoCloudinary {
+  file?: File; // Referencia al archivo real (solo para archivos nuevos antes de subir)
+  uploading?: boolean; // Estado de carga
 }
 
 export default function EpisodioDetalle() {
@@ -44,6 +47,7 @@ export default function EpisodioDetalle() {
   const [isDragOver, setIsDragOver] = useState(false);
   const [replaceModal, setReplaceModal] = useState<{show: boolean, oldFile: string, newFile: string, documentoId: string} | null>(null);
   const [deleteModal, setDeleteModal] = useState<{show: boolean, documentoId: string, fileName: string} | null>(null);
+  const [loadingDocumentos, setLoadingDocumentos] = useState(false);
   
   const fileInputRef = useRef<HTMLInputElement>(null);
   const replaceInputRef = useRef<HTMLInputElement>(null);
@@ -51,8 +55,30 @@ export default function EpisodioDetalle() {
   useEffect(() => {
     if (id) {
       loadEpisodio();
+      loadDocumentos();
     }
   }, [id]);
+
+  // Cargar documentos desde el backend
+  const loadDocumentos = async () => {
+    if (!id) return;
+    
+    setLoadingDocumentos(true);
+    try {
+      const documentosFromBackend = await getDocumentos(id);
+      setDocumentos(documentosFromBackend);
+    } catch (error: any) {
+      console.error('Error al cargar documentos:', error);
+      // Si el endpoint no existe aún, simplemente no mostrar error
+      // Esto permite que el sistema funcione mientras se implementa el backend
+      if (error.response?.status !== 404) {
+        setSaveMessage(`Error al cargar documentos: ${error.message}`);
+        setTimeout(() => setSaveMessage(''), 5000);
+      }
+    } finally {
+      setLoadingDocumentos(false);
+    }
+  };
 
   // Estado para mostrar sección de documentos solo cuando viene del hash
   const [showDocumentosSection, setShowDocumentosSection] = useState(false);
@@ -498,16 +524,54 @@ export default function EpisodioDetalle() {
   };
 
   // Funciones para manejo de documentos
-  const processFiles = (files: FileList) => {
-    const newDocumentos = Array.from(files).map((file, index) => ({
-      id: String(Date.now() + index),
+  const processFiles = async (files: FileList) => {
+    if (!id) return;
+
+    const filesArray = Array.from(files);
+    
+    // Crear documentos temporales con estado de carga
+    const tempDocumentos: Documento[] = filesArray.map((file, index) => ({
+      id: `temp-${Date.now()}-${index}`,
       nombre: file.name,
       fecha: new Date().toISOString().split('T')[0],
       tamaño: `${(file.size / 1024 / 1024).toFixed(1)} MB`,
       usuario: user?.email || 'Usuario desconocido',
-      file: file
+      url: '',
+      public_id: '',
+      file: file,
+      uploading: true,
     }));
-    setDocumentos(prev => [...prev, ...newDocumentos]);
+
+    // Agregar documentos temporales al estado
+    setDocumentos(prev => [...prev, ...tempDocumentos]);
+
+    // Subir cada archivo al backend
+    for (let i = 0; i < filesArray.length; i++) {
+      const file = filesArray[i];
+      const tempDoc = tempDocumentos[i];
+
+      try {
+        const documentoSubido = await uploadDocumento(id, file);
+        
+        // Actualizar el documento temporal con los datos del backend
+        setDocumentos(prev => prev.map(doc => 
+          doc.id === tempDoc.id 
+            ? { ...documentoSubido, uploading: false }
+            : doc
+        ));
+
+        setSaveMessage(`Documento "${file.name}" subido exitosamente`);
+        setTimeout(() => setSaveMessage(''), 3000);
+      } catch (error: any) {
+        console.error('Error al subir documento:', error);
+        
+        // Remover el documento temporal en caso de error
+        setDocumentos(prev => prev.filter(doc => doc.id !== tempDoc.id));
+        
+        setSaveMessage(`Error al subir "${file.name}": ${error.response?.data?.message || error.message}`);
+        setTimeout(() => setSaveMessage(''), 5000);
+      }
+    }
   };
 
   const handleFileUpload = (event: React.ChangeEvent<HTMLInputElement>) => {
@@ -558,28 +622,50 @@ export default function EpisodioDetalle() {
     }
   };
 
-  const handleConfirmReplace = () => {
-    if (!replaceModal) return;
+  const handleConfirmReplace = async () => {
+    if (!replaceModal || !id) return;
     const documentoId = replaceModal.documentoId;
     const newFileName = replaceModal.newFile;
     const files = replaceInputRef.current?.files;
     
     if (files && files.length > 0) {
       const file = files[0];
+      const documento = documentos.find(doc => doc.id === documentoId);
+      
+      if (!documento) return;
+
+      // Marcar como cargando
       setDocumentos(prev => prev.map(doc => 
         doc.id === documentoId 
-          ? {
-              ...doc,
-              nombre: newFileName,
-              fecha: new Date().toISOString().split('T')[0],
-              tamaño: `${(file.size / 1024 / 1024).toFixed(1)} MB`,
-              usuario: user?.email || 'Usuario desconocido',
-              file: file
-            }
+          ? { ...doc, uploading: true }
           : doc
       ));
-      setSaveMessage(`Archivo "${newFileName}" reemplazado exitosamente`);
-      setTimeout(() => setSaveMessage(''), 3000);
+
+      try {
+        // Reemplazar en Cloudinary
+        const documentoActualizado = await replaceDocumento(id, documento.public_id, file);
+        
+        // Actualizar el documento con los nuevos datos
+        setDocumentos(prev => prev.map(doc => 
+          doc.id === documentoId 
+            ? { ...documentoActualizado, uploading: false }
+            : doc
+        ));
+        
+        setSaveMessage(`Archivo "${newFileName}" reemplazado exitosamente`);
+        setTimeout(() => setSaveMessage(''), 3000);
+      } catch (error: any) {
+        console.error('Error al reemplazar documento:', error);
+        setSaveMessage(`Error al reemplazar "${newFileName}": ${error.response?.data?.message || error.message}`);
+        setTimeout(() => setSaveMessage(''), 5000);
+        
+        // Restaurar estado anterior
+        setDocumentos(prev => prev.map(doc => 
+          doc.id === documentoId 
+            ? { ...doc, uploading: false }
+            : doc
+        ));
+      }
     }
     setReplaceModal(null);
     if (replaceInputRef.current) {
@@ -604,11 +690,26 @@ export default function EpisodioDetalle() {
     });
   };
 
-  const handleConfirmDelete = () => {
-    if (!deleteModal) return;
-    setDocumentos(prev => prev.filter(doc => doc.id !== deleteModal.documentoId));
-    setSaveMessage(`Archivo "${deleteModal.fileName}" eliminado exitosamente`);
-    setTimeout(() => setSaveMessage(''), 3000);
+  const handleConfirmDelete = async () => {
+    if (!deleteModal || !id) return;
+    
+    const documento = documentos.find(doc => doc.id === deleteModal.documentoId);
+    if (!documento) return;
+
+    try {
+      // Eliminar de Cloudinary
+      await deleteDocumento(id, documento.public_id);
+      
+      // Remover del estado local
+      setDocumentos(prev => prev.filter(doc => doc.id !== deleteModal.documentoId));
+      setSaveMessage(`Archivo "${deleteModal.fileName}" eliminado exitosamente`);
+      setTimeout(() => setSaveMessage(''), 3000);
+    } catch (error: any) {
+      console.error('Error al eliminar documento:', error);
+      setSaveMessage(`Error al eliminar "${deleteModal.fileName}": ${error.response?.data?.message || error.message}`);
+      setTimeout(() => setSaveMessage(''), 5000);
+    }
+    
     setDeleteModal(null);
   };
 
@@ -618,14 +719,29 @@ export default function EpisodioDetalle() {
 
   const handleDownloadIndividual = (documento: Documento) => {
     try {
-      const url = URL.createObjectURL(documento.file);
-      const link = document.createElement('a');
-      link.href = url;
-      link.download = `episodio-${id}-${documento.nombre}`;
-      document.body.appendChild(link);
-      link.click();
-      document.body.removeChild(link);
-      URL.revokeObjectURL(url);
+      // Si tiene URL de Cloudinary, usar esa
+      if (documento.url || documento.secure_url) {
+        const url = documento.secure_url || documento.url;
+        const link = document.createElement('a');
+        link.href = url;
+        link.download = documento.nombre;
+        link.target = '_blank'; // Abrir en nueva pestaña si no se puede descargar
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+      } else if (documento.file) {
+        // Si es un archivo local (antes de subir), usar blob URL
+        const url = URL.createObjectURL(documento.file);
+        const link = document.createElement('a');
+        link.href = url;
+        link.download = `episodio-${id}-${documento.nombre}`;
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+        URL.revokeObjectURL(url);
+      } else {
+        throw new Error('No hay URL disponible para descargar');
+      }
     } catch (error) {
       console.error('Error al descargar archivo:', error);
       alert('Error al descargar el archivo');
@@ -639,10 +755,28 @@ export default function EpisodioDetalle() {
     }
     try {
       const zip = new JSZip();
+      
       for (const doc of documentos) {
-        const fileContent = await doc.file.arrayBuffer();
-        zip.file(doc.nombre, fileContent);
+        if (doc.uploading) continue; // Saltar documentos que se están subiendo
+        
+        try {
+          if (doc.file) {
+            // Si tiene archivo local, usarlo directamente
+            const fileContent = await doc.file.arrayBuffer();
+            zip.file(doc.nombre, fileContent);
+          } else if (doc.url || doc.secure_url) {
+            // Si tiene URL de Cloudinary, descargar desde ahí
+            const url = doc.secure_url || doc.url;
+            const response = await fetch(url);
+            const blob = await response.blob();
+            const arrayBuffer = await blob.arrayBuffer();
+            zip.file(doc.nombre, arrayBuffer);
+          }
+        } catch (error) {
+          console.error(`Error al agregar "${doc.nombre}" al ZIP:`, error);
+        }
       }
+      
       const blob = await zip.generateAsync({ type: 'blob' });
       const url = URL.createObjectURL(blob);
       const link = document.createElement('a');
@@ -741,7 +875,12 @@ export default function EpisodioDetalle() {
                 {documentos.map((doc) => (
                   <tr key={doc.id} className='border-b border-slate-100 hover:bg-slate-50/50 transition-colors'>
                     <td className='px-4 py-3'>
-                      <span className='font-medium'>{doc.nombre}</span>
+                      <div className='flex items-center gap-2'>
+                        <span className='font-medium'>{doc.nombre}</span>
+                        {doc.uploading && (
+                          <div className='w-4 h-4 border-2 border-indigo-600 border-t-transparent rounded-full animate-spin'></div>
+                        )}
+                      </div>
                     </td>
                     <td className='px-4 py-3 text-center text-gray-600'>{doc.fecha}</td>
                     <td className='px-4 py-3 text-center text-gray-600'>{doc.usuario}</td>
@@ -750,21 +889,24 @@ export default function EpisodioDetalle() {
                       <div className='flex gap-2 justify-center'>
                         <button 
                           onClick={() => handleDownloadIndividual(doc)} 
-                          className='p-2 bg-indigo-100 text-indigo-700 rounded hover:bg-indigo-200 transition-colors'
+                          disabled={doc.uploading}
+                          className='p-2 bg-indigo-100 text-indigo-700 rounded hover:bg-indigo-200 transition-colors disabled:opacity-50 disabled:cursor-not-allowed'
                           title='Descargar'
                         >
                           ↓
                         </button>
                         <button 
                           onClick={() => handleReplaceFile(doc.id)} 
-                          className='p-2 bg-slate-100 text-slate-700 rounded hover:bg-slate-200 transition-colors'
+                          disabled={doc.uploading}
+                          className='p-2 bg-slate-100 text-slate-700 rounded hover:bg-slate-200 transition-colors disabled:opacity-50 disabled:cursor-not-allowed'
                           title='Reemplazar'
                         >
                           ✎
                         </button>
                         <button 
                           onClick={() => handleDeleteFile(doc.id)} 
-                          className='p-2 bg-red-100 text-red-700 rounded hover:bg-red-200 transition-colors'
+                          disabled={doc.uploading}
+                          className='p-2 bg-red-100 text-red-700 rounded hover:bg-red-200 transition-colors disabled:opacity-50 disabled:cursor-not-allowed'
                           title='Eliminar'
                         >
                           ×
