@@ -7,6 +7,13 @@ import api from '@/lib/api';
 export async function uploadNormaMinsal(file: File) {
   const fd = new FormData();
   fd.append('file', file);
+  
+  // Log para verificar qué URL se está usando
+  const baseURL = import.meta.env.VITE_API_URL || 'http://localhost:3000';
+  const fullURL = `${baseURL}/api/catalogs/norma-minsal/import`;
+  console.log('📤 Subiendo archivo a:', fullURL);
+  console.log('📤 Archivo:', file.name, 'Tamaño:', file.size, 'bytes');
+  
   // NO establecer Content-Type manualmente - axios lo hace automáticamente con el boundary correcto
   const res = await api.post('/api/catalogs/norma-minsal/import', fd);
   return res.data; // El backend devuelve { success, summary: { total, valid, errors }, grds, errorDetails }
