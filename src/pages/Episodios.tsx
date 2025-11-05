@@ -150,9 +150,14 @@ export default function Episodios() {
         // Enviar solo el campo editado al backend
         // El backend se encarga de todos los cálculos usando los catálogos
         try {
-          const response = await api.patch(`/api/episodes/${episodio.episodio}`, { 
-            [field]: validatedValue
-          });
+          const url = `/api/episodios/${episodio.episodio}`;
+          const payload = { [field]: validatedValue };
+          
+          console.log('🔄 Enviando PATCH a:', url);
+          console.log('📦 Datos enviados:', payload);
+          console.log('🆔 ID del episodio:', episodio.episodio);
+          
+          const response = await api.patch(url, payload);
           
           console.log(`Campo ${field} actualizado exitosamente para episodio ${episodio.episodio}`);
           
@@ -168,10 +173,35 @@ export default function Episodios() {
           setTimeout(() => setSaveMessage(''), 3000);
           
         } catch (backendError: any) {
-          console.error('Error al guardar en backend:', backendError);
+          console.error('❌ Error al guardar en backend:', backendError);
+          console.error('📋 Detalles del error:', {
+            status: backendError.response?.status,
+            statusText: backendError.response?.statusText,
+            data: backendError.response?.data,
+            url: backendError.config?.url,
+            method: backendError.config?.method,
+            fullUrl: backendError.config?.baseURL + backendError.config?.url
+          });
+          
           // Revertir cambios locales si falla el backend
           setEpisodios(episodios);
-          throw new Error(`Error al guardar: ${backendError.response?.data?.message || backendError.message}`);
+          
+          let errorMessage = 'Error al guardar los cambios';
+          if (backendError.response?.status === 404) {
+            errorMessage = `El episodio ${episodio.episodio} no fue encontrado en el servidor. Verifica que el ID del episodio sea correcto.`;
+          } else if (backendError.response?.status === 400) {
+            errorMessage = `Datos inválidos: ${backendError.response?.data?.message || 'El valor ingresado no es válido'}`;
+          } else if (backendError.response?.status === 401) {
+            errorMessage = 'No tienes permisos para realizar esta acción. Por favor, inicia sesión nuevamente.';
+          } else if (backendError.response?.status === 500) {
+            errorMessage = 'Error del servidor. Por favor, intenta nuevamente más tarde.';
+          } else if (backendError.response?.data?.message) {
+            errorMessage = backendError.response.data.message;
+          } else if (backendError.message) {
+            errorMessage = backendError.message;
+          }
+          
+          throw new Error(errorMessage);
         }
       }
       

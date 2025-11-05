@@ -98,12 +98,19 @@ export default function EpisodioDetalle() {
     setSaveMessage('');
     
     try {
-      const response = await api.patch(`/api/episodes/${episodio.episodio}`, {
+      const url = `/api/episodios/${episodio.episodio}`;
+      const payload = {
         validado: nuevoEstado === 'aprobado',
         comentariosGestion: comentarios,
         fechaRevision: new Date().toISOString(),
         revisadoPor: user?.email || 'Usuario'
-      });
+      };
+      
+      console.log('🔄 Enviando PATCH a:', url);
+      console.log('📦 Datos enviados:', payload);
+      console.log('🆔 ID del episodio:', episodio.episodio);
+      
+      const response = await api.patch(url, payload);
       
       // Actualizar el episodio local con la respuesta del backend
       setEpisodio(response.data);
@@ -112,8 +119,32 @@ export default function EpisodioDetalle() {
       setTimeout(() => setSaveMessage(''), 3000);
       
     } catch (error: any) {
-      console.error('Error al actualizar estado:', error);
-      setSaveMessage(`Error: ${error.response?.data?.message || error.message}`);
+      console.error('❌ Error al actualizar estado:', error);
+      console.error('📋 Detalles del error:', {
+        status: error.response?.status,
+        statusText: error.response?.statusText,
+        data: error.response?.data,
+        url: error.config?.url,
+        method: error.config?.method,
+        fullUrl: error.config?.baseURL + error.config?.url
+      });
+      
+      let errorMessage = 'Error al guardar los cambios';
+      if (error.response?.status === 404) {
+        errorMessage = `El episodio ${episodio?.episodio} no fue encontrado en el servidor. Verifica que el ID del episodio sea correcto.`;
+      } else if (error.response?.status === 400) {
+        errorMessage = `Datos inválidos: ${error.response?.data?.message || 'El valor ingresado no es válido'}`;
+      } else if (error.response?.status === 401) {
+        errorMessage = 'No tienes permisos para realizar esta acción. Por favor, inicia sesión nuevamente.';
+      } else if (error.response?.status === 500) {
+        errorMessage = 'Error del servidor. Por favor, intenta nuevamente más tarde.';
+      } else if (error.response?.data?.message) {
+        errorMessage = error.response.data.message;
+      } else if (error.message) {
+        errorMessage = error.message;
+      }
+      
+      setSaveMessage(`Error: ${errorMessage}`);
       setTimeout(() => setSaveMessage(''), 5000);
     } finally {
       setSaving(false);
@@ -160,9 +191,14 @@ export default function EpisodioDetalle() {
       }
 
       // Enviar actualización al backend
-      const response = await api.patch(`/api/episodes/${episodio.episodio}`, { 
-        [field]: validatedValue
-      });
+      const url = `/api/episodios/${episodio.episodio}`;
+      const payload = { [field]: validatedValue };
+      
+      console.log('🔄 Enviando PATCH a:', url);
+      console.log('📦 Datos enviados:', payload);
+      console.log('🆔 ID del episodio:', episodio.episodio);
+      
+      const response = await api.patch(url, payload);
       
       // Actualizar el episodio local con la respuesta del backend
       setEpisodio(response.data);
@@ -174,8 +210,32 @@ export default function EpisodioDetalle() {
       setEditValue('');
       
     } catch (error: any) {
-      console.error('Error al actualizar campo:', error);
-      setSaveMessage(`Error: ${error.response?.data?.message || error.message}`);
+      console.error('❌ Error al actualizar campo:', error);
+      console.error('📋 Detalles del error:', {
+        status: error.response?.status,
+        statusText: error.response?.statusText,
+        data: error.response?.data,
+        url: error.config?.url,
+        method: error.config?.method,
+        fullUrl: error.config?.baseURL + error.config?.url
+      });
+      
+      let errorMessage = 'Error al guardar los cambios';
+      if (error.response?.status === 404) {
+        errorMessage = `El episodio ${episodio?.episodio} no fue encontrado en el servidor. Verifica que el ID del episodio sea correcto.`;
+      } else if (error.response?.status === 400) {
+        errorMessage = `Datos inválidos: ${error.response?.data?.message || 'El valor ingresado no es válido'}`;
+      } else if (error.response?.status === 401) {
+        errorMessage = 'No tienes permisos para realizar esta acción. Por favor, inicia sesión nuevamente.';
+      } else if (error.response?.status === 500) {
+        errorMessage = 'Error del servidor. Por favor, intenta nuevamente más tarde.';
+      } else if (error.response?.data?.message) {
+        errorMessage = error.response.data.message;
+      } else if (error.message) {
+        errorMessage = error.message;
+      }
+      
+      setSaveMessage(`Error: ${errorMessage}`);
       setTimeout(() => setSaveMessage(''), 5000);
     } finally {
       setSavingField(false);
