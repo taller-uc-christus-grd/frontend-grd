@@ -119,7 +119,8 @@ export function validateFieldValue(field: string, value: any): ValidationResult 
 
   // Validar estado RN
   if (field === 'estadoRN') {
-    if (value && !['Aprobado', 'Pendiente', 'Rechazado'].includes(value)) {
+    // Permitir vacío (se enviará como null)
+    if (value && value !== '' && !['Aprobado', 'Pendiente', 'Rechazado'].includes(value)) {
       errors.push('Estado inválido. Use: Aprobado, Pendiente o Rechazado');
     }
   }

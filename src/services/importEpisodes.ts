@@ -86,7 +86,10 @@ export async function getEpisodesMeta(): Promise<{ count: number; lastImportedAt
  */
 export async function getEpisodeDetail(id: string): Promise<Episode> {
   try {
-    const { data } = await api.get(`/api/episodios/${id}`);
+    // Agregar timestamp para evitar caché
+    const { data } = await api.get(`/api/episodios/${id}`, {
+      params: { _t: Date.now() }
+    });
     return data as Episode;
   } catch (error) {
     console.warn('Error al cargar episodio desde backend, usando datos mock:', error);

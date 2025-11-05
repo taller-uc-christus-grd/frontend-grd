@@ -101,9 +101,20 @@ export default function Episodios() {
     
     setEditingCell({ row: rowIndex, field });
     
-    // Para el campo validado, convertir boolean a string apropiado
+    // Convertir valores según el tipo de campo
     if (field === 'validado') {
       setEditValue(currentValue === true ? 'true' : currentValue === false ? 'false' : '');
+    } else if (field === 'at') {
+      // Convertir boolean a "S"/"N" o mantener "S"/"N" si ya es string
+      if (currentValue === true || currentValue === 'S' || currentValue === 's') {
+        setEditValue('S');
+      } else if (currentValue === false || currentValue === 'N' || currentValue === 'n') {
+        setEditValue('N');
+      } else {
+        setEditValue('N'); // Default
+      }
+    } else if (field === 'estadoRN') {
+      setEditValue(currentValue || '');
     } else {
       setEditValue(currentValue?.toString() || '');
     }
@@ -134,52 +145,71 @@ export default function Episodios() {
         validatedValue = parseInt(editValue);
       }
       
+      if (field === 'at') {
+        // Convertir a "S" o "N" para el backend
+        validatedValue = editValue === 'S' || editValue === 'true' ? 'S' : 'N';
+      }
+      
+      if (field === 'estadoRN') {
+        // Si está vacío, enviar null
+        validatedValue = editValue === '' ? null : editValue;
+      }
+      
       if (field === 'validado') {
         validatedValue = editValue === 'true' ? true : editValue === 'false' ? false : null;
       }
 
-      // Actualizar el episodio localmente
-      const updatedEpisodios = [...episodios];
-      const originalIndex = episodios.findIndex(ep => ep.episodio === episodio.episodio);
-      if (originalIndex !== -1) {
-        const updatedEpisodio = {
-          ...updatedEpisodios[originalIndex],
-          [field]: validatedValue
-        };
-
-        // Enviar solo el campo editado al backend
-        // El backend se encarga de todos los cálculos usando los catálogos
-        try {
-          // Intentar usar id si existe, sino usar episodio
-          const episodeId = (episodio as any).id || episodio.episodio;
-          const url = `/api/episodios/${episodeId}`;
-          const payload = { [field]: validatedValue };
-          
-          console.log('🔄 Enviando PATCH a:', url);
-          console.log('📦 Datos enviados:', payload);
-          console.log('🆔 ID del episodio (usado):', episodeId);
-          console.log('🔍 Datos del episodio:', {
-            episodio: episodio.episodio,
-            id: (episodio as any).id,
-            hasId: !!(episodio as any).id
+      // Enviar solo el campo editado al backend
+      // El backend se encarga de todos los cálculos usando los catálogos
+      try {
+        // Intentar usar id si existe, sino usar episodio
+        const episodeId = (episodio as any).id || episodio.episodio;
+        const url = `/api/episodios/${episodeId}`;
+        const payload = { [field]: validatedValue };
+        
+        console.log('🔄 Enviando PATCH a:', url);
+        console.log('📦 Datos enviados:', payload);
+        console.log('🆔 ID del episodio (usado):', episodeId);
+        console.log('🔍 Datos del episodio:', {
+          episodio: episodio.episodio,
+          id: (episodio as any).id,
+          hasId: !!(episodio as any).id
+        });
+        
+        const response = await api.patch(url, payload);
+        
+        console.log(`Campo ${field} actualizado exitosamente para episodio ${episodio.episodio}`);
+        console.log('📥 Respuesta del backend:', response.data);
+        
+        // El backend devuelve el episodio completo con todos los campos recalculados
+        const updatedEpisodioFromBackend = response.data;
+        
+        // Actualizar la lista local con los datos del backend
+        // Buscar el episodio por ID flexible (puede ser id o episodio)
+        setEpisodios(prevEpisodios => {
+          const updated = [...prevEpisodios];
+          const index = updated.findIndex(ep => {
+            const epId = (ep as any).id || ep.episodio;
+            const searchId = (episodio as any).id || episodio.episodio;
+            return epId === searchId || ep.episodio === episodio.episodio;
           });
           
-          const response = await api.patch(url, payload);
+          if (index !== -1) {
+            // Reemplazar completamente el episodio con los datos del backend
+            updated[index] = updatedEpisodioFromBackend;
+            console.log('✅ Episodio actualizado en la lista local:', updatedEpisodioFromBackend);
+          } else {
+            console.warn('⚠️ No se encontró el episodio en la lista para actualizar');
+          }
           
-          console.log(`Campo ${field} actualizado exitosamente para episodio ${episodio.episodio}`);
-          
-          // El backend devuelve el episodio completo con todos los campos recalculados
-          const updatedEpisodioFromBackend = response.data;
-          
-          // Actualizar la lista local con los datos del backend
-          updatedEpisodios[originalIndex] = updatedEpisodioFromBackend;
-          setEpisodios(updatedEpisodios);
-          
-          // Mostrar mensaje de confirmación
-          setSaveMessage(`✅ Campo ${field} guardado exitosamente`);
-          setTimeout(() => setSaveMessage(''), 3000);
-          
-        } catch (backendError: any) {
+          return updated;
+        });
+        
+        // Mostrar mensaje de confirmación
+        setSaveMessage(`✅ Campo ${field} guardado exitosamente`);
+        setTimeout(() => setSaveMessage(''), 3000);
+        
+      } catch (backendError: any) {
           console.error('❌ Error al guardar en backend:', backendError);
           console.error('📋 Detalles del error:', {
             status: backendError.response?.status,
@@ -209,7 +239,6 @@ export default function Episodios() {
           }
           
           throw new Error(errorMessage);
-        }
       }
       
       setEditingCell(null);
@@ -249,6 +278,16 @@ export default function Episodios() {
               <option value="Aprobado">Aprobado</option>
               <option value="Pendiente">Pendiente</option>
               <option value="Rechazado">Rechazado</option>
+            </select>
+          ) : key === 'at' ? (
+            <select
+              value={editValue}
+              onChange={(e) => setEditValue(e.target.value)}
+              className="px-2 py-1 text-xs border rounded"
+              autoFocus
+            >
+              <option value="N">No</option>
+              <option value="S">Sí</option>
             </select>
           ) : key === 'validado' ? (
             <select
@@ -318,7 +357,9 @@ export default function Episodios() {
         );
       
       case 'at':
-        return value ? (
+        // Manejar tanto boolean como "S"/"N"
+        const atValue = value === true || value === 'S' || value === 's';
+        return atValue ? (
           <span className="badge-success">Sí</span>
         ) : (
           <span className="badge-error">No</span>
@@ -397,10 +438,12 @@ export default function Episodios() {
     setLoading(true);
     setError(null);
     try {
+      // Agregar timestamp para evitar caché del navegador
       const response = await api.get('/api/episodios/final', {
         params: {
           page: 1,
-          pageSize: 100 // Cargar los primeros 100 episodios
+          pageSize: 100, // Cargar los primeros 100 episodios
+          _t: Date.now() // Timestamp para evitar caché
         }
       });
       

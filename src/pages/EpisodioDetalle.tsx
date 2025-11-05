@@ -80,10 +80,12 @@ export default function EpisodioDetalle() {
     setError(null);
     
     try {
+      // Agregar timestamp para evitar caché
       const data = await getEpisodeDetail(id);
       setEpisodio(data);
       // Cargar comentarios existentes
       setComentarios(data.comentariosGestion || '');
+      console.log('📥 Episodio cargado:', data);
     } catch (err: any) {
       setError(err.message || 'Error al cargar el episodio');
     } finally {
@@ -164,7 +166,14 @@ export default function EpisodioDetalle() {
     
     setEditingField(field);
     if (field === 'at') {
-      setEditValue(currentValue ? 'true' : 'false');
+      // Convertir boolean a "S"/"N" o mantener "S"/"N" si ya es string
+      if (currentValue === true || currentValue === 'S' || currentValue === 's') {
+        setEditValue('S');
+      } else if (currentValue === false || currentValue === 'N' || currentValue === 'n') {
+        setEditValue('N');
+      } else {
+        setEditValue('N'); // Default
+      }
     } else if (field === 'estadoRN') {
       setEditValue(currentValue || '');
     } else {
@@ -194,7 +203,11 @@ export default function EpisodioDetalle() {
       } else if (field === 'diasDemoraRescate') {
         validatedValue = parseInt(editValue);
       } else if (field === 'at') {
-        validatedValue = editValue === 'true';
+        // Convertir a "S" o "N" para el backend
+        validatedValue = editValue === 'S' || editValue === 'true' ? 'S' : 'N';
+      } else if (field === 'estadoRN') {
+        // Si está vacío, enviar null
+        validatedValue = editValue === '' ? null : editValue;
       }
 
       // Enviar actualización al backend
@@ -308,8 +321,8 @@ export default function EpisodioDetalle() {
                 className="px-3 py-2 border rounded-lg flex-1"
                 autoFocus
               >
-                <option value="true">Sí</option>
-                <option value="false">No</option>
+                <option value="N">No</option>
+                <option value="S">Sí</option>
               </select>
             ) : (
               <input
@@ -923,8 +936,14 @@ export default function EpisodioDetalle() {
             <h3 className="text-sm font-semibold text-amber-900 mb-4">Ajuste por Tecnología</h3>
             <div className="grid md:grid-cols-2 gap-4">
               {renderEditableField('at', 'Ajuste por Tecnología (AT)', episodio.at)}
-              {episodio.at && renderEditableField('atDetalle', 'AT Detalle', episodio.atDetalle)}
-              {episodio.at && renderEditableField('montoAT', 'Monto AT', episodio.montoAT, true)}
+              {(() => {
+                const atValue = episodio.at as any;
+                return (atValue === true || atValue === 'S' || atValue === 's');
+              })() && renderEditableField('atDetalle', 'AT Detalle', episodio.atDetalle)}
+              {(() => {
+                const atValue = episodio.at as any;
+                return (atValue === true || atValue === 'S' || atValue === 's');
+              })() && renderEditableField('montoAT', 'Monto AT', episodio.montoAT, true)}
             </div>
           </div>
           
