@@ -81,11 +81,22 @@ export default function EpisodioDetalle() {
     
     try {
       // Agregar timestamp para evitar caché
-      const data = await getEpisodeDetail(id);
+      let data = await getEpisodeDetail(id);
+      
+      // Normalizar valores de AT: convertir "S"/"N" a string consistente
+      const atValue = data.at as any;
+      if (atValue === true || atValue === 'S' || atValue === 's') {
+        data.at = 'S' as any;
+      } else if (atValue === false || atValue === 'N' || atValue === 'n') {
+        data.at = 'N' as any;
+      } else {
+        data.at = 'N' as any;
+      }
+      
       setEpisodio(data);
       // Cargar comentarios existentes
       setComentarios(data.comentariosGestion || '');
-      console.log('📥 Episodio cargado:', data);
+      console.log('📥 Episodio cargado (normalizado):', data);
     } catch (err: any) {
       setError(err.message || 'Error al cargar el episodio');
     } finally {
@@ -167,14 +178,16 @@ export default function EpisodioDetalle() {
     setEditingField(field);
     if (field === 'at') {
       // Convertir boolean a "S"/"N" o mantener "S"/"N" si ya es string
+      // También manejar valores null/undefined
       if (currentValue === true || currentValue === 'S' || currentValue === 's') {
         setEditValue('S');
-      } else if (currentValue === false || currentValue === 'N' || currentValue === 'n') {
+      } else if (currentValue === false || currentValue === 'N' || currentValue === 'n' || currentValue === null || currentValue === undefined) {
         setEditValue('N');
       } else {
         setEditValue('N'); // Default
       }
     } else if (field === 'estadoRN') {
+      // Manejar null, undefined y strings vacíos correctamente
       setEditValue(currentValue || '');
     } else {
       setEditValue(currentValue?.toString() || '');
@@ -227,14 +240,29 @@ export default function EpisodioDetalle() {
       
       const response = await api.patch(url, payload);
       
-      // Actualizar el episodio local con la respuesta del backend
-      setEpisodio(response.data);
+      // Normalizar valores del episodio actualizado del backend
+      let updatedEpisodio = { ...response.data };
+      // Normalizar AT
+      const atValue = updatedEpisodio.at as any;
+      if (atValue === true || atValue === 'S' || atValue === 's') {
+        updatedEpisodio.at = 'S' as any;
+      } else if (atValue === false || atValue === 'N' || atValue === 'n') {
+        updatedEpisodio.at = 'N' as any;
+      } else {
+        updatedEpisodio.at = 'N' as any;
+      }
+      
+      // Cerrar modo edición ANTES de actualizar para que se actualice la visualización
+      setEditingField(null);
+      setEditValue('');
+      
+      // Actualizar el episodio local con la respuesta del backend normalizada
+      // Crear un nuevo objeto para forzar re-render
+      setEpisodio({ ...updatedEpisodio });
+      console.log('✅ Episodio actualizado localmente:', updatedEpisodio);
       
       setSaveMessage(`Campo ${field} actualizado exitosamente`);
       setTimeout(() => setSaveMessage(''), 3000);
-      
-      setEditingField(null);
-      setEditValue('');
       
     } catch (error: any) {
       console.error('❌ Error al actualizar campo:', error);
@@ -360,7 +388,11 @@ export default function EpisodioDetalle() {
           <p className="font-medium text-[var(--text-primary)] flex-1">
             {currentValue !== null && currentValue !== undefined 
               ? (isCurrency ? formatCurrency(currentValue) : 
-                 field === 'at' ? (currentValue ? 'Sí' : 'No') : 
+                 field === 'at' ? (() => {
+                   const atVal = currentValue as any;
+                   return (atVal === true || atVal === 'S' || atVal === 's') ? 'Sí' : 'No';
+                 })() : 
+                 field === 'estadoRN' ? (currentValue || '-') :
                  currentValue.toString())
               : 'No disponible'}
           </p>

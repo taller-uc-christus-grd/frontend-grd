@@ -106,14 +106,16 @@ export default function Episodios() {
       setEditValue(currentValue === true ? 'true' : currentValue === false ? 'false' : '');
     } else if (field === 'at') {
       // Convertir boolean a "S"/"N" o mantener "S"/"N" si ya es string
+      // También manejar valores null/undefined
       if (currentValue === true || currentValue === 'S' || currentValue === 's') {
         setEditValue('S');
-      } else if (currentValue === false || currentValue === 'N' || currentValue === 'n') {
+      } else if (currentValue === false || currentValue === 'N' || currentValue === 'n' || currentValue === null || currentValue === undefined) {
         setEditValue('N');
       } else {
         setEditValue('N'); // Default
       }
     } else if (field === 'estadoRN') {
+      // Manejar null, undefined y strings vacíos
       setEditValue(currentValue || '');
     } else {
       setEditValue(currentValue?.toString() || '');
@@ -182,28 +184,58 @@ export default function Episodios() {
         console.log('📥 Respuesta del backend:', response.data);
         
         // El backend devuelve el episodio completo con todos los campos recalculados
-        const updatedEpisodioFromBackend = response.data;
+        let updatedEpisodioFromBackend = { ...response.data };
+        
+        // Normalizar valores de AT
+        const atValue = updatedEpisodioFromBackend.at as any;
+        if (atValue === true || atValue === 'S' || atValue === 's') {
+          updatedEpisodioFromBackend.at = 'S' as any;
+        } else if (atValue === false || atValue === 'N' || atValue === 'n') {
+          updatedEpisodioFromBackend.at = 'N' as any;
+        } else {
+          updatedEpisodioFromBackend.at = 'N' as any;
+        }
         
         // Actualizar la lista local con los datos del backend
         // Buscar el episodio por ID flexible (puede ser id o episodio)
         setEpisodios(prevEpisodios => {
-          const updated = [...prevEpisodios];
-          const index = updated.findIndex(ep => {
+          const index = prevEpisodios.findIndex(ep => {
             const epId = (ep as any).id || ep.episodio;
             const searchId = (episodio as any).id || episodio.episodio;
             return epId === searchId || ep.episodio === episodio.episodio;
           });
           
-          if (index !== -1) {
-            // Reemplazar completamente el episodio con los datos del backend
-            updated[index] = updatedEpisodioFromBackend;
-            console.log('✅ Episodio actualizado en la lista local:', updatedEpisodioFromBackend);
-          } else {
+          if (index === -1) {
             console.warn('⚠️ No se encontró el episodio en la lista para actualizar');
+            return prevEpisodios; // No cambiar nada si no se encuentra
           }
           
+          // Verificar si realmente cambió algo comparando solo el campo editado
+          const currentEp = prevEpisodios[index];
+          // Comparación rápida: solo el campo que se editó
+          const fieldChanged = (currentEp as any)[field] !== (updatedEpisodioFromBackend as any)[field];
+          
+          if (!fieldChanged && currentEp === prevEpisodios[index]) {
+            // Si el campo no cambió y es la misma referencia, no actualizar
+            console.log('ℹ️ El campo no cambió, evitando re-render');
+            return prevEpisodios;
+          }
+          
+          // Crear un nuevo array solo con el episodio actualizado (optimización)
+          // Esto causa un re-render, pero solo actualiza la fila específica gracias a la key estable
+          const updated = [
+            ...prevEpisodios.slice(0, index),
+            { ...updatedEpisodioFromBackend },
+            ...prevEpisodios.slice(index + 1)
+          ];
+          
+          console.log('✅ Episodio actualizado en la lista local (campo:', field, ')');
           return updated;
         });
+        
+        // Cerrar modo edición ANTES de mostrar mensaje para que se actualice la visualización
+        setEditingCell(null);
+        setEditValue('');
         
         // Mostrar mensaje de confirmación
         setSaveMessage(`✅ Campo ${field} guardado exitosamente`);
@@ -448,7 +480,22 @@ export default function Episodios() {
       });
       
       // El backend debería devolver { items: Episode[], total: number }
-      const episodiosData = response.data?.items || response.data || [];
+      let episodiosData = response.data?.items || response.data || [];
+      
+      // Normalizar valores de AT: convertir "S"/"N" a boolean si es necesario
+      // O mantener como string si el backend lo envía así
+      episodiosData = episodiosData.map((ep: any) => {
+        // Normalizar AT: si viene como "S"/"N" mantenerlo, si viene como boolean convertir
+        if (ep.at === true || ep.at === 'S' || ep.at === 's') {
+          ep.at = 'S';
+        } else if (ep.at === false || ep.at === 'N' || ep.at === 'n') {
+          ep.at = 'N';
+        } else {
+          ep.at = 'N'; // Default
+        }
+        return ep;
+      });
+      
       setEpisodios(episodiosData);
       
       console.log('Episodios cargados:', episodiosData.length);
@@ -458,6 +505,8 @@ export default function Episodios() {
         console.log('📋 Estructura del primer episodio:', {
           episodio: episodiosData[0].episodio,
           id: (episodiosData[0] as any).id,
+          at: episodiosData[0].at,
+          estadoRN: episodiosData[0].estadoRN,
           keys: Object.keys(episodiosData[0])
         });
       }
