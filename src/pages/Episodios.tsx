@@ -148,14 +148,20 @@ export default function Episodios() {
       }
       
       if (field === 'at') {
-        // Convertir a "S" o "N" para el backend
-        validatedValue = editValue === 'S' || editValue === 'true' ? 'S' : 'N';
+        // Normalizar: aceptar S/s/N/n, convertir a "S" o "N"
+        const atVal = String(editValue).trim().toUpperCase();
+        validatedValue = (atVal === 'S') ? 'S' : 'N';
         console.log('📤 AT validado para enviar:', validatedValue, 'desde editValue:', editValue);
       }
       
       if (field === 'estadoRN') {
-        // Si está vacío, enviar null
-        validatedValue = editValue === '' || editValue === null ? null : String(editValue);
+        // Normalizar: aceptar valores válidos o convertir a null
+        const estadoVal = String(editValue).trim();
+        if (estadoVal === '' || !['Aprobado', 'Pendiente', 'Rechazado'].includes(estadoVal)) {
+          validatedValue = null;
+        } else {
+          validatedValue = estadoVal; // Case-sensitive exacto
+        }
         console.log('📤 estadoRN validado para enviar:', validatedValue, 'desde editValue:', editValue);
       }
       
@@ -335,33 +341,31 @@ export default function Episodios() {
       return (
         <div className="flex items-center gap-1">
           {key === 'estadoRN' ? (
-            <select
+            <input
+              type="text"
               value={editValue || ''}
               onChange={(e) => {
-                console.log('🔄 estadoRN seleccionado:', e.target.value);
+                console.log('🔄 estadoRN ingresado:', e.target.value);
                 setEditValue(e.target.value);
               }}
-              className="px-2 py-1 text-xs border rounded"
+              className="px-2 py-1 text-xs border rounded w-32"
               autoFocus
-            >
-              <option value="">Seleccionar...</option>
-              <option value="Aprobado">Aprobado</option>
-              <option value="Pendiente">Pendiente</option>
-              <option value="Rechazado">Rechazado</option>
-            </select>
+              placeholder="Aprobado, Pendiente, Rechazado"
+              title="Valores permitidos: Aprobado, Pendiente, Rechazado (case-sensitive) o vacío"
+            />
           ) : key === 'at' ? (
-            <select
-              value={editValue || 'N'}
+            <input
+              type="text"
+              value={editValue || ''}
               onChange={(e) => {
-                console.log('🔄 AT seleccionado:', e.target.value);
+                console.log('🔄 AT ingresado:', e.target.value);
                 setEditValue(e.target.value);
               }}
-              className="px-2 py-1 text-xs border rounded"
+              className="px-2 py-1 text-xs border rounded w-20"
               autoFocus
-            >
-              <option value="N">No</option>
-              <option value="S">Sí</option>
-            </select>
+              placeholder="S o N"
+              title="Valores permitidos: S, s, N, n"
+            />
           ) : key === 'validado' ? (
             <select
               value={editValue}
@@ -803,6 +807,14 @@ export default function Episodios() {
                       <span className="text-purple-500 mt-0.5 font-bold">•</span>
                       <span>Los cambios se guardan automáticamente en el servidor al confirmar la edición.</span>
                     </p>
+                    <p className="text-sm text-slate-700 flex items-start gap-2.5">
+                      <span className="text-purple-500 mt-0.5 font-bold">•</span>
+                      <span><strong>Estado RN:</strong> Valores permitidos: "Aprobado", "Pendiente", "Rechazado" (case-sensitive) o vacío (null).</span>
+                    </p>
+                    <p className="text-sm text-slate-700 flex items-start gap-2.5">
+                      <span className="text-purple-500 mt-0.5 font-bold">•</span>
+                      <span><strong>AT (S/N):</strong> Valores permitidos: "S", "s", "N", "n" (se normaliza a "S" o "N").</span>
+                    </p>
                   </div>
                 </div>
                 
@@ -846,10 +858,6 @@ export default function Episodios() {
                     <p className="flex items-start gap-2">
                       <span className="text-purple-500 mt-1">•</span>
                       <span><strong className="font-semibold text-slate-900">Precio Base por Tramo</strong> - Precio base</span>
-                    </p>
-                    <p className="flex items-start gap-2">
-                      <span className="text-purple-500 mt-1">•</span>
-                      <span><strong className="font-semibold text-slate-900">Valor GRD</strong> - Valor GRD</span>
                     </p>
                     <p className="flex items-start gap-2">
                       <span className="text-purple-500 mt-1">•</span>

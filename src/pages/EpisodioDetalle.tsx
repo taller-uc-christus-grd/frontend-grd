@@ -243,12 +243,18 @@ export default function EpisodioDetalle() {
       } else if (field === 'diasDemoraRescate') {
         validatedValue = parseInt(editValue);
       } else if (field === 'at') {
-        // Convertir a "S" o "N" para el backend
-        validatedValue = editValue === 'S' || editValue === 'true' ? 'S' : 'N';
+        // Normalizar: aceptar S/s/N/n, convertir a "S" o "N"
+        const atVal = String(editValue).trim().toUpperCase();
+        validatedValue = (atVal === 'S') ? 'S' : 'N';
         console.log('📤 AT validado para enviar:', validatedValue, 'desde editValue:', editValue);
       } else if (field === 'estadoRN') {
-        // Si está vacío, enviar null
-        validatedValue = editValue === '' || editValue === null ? null : String(editValue);
+        // Normalizar: aceptar valores válidos o convertir a null
+        const estadoVal = String(editValue).trim();
+        if (estadoVal === '' || !['Aprobado', 'Pendiente', 'Rechazado'].includes(estadoVal)) {
+          validatedValue = null;
+        } else {
+          validatedValue = estadoVal; // Case-sensitive exacto
+        }
         console.log('📤 estadoRN validado para enviar:', validatedValue, 'desde editValue:', editValue);
       }
 
@@ -399,33 +405,31 @@ export default function EpisodioDetalle() {
           <span className="text-sm text-[var(--text-secondary)] mb-1 block">{label}:</span>
           <div className="flex items-center gap-2">
             {field === 'estadoRN' ? (
-              <select
+              <input
+                type="text"
                 value={editValue || ''}
                 onChange={(e) => {
-                  console.log('🔄 estadoRN seleccionado:', e.target.value);
+                  console.log('🔄 estadoRN ingresado:', e.target.value);
                   setEditValue(e.target.value);
                 }}
                 className="px-3 py-2 border rounded-lg flex-1"
                 autoFocus
-              >
-                <option value="">Seleccionar...</option>
-                <option value="Aprobado">Aprobado</option>
-                <option value="Pendiente">Pendiente</option>
-                <option value="Rechazado">Rechazado</option>
-              </select>
+                placeholder="Aprobado, Pendiente, Rechazado"
+                title="Valores permitidos: Aprobado, Pendiente, Rechazado (case-sensitive) o vacío"
+              />
             ) : field === 'at' ? (
-              <select
-                value={editValue || 'N'}
+              <input
+                type="text"
+                value={editValue || ''}
                 onChange={(e) => {
-                  console.log('🔄 AT seleccionado:', e.target.value);
+                  console.log('🔄 AT ingresado:', e.target.value);
                   setEditValue(e.target.value);
                 }}
                 className="px-3 py-2 border rounded-lg flex-1"
                 autoFocus
-              >
-                <option value="N">No</option>
-                <option value="S">Sí</option>
-              </select>
+                placeholder="S o N"
+                title="Valores permitidos: S, s, N, n"
+              />
             ) : (
               <input
                 type={isCurrency ? 'number' : 'text'}

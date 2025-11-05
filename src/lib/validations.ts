@@ -119,9 +119,20 @@ export function validateFieldValue(field: string, value: any): ValidationResult 
 
   // Validar estado RN
   if (field === 'estadoRN') {
+    const val = String(value).trim();
     // Permitir vacío (se enviará como null)
-    if (value && value !== '' && !['Aprobado', 'Pendiente', 'Rechazado'].includes(value)) {
-      errors.push('Estado inválido. Use: Aprobado, Pendiente o Rechazado');
+    if (val === '' || val === null || val === undefined) {
+      // Válido, se convertirá a null
+    } else if (!['Aprobado', 'Pendiente', 'Rechazado'].includes(val)) {
+      errors.push('Estado inválido. Use: Aprobado, Pendiente o Rechazado (case-sensitive)');
+    }
+  }
+
+  // Validar AT
+  if (field === 'at') {
+    const val = String(value).trim().toUpperCase();
+    if (val !== '' && val !== 'S' && val !== 'N') {
+      errors.push('Valor inválido. Use: S o N');
     }
   }
 
