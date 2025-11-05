@@ -360,7 +360,7 @@ export default function Episodios() {
     setLoading(true);
     setError(null);
     try {
-      const response = await api.get('/api/episodes/final', {
+      const response = await api.get('/api/episodios/final', {
         params: {
           page: 1,
           pageSize: 100 // Cargar los primeros 100 episodios
