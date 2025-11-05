@@ -990,7 +990,18 @@ export default function EpisodioDetalle() {
             {renderEditableField('estadoRN', 'Estado RN', episodio.estadoRN)}
             {renderEditableField('montoRN', 'Monto RN', episodio.montoRN, true)}
             {renderEditableField('precioBaseTramo', 'Precio Base por Tramo', episodio.precioBaseTramo, true)}
-            {renderEditableField('valorGRD', 'Valor GRD', episodio.valorGRD, true)}
+            {/* Valor GRD es calculado automáticamente: peso * precioBaseTramo */}
+            <div className="mb-4">
+              <label className="block text-sm font-medium text-slate-700 mb-1">
+                Valor GRD (calculado)
+              </label>
+              <p className="text-slate-900 font-medium">
+                {formatCurrency(episodio.valorGRD || 0)}
+              </p>
+              <p className="text-xs text-slate-500 mt-1">
+                Calculado automáticamente: peso × precio base por tramo
+              </p>
+            </div>
             {renderEditableField('montoFinal', 'Monto Final', episodio.montoFinal, true)}
           </div>
         </div>

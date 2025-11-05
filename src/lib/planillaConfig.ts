@@ -10,7 +10,6 @@ export type ManualField =
   | 'pagoDemora'
   | 'pagoOutlierSup'
   | 'precioBaseTramo'
-  | 'valorGRD'
   | 'montoFinal'
   | 'documentacion';
 
@@ -45,6 +44,6 @@ export const FINAL_COLUMNS = [
   ['Grupo dentro de norma S/N', 'grupoDentroNorma', false],
   ['Días de Estada', 'diasEstada', false],
   ['Precio Base por tramo correspondiente', 'precioBaseTramo', true], // editable solo para finanzas
-  ['Valor GRD', 'valorGRD', true], // editable solo para finanzas
+  ['Valor GRD', 'valorGRD', false], // CALCULADO: peso * precioBaseTramo (no editable)
   ['Monto Final', 'montoFinal', true], // editable solo para finanzas
 ] as const;

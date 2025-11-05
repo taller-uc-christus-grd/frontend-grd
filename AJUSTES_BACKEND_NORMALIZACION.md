@@ -235,6 +235,89 @@ for field in numeric_fields:
 
 ---
 
+## 🧮 Cálculo de `montoFinal`
+
+### Fórmula Principal
+
+El `montoFinal` se calcula con la siguiente fórmula:
+
+```typescript
+montoFinal = valorGRD + montoAT + pagoOutlierSup + pagoDemora
+```
+
+### Cálculo de `valorGRD`
+
+**⚠️ IMPORTANTE**: `valorGRD` **NO es editable** y **SIEMPRE** debe calcularse automáticamente como `peso * precioBaseTramo`.
+
+**Lógica de cálculo:**
+1. **SIEMPRE** calcular `valorGRD = peso * precioBaseTramo`
+2. **IGNORAR** cualquier valor de `valorGRD` que venga en el request PATCH
+3. Si `peso` o `precioBaseTramo` son `null` o `undefined` → `valorGRD = 0`
+4. El cálculo debe hacerse **antes** de calcular `montoFinal`
+
+**Código sugerido:**
+```python
+def calcular_valor_grd(episodio):
+    """
+    Calcula valorGRD como peso * precioBaseTramo
+    SIEMPRE recalcula, ignorando cualquier valor existente
+    """
+    # SIEMPRE calcular, ignorar valor existente
+    if episodio.peso and episodio.precioBaseTramo:
+        return episodio.peso * episodio.precioBaseTramo
+    
+    return 0
+
+def calcular_monto_final(episodio):
+    """
+    Calcula el montoFinal considerando precioBaseTramo
+    """
+    # Calcular valorGRD (usar existente o calcular)
+    valor_grd = calcular_valor_grd(episodio)
+    
+    # Normalizar otros campos a 0 si son null
+    monto_at = episodio.montoAT or 0
+    pago_outlier = episodio.pagoOutlierSup or 0
+    pago_demora = episodio.pagoDemora or 0
+    
+    # Calcular montoFinal
+    monto_final = valor_grd + monto_at + pago_outlier + pago_demora
+    
+    return monto_final
+```
+
+### Ejemplo de Cálculo
+
+**Datos del episodio:**
+```json
+{
+  "peso": 1.2,
+  "precioBaseTramo": 125000,
+  "valorGRD": null,  // No está disponible, se debe calcular
+  "montoAT": 18000,
+  "pagoOutlierSup": 25000,
+  "pagoDemora": 5000
+}
+```
+
+**Cálculo:**
+1. `valorGRD = peso * precioBaseTramo = 1.2 * 125000 = 150000`
+2. `montoFinal = 150000 + 18000 + 25000 + 5000 = 198000`
+
+### Orden de Ejecución en PATCH
+
+Cuando se recibe un PATCH, el backend debe:
+
+1. Aplicar los cambios del request (excepto `montoFinal` y `valorGRD`)
+2. **SIEMPRE recalcular `valorGRD`**: `peso * precioBaseTramo` (ignorar valor del request si viene)
+3. **Calcular `montoFinal`**: `valorGRD + montoAT + pagoOutlierSup + pagoDemora`
+4. Guardar todos los campos, incluyendo `valorGRD` y `montoFinal` calculados
+5. Normalizar y devolver el episodio completo
+
+**Nota**: El frontend marca `valorGRD` como campo de solo lectura, pero el backend debe asegurarse de calcularlo siempre, incluso si el frontend intenta enviarlo en el request.
+
+---
+
 ## 🚀 Prioridad
 
 **ALTA** - Este ajuste es necesario para que los cambios se visualicen correctamente en el frontend.

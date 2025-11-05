@@ -225,19 +225,22 @@ Authorization: Bearer <jwt-token>
 
 **Tipo de dato**: `number`
 
-**Validación frontend**:
-- Debe ser un número válido
-- Debe ser >= 0
-- Warning si > 10,000,000
+**⚠️ IMPORTANTE**: Este campo **NO es editable**. Se calcula automáticamente como:
 
-**Ejemplo de request**:
-```json
-{
-  "valorGRD": 150000
-}
+```
+valorGRD = peso * precioBaseTramo
 ```
 
-**Nota**: El frontend valida que `valorGRD ≈ peso * precioBaseTramo` (con tolerancia de 0.01), pero el backend puede aplicar sus propias reglas.
+**El backend debe:**
+- **SIEMPRE** calcular `valorGRD` automáticamente cuando se actualiza `peso` o `precioBaseTramo`
+- **IGNORAR** cualquier valor de `valorGRD` que venga en el request PATCH
+- Calcular `valorGRD` antes de calcular `montoFinal`
+
+**Ejemplo de cálculo:**
+- Si `peso = 1.2` y `precioBaseTramo = 125000`
+- Entonces `valorGRD = 1.2 * 125000 = 150000`
+
+**Nota**: El frontend muestra este campo como solo lectura con el texto "Calculado automáticamente: peso × precio base por tramo".
 
 ---
 
