@@ -7,10 +7,9 @@ import api from '@/lib/api';
 export async function uploadNormaMinsal(file: File) {
   const fd = new FormData();
   fd.append('file', file);
-  const res = await api.post('/api/catalogs/norma-minsal/import', fd, {
-    headers: { 'Content-Type': 'multipart/form-data' },
-  });
-  return res.data; // { ok:true, version:n, items:n }
+  // NO establecer Content-Type manualmente - axios lo hace automáticamente con el boundary correcto
+  const res = await api.post('/api/catalogs/norma-minsal/import', fd);
+  return res.data; // El backend devuelve { success, summary: { total, valid, errors }, grds, errorDetails }
 }
 
 /**
@@ -60,5 +59,7 @@ export async function getNormaMinsal() {
   const res = await api.get('/api/catalogs/norma-minsal', {
     params: { version: 'latest' },
   });
-  return res.data.items; // o res.data.norma según lo que devuelva el backend
+  // El backend devuelve { version, totalRecords, lastUpdated, status }
+  // Retornamos un array vacío por compatibilidad, o podemos ajustar el componente para usar totalRecords
+  return res.data.totalRecords ? Array(res.data.totalRecords).fill(null) : [];
 }

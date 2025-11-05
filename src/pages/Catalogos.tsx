@@ -23,8 +23,10 @@ export default function Catalogos() {
   async function loadAll() {
     try {
       const normaLatest = await getNormaMinsal();
+      // getNormaMinsal ahora retorna un array basado en totalRecords
       setNormaRows(Array.isArray(normaLatest) ? normaLatest.length : null);
-    } catch {
+    } catch (e: any) {
+      console.error('Error cargando norma minsal:', e);
       // si algún GET falla, no rompemos la página
     }
   }
@@ -36,10 +38,23 @@ export default function Catalogos() {
     setSNorma({ loading:true });
     try{
       const r = await uploadNormaMinsal(norma);
-      setSNorma({ loading:false, ok:true, msg:`OK v${r.version ?? '—'} • ${r.items ?? '?'} filas` });
+      // El backend devuelve { success, summary: { total, valid, errors }, grds, errorDetails }
+      if (r.success) {
+        const validCount = r.summary?.valid ?? 0;
+        const errorCount = r.summary?.errors ?? 0;
+        const totalCount = r.summary?.total ?? 0;
+        setSNorma({ 
+          loading:false, 
+          ok:true, 
+          msg:`✅ Importación exitosa: ${validCount} registros válidos de ${totalCount} total${errorCount > 0 ? ` (${errorCount} errores)` : ''}` 
+        });
+      } else {
+        setSNorma({ loading:false, ok:false, msg:r.error || 'Error al procesar el archivo' });
+      }
       await loadAll(); // ← volvemos a pedir la "latest" para reflejar cambios
     }catch(e:any){
-      setSNorma({ loading:false, ok:false, msg:e?.message || 'Error al subir norma' });
+      const errorMsg = e?.response?.data?.message || e?.response?.data?.error || e?.message || 'Error al subir norma';
+      setSNorma({ loading:false, ok:false, msg:errorMsg });
     }
   }
 

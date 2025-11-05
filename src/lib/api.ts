@@ -27,6 +27,12 @@ api.interceptors.request.use(
       // CLAVE: Adjuntar el token al header 'Authorization'
       config.headers.Authorization = `Bearer ${token}`;
     }
+    
+    // Si es FormData, NO establecer Content-Type manualmente - axios lo hace automáticamente con el boundary
+    if (config.data instanceof FormData) {
+      delete config.headers['Content-Type'];
+    }
+    
     return config;
   },
   (error) => {
