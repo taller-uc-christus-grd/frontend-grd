@@ -150,11 +150,13 @@ export default function Episodios() {
       if (field === 'at') {
         // Convertir a "S" o "N" para el backend
         validatedValue = editValue === 'S' || editValue === 'true' ? 'S' : 'N';
+        console.log('📤 AT validado para enviar:', validatedValue, 'desde editValue:', editValue);
       }
       
       if (field === 'estadoRN') {
         // Si está vacío, enviar null
-        validatedValue = editValue === '' ? null : editValue;
+        validatedValue = editValue === '' || editValue === null ? null : String(editValue);
+        console.log('📤 estadoRN validado para enviar:', validatedValue, 'desde editValue:', editValue);
       }
       
       if (field === 'validado') {
@@ -204,6 +206,15 @@ export default function Episodios() {
         } else {
           updatedEpisodioFromBackend.estadoRN = String(estadoRNValue) as any;
         }
+        
+        // Normalizar atDetalle: asegurar que sea string o null
+        const atDetalleValue = updatedEpisodioFromBackend.atDetalle as any;
+        if (atDetalleValue === null || atDetalleValue === undefined || atDetalleValue === '') {
+          updatedEpisodioFromBackend.atDetalle = null as any;
+        } else {
+          updatedEpisodioFromBackend.atDetalle = String(atDetalleValue).trim() as any;
+        }
+        console.log('📥 atDetalle normalizado después del backend:', updatedEpisodioFromBackend.atDetalle);
         
         // Normalizar campos numéricos: asegurar que sean números
         const numericFields = ['montoAT', 'montoRN', 'pagoOutlierSup', 'pagoDemora', 'precioBaseTramo', 'valorGRD', 'montoFinal', 'diasDemoraRescate'];
@@ -325,8 +336,11 @@ export default function Episodios() {
         <div className="flex items-center gap-1">
           {key === 'estadoRN' ? (
             <select
-              value={editValue}
-              onChange={(e) => setEditValue(e.target.value)}
+              value={editValue || ''}
+              onChange={(e) => {
+                console.log('🔄 estadoRN seleccionado:', e.target.value);
+                setEditValue(e.target.value);
+              }}
               className="px-2 py-1 text-xs border rounded"
               autoFocus
             >
@@ -337,8 +351,11 @@ export default function Episodios() {
             </select>
           ) : key === 'at' ? (
             <select
-              value={editValue}
-              onChange={(e) => setEditValue(e.target.value)}
+              value={editValue || 'N'}
+              onChange={(e) => {
+                console.log('🔄 AT seleccionado:', e.target.value);
+                setEditValue(e.target.value);
+              }}
               className="px-2 py-1 text-xs border rounded"
               autoFocus
             >
@@ -415,10 +432,12 @@ export default function Episodios() {
       case 'at':
         // Manejar tanto boolean como "S"/"N"
         const atValue = value === true || value === 'S' || value === 's';
+        const atDisplay = atValue ? 'Sí' : 'No';
+        console.log('📊 AT renderizado en tabla:', { original: value, display: atDisplay });
         return atValue ? (
-          <span className="badge-success">Sí</span>
+          <span className="badge-success">{atDisplay}</span>
         ) : (
-          <span className="badge-error">No</span>
+          <span className="badge-error">{atDisplay}</span>
         );
       
       case 'inlierOutlier':
@@ -438,14 +457,18 @@ export default function Episodios() {
         );
       
       case 'estadoRN':
+        const estadoDisplay = value ? String(value) : '-';
+        console.log('📊 estadoRN renderizado en tabla:', { original: value, display: estadoDisplay });
         return value ? (
           <span className={`badge-${
             value === 'Aprobado' ? 'success' : 
             value === 'Pendiente' ? 'warning' : 'error'
           }`}>
-            {value}
+            {estadoDisplay}
           </span>
-        ) : '-';
+        ) : (
+          <span className="text-slate-400">-</span>
+        );
       
       case 'montoAT':
       case 'montoRN':
@@ -522,6 +545,13 @@ export default function Episodios() {
           ep.estadoRN = null;
         } else {
           ep.estadoRN = String(ep.estadoRN);
+        }
+        
+        // Normalizar atDetalle: asegurar que sea string o null
+        if (ep.atDetalle === null || ep.atDetalle === undefined || ep.atDetalle === '') {
+          ep.atDetalle = null;
+        } else {
+          ep.atDetalle = String(ep.atDetalle).trim();
         }
         
         // Normalizar campos numéricos: asegurar que sean números

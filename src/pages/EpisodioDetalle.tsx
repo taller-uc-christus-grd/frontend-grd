@@ -102,6 +102,15 @@ export default function EpisodioDetalle() {
         data.estadoRN = String(estadoRNValue) as any;
       }
       
+      // Normalizar atDetalle: asegurar que sea string o null
+      const atDetalleValue = data.atDetalle as any;
+      if (atDetalleValue === null || atDetalleValue === undefined || atDetalleValue === '') {
+        data.atDetalle = null as any;
+      } else {
+        data.atDetalle = String(atDetalleValue).trim() as any;
+      }
+      console.log('📥 atDetalle normalizado al cargar:', data.atDetalle);
+      
       // Normalizar campos numéricos: asegurar que sean números
       const numericFields = ['montoAT', 'montoRN', 'pagoOutlierSup', 'pagoDemora', 'precioBaseTramo', 'valorGRD', 'montoFinal', 'diasDemoraRescate'];
       numericFields.forEach(fieldName => {
@@ -236,9 +245,11 @@ export default function EpisodioDetalle() {
       } else if (field === 'at') {
         // Convertir a "S" o "N" para el backend
         validatedValue = editValue === 'S' || editValue === 'true' ? 'S' : 'N';
+        console.log('📤 AT validado para enviar:', validatedValue, 'desde editValue:', editValue);
       } else if (field === 'estadoRN') {
         // Si está vacío, enviar null
-        validatedValue = editValue === '' ? null : editValue;
+        validatedValue = editValue === '' || editValue === null ? null : String(editValue);
+        console.log('📤 estadoRN validado para enviar:', validatedValue, 'desde editValue:', editValue);
       }
 
       // Enviar actualización al backend
@@ -277,8 +288,21 @@ export default function EpisodioDetalle() {
       if (estadoRNValue === null || estadoRNValue === undefined || estadoRNValue === '') {
         updatedEpisodio.estadoRN = null as any;
       } else {
-        updatedEpisodio.estadoRN = String(estadoRNValue) as any;
+        // Asegurar que sea un string válido
+        const estadoStr = String(estadoRNValue).trim();
+        updatedEpisodio.estadoRN = (estadoStr === '' ? null : estadoStr) as any;
       }
+      console.log('📥 estadoRN normalizado después del backend:', updatedEpisodio.estadoRN);
+      
+      // Normalizar atDetalle: asegurar que sea string o null
+      const atDetalleValue = updatedEpisodio.atDetalle as any;
+      if (atDetalleValue === null || atDetalleValue === undefined || atDetalleValue === '') {
+        updatedEpisodio.atDetalle = null as any;
+      } else {
+        const atDetalleStr = String(atDetalleValue).trim();
+        updatedEpisodio.atDetalle = (atDetalleStr === '' ? null : atDetalleStr) as any;
+      }
+      console.log('📥 atDetalle normalizado después del backend:', updatedEpisodio.atDetalle);
       
       // Normalizar campos numéricos: asegurar que sean números
       const numericFields = ['montoAT', 'montoRN', 'pagoOutlierSup', 'pagoDemora', 'precioBaseTramo', 'valorGRD', 'montoFinal', 'diasDemoraRescate'];
@@ -376,8 +400,11 @@ export default function EpisodioDetalle() {
           <div className="flex items-center gap-2">
             {field === 'estadoRN' ? (
               <select
-                value={editValue}
-                onChange={(e) => setEditValue(e.target.value)}
+                value={editValue || ''}
+                onChange={(e) => {
+                  console.log('🔄 estadoRN seleccionado:', e.target.value);
+                  setEditValue(e.target.value);
+                }}
                 className="px-3 py-2 border rounded-lg flex-1"
                 autoFocus
               >
@@ -388,8 +415,11 @@ export default function EpisodioDetalle() {
               </select>
             ) : field === 'at' ? (
               <select
-                value={editValue}
-                onChange={(e) => setEditValue(e.target.value)}
+                value={editValue || 'N'}
+                onChange={(e) => {
+                  console.log('🔄 AT seleccionado:', e.target.value);
+                  setEditValue(e.target.value);
+                }}
                 className="px-3 py-2 border rounded-lg flex-1"
                 autoFocus
               >
@@ -434,9 +464,21 @@ export default function EpisodioDetalle() {
               ? (isCurrency ? formatCurrency(currentValue) : 
                  field === 'at' ? (() => {
                    const atVal = currentValue as any;
-                   return (atVal === true || atVal === 'S' || atVal === 's') ? 'Sí' : 'No';
+                   // Normalizar para mostrar correctamente
+                   const atNormalized = (atVal === true || atVal === 'S' || atVal === 's') ? 'Sí' : 'No';
+                   console.log('📊 AT renderizado:', { original: atVal, normalizado: atNormalized });
+                   return atNormalized;
                  })() : 
-                 field === 'estadoRN' ? (currentValue || '-') :
+                 field === 'estadoRN' ? (() => {
+                   const estadoNormalized = currentValue ? String(currentValue) : '-';
+                   console.log('📊 estadoRN renderizado:', { original: currentValue, normalizado: estadoNormalized });
+                   return estadoNormalized;
+                 })() :
+                 field === 'atDetalle' ? (() => {
+                   const atDetalleNormalized = currentValue ? String(currentValue).trim() : '-';
+                   console.log('📊 atDetalle renderizado:', { original: currentValue, normalizado: atDetalleNormalized });
+                   return atDetalleNormalized;
+                 })() :
                  currentValue.toString())
               : 'No disponible'}
           </p>
