@@ -691,23 +691,96 @@ export default function EpisodioDetalle() {
   };
 
   const handleConfirmDelete = async () => {
-    if (!deleteModal || !id) return;
+    if (!deleteModal || !id) {
+      console.error('❌ No hay modal de eliminación o ID de episodio');
+      return;
+    }
     
     const documento = documentos.find(doc => doc.id === deleteModal.documentoId);
-    if (!documento) return;
+    if (!documento) {
+      console.error('❌ Documento no encontrado:', deleteModal.documentoId);
+      setSaveMessage(`Error: Documento no encontrado`);
+      setTimeout(() => setSaveMessage(''), 3000);
+      setDeleteModal(null);
+      return;
+    }
+
+    console.log('🗑️ Intentando eliminar documento:', {
+      documentoId: deleteModal.documentoId,
+      documento: documento,
+      public_id: documento.public_id,
+      id: documento.id,
+      episodioId: id
+    });
+
+    // Verificar que tenemos el id necesario
+    if (!documento.id) {
+      console.error('❌ No hay id disponible en el documento');
+      setSaveMessage(`Error: No se puede identificar el documento para eliminar`);
+      setTimeout(() => setSaveMessage(''), 5000);
+      setDeleteModal(null);
+      return;
+    }
+
+    // El backend probablemente espera el id del documento (ID interno de la BD)
+    // Si el backend espera public_id, el backend puede mapearlo internamente
+    // Usamos el id del documento que viene del backend
+    const documentoIdToDelete = documento.id;
 
     try {
+      console.log('📤 Enviando DELETE al backend con:', {
+        episodioId: id,
+        documentoId: documentoIdToDelete
+      });
+
       // Eliminar de Cloudinary
-      await deleteDocumento(id, documento.public_id);
+      await deleteDocumento(id, documentoIdToDelete);
+      
+      console.log('✅ Documento eliminado exitosamente del backend');
       
       // Remover del estado local
       setDocumentos(prev => prev.filter(doc => doc.id !== deleteModal.documentoId));
-      setSaveMessage(`Archivo "${deleteModal.fileName}" eliminado exitosamente`);
+      setSaveMessage(`✅ Archivo "${deleteModal.fileName}" eliminado exitosamente`);
       setTimeout(() => setSaveMessage(''), 3000);
     } catch (error: any) {
-      console.error('Error al eliminar documento:', error);
-      setSaveMessage(`Error al eliminar "${deleteModal.fileName}": ${error.response?.data?.message || error.message}`);
-      setTimeout(() => setSaveMessage(''), 5000);
+      console.error('❌ Error completo al eliminar documento:', error);
+      console.error('📋 Detalles del error:', {
+        status: error.response?.status,
+        statusText: error.response?.statusText,
+        data: error.response?.data,
+        message: error.message,
+        url: error.config?.url,
+        baseURL: error.config?.baseURL,
+        fullUrl: error.config?.baseURL + error.config?.url
+      });
+      
+      let errorMessage = 'Error desconocido al eliminar el documento';
+      
+      if (error.response) {
+        // Hay respuesta del servidor
+        if (error.response.status === 404) {
+          errorMessage = `El documento no fue encontrado en el servidor`;
+        } else if (error.response.status === 400) {
+          errorMessage = `Datos inválidos: ${error.response.data?.message || 'El documento no puede ser eliminado'}`;
+        } else if (error.response.status === 401) {
+          errorMessage = 'No autorizado. Por favor, inicia sesión nuevamente.';
+        } else if (error.response.status === 403) {
+          errorMessage = 'No tienes permisos para eliminar este documento';
+        } else if (error.response.status === 500) {
+          errorMessage = 'Error del servidor. Por favor, intenta nuevamente más tarde.';
+        } else {
+          errorMessage = error.response.data?.message || error.response.data?.error || `Error ${error.response.status}: ${error.response.statusText}`;
+        }
+      } else if (error.request) {
+        // No hubo respuesta del servidor
+        errorMessage = `Error de conexión: No se pudo conectar al servidor. Verifica tu conexión.`;
+      } else {
+        // Error en la configuración de la petición
+        errorMessage = error.message || 'Error al configurar la petición de eliminación';
+      }
+      
+      setSaveMessage(`❌ Error al eliminar "${deleteModal.fileName}": ${errorMessage}`);
+      setTimeout(() => setSaveMessage(''), 8000); // Más tiempo para leer el error
     }
     
     setDeleteModal(null);

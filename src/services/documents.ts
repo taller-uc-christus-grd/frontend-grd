@@ -46,21 +46,44 @@ export async function uploadDocumento(
  * @returns Lista de documentos
  */
 export async function getDocumentos(episodioId: string): Promise<DocumentoCloudinary[]> {
+  console.log('📥 Obteniendo documentos para episodio:', episodioId);
   const response = await api.get(`/api/episodios/${episodioId}/documentos`);
+  console.log('📥 Documentos recibidos:', response.data);
   return response.data;
 }
 
 /**
  * Elimina un documento de Cloudinary
  * @param episodioId ID del episodio
- * @param documentoId ID del documento (public_id de Cloudinary)
+ * @param documentoId ID del documento (public_id de Cloudinary o id del documento)
  * @returns Respuesta de eliminación
  */
 export async function deleteDocumento(
   episodioId: string,
   documentoId: string
 ): Promise<void> {
-  await api.delete(`/api/episodios/${episodioId}/documentos/${documentoId}`);
+  console.log('🗑️ Eliminando documento:', {
+    episodioId,
+    documentoId,
+    url: `/api/episodios/${episodioId}/documentos/${documentoId}`
+  });
+  
+  try {
+    const response = await api.delete(`/api/episodios/${episodioId}/documentos/${documentoId}`);
+    console.log('✅ Documento eliminado exitosamente:', response.data);
+    return response.data;
+  } catch (error: any) {
+    console.error('❌ Error al eliminar documento:', {
+      status: error.response?.status,
+      statusText: error.response?.statusText,
+      data: error.response?.data,
+      message: error.message,
+      url: error.config?.url,
+      baseURL: error.config?.baseURL,
+      fullUrl: error.config?.baseURL + error.config?.url
+    });
+    throw error;
+  }
 }
 
 /**
