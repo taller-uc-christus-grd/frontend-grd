@@ -103,7 +103,14 @@ export default function Episodios() {
     
     // Convertir valores según el tipo de campo
     if (field === 'validado') {
-      setEditValue(currentValue === true ? 'true' : currentValue === false ? 'false' : '');
+      // Convertir boolean/null a string para el dropdown
+      if (currentValue === true) {
+        setEditValue('aprobado');
+      } else if (currentValue === false) {
+        setEditValue('rechazado');
+      } else {
+        setEditValue('pendiente'); // Default
+      }
     } else if (field === 'at') {
       // Convertir boolean a "S"/"N" o mantener "S"/"N" si ya es string
       // También manejar valores null/undefined
@@ -166,7 +173,14 @@ export default function Episodios() {
       }
       
       if (field === 'validado') {
-        validatedValue = editValue === 'true' ? true : editValue === 'false' ? false : null;
+        // Convertir string del dropdown a boolean/null
+        if (editValue === 'aprobado') {
+          validatedValue = true;
+        } else if (editValue === 'rechazado') {
+          validatedValue = false;
+        } else {
+          validatedValue = null; // pendiente
+        }
       }
 
       // Enviar solo el campo editado al backend
@@ -373,9 +387,9 @@ export default function Episodios() {
               className="px-2 py-1 text-xs border rounded"
               autoFocus
             >
-              <option value="">Seleccionar...</option>
-              <option value="true">Aprobar</option>
-              <option value="false">Rechazar</option>
+              <option value="pendiente">Pendiente</option>
+              <option value="aprobado">Aprobado</option>
+              <option value="rechazado">Rechazado</option>
             </select>
           ) : (
             <input
@@ -406,24 +420,79 @@ export default function Episodios() {
       );
     }
     
-    if (value === null || value === undefined) return '-';
+    // Manejar null/undefined para campos que no sean validado (validado se maneja en el switch)
+    if (key !== 'validado' && (value === null || value === undefined)) return '-';
     
     switch (key) {
       case 'validado':
-        // Para gestión, mostrar estado de revisión con badges más descriptivos
+        // Para gestión, mostrar dropdown directamente
         if (isGestion) {
+          // Manejar null/undefined como 'pendiente' (default)
+          const currentValueStr = value === true ? 'aprobado' : value === false ? 'rechazado' : 'pendiente';
           return (
-            <span className={`px-2 py-1 rounded-full text-xs font-medium ${
-              value === true 
-                ? 'bg-green-100 text-green-800' 
-                : value === false
-                ? 'bg-red-100 text-red-800'
-                : 'bg-yellow-100 text-yellow-800'
-            }`}>
-              {value === true ? '✅ Aprobado' :
-               value === false ? '❌ Rechazado' : 
-               '⏳ Pendiente'}
-            </span>
+            <select
+              value={currentValueStr}
+              onChange={async (e) => {
+                const newValue = e.target.value;
+                // Convertir string a boolean/null
+                let validatedValue: any = null;
+                if (newValue === 'aprobado') {
+                  validatedValue = true;
+                } else if (newValue === 'rechazado') {
+                  validatedValue = false;
+                } else {
+                  validatedValue = null; // pendiente
+                }
+                
+                // Guardar automáticamente
+                setSaving(true);
+                try {
+                  const episodeId = (episodio as any).id || episodio.episodio;
+                  const url = `/api/episodios/${episodeId}`;
+                  const payload = { validado: validatedValue };
+                  
+                  const response = await api.patch(url, payload);
+                  
+                  // Actualizar el episodio en la lista
+                  setEpisodios(prevEpisodios => {
+                    const index = prevEpisodios.findIndex(ep => {
+                      const epId = (ep as any).id || ep.episodio;
+                      const searchId = (episodio as any).id || episodio.episodio;
+                      return epId === searchId || ep.episodio === episodio.episodio;
+                    });
+                    
+                    if (index === -1) return prevEpisodios;
+                    
+                    return [
+                      ...prevEpisodios.slice(0, index),
+                      { ...response.data },
+                      ...prevEpisodios.slice(index + 1)
+                    ];
+                  });
+                  
+                  setSaveMessage(`✅ Estado actualizado exitosamente`);
+                  setTimeout(() => setSaveMessage(''), 3000);
+                } catch (error: any) {
+                  console.error('Error al actualizar estado:', error);
+                  setSaveMessage(`❌ Error: ${error.response?.data?.message || error.message}`);
+                  setTimeout(() => setSaveMessage(''), 5000);
+                } finally {
+                  setSaving(false);
+                }
+              }}
+              disabled={saving}
+              className={`px-2 py-1 text-xs border rounded font-medium ${
+                currentValueStr === 'aprobado'
+                  ? 'bg-green-100 text-green-800 border-green-300'
+                  : currentValueStr === 'rechazado'
+                  ? 'bg-red-100 text-red-800 border-red-300'
+                  : 'bg-yellow-100 text-yellow-800 border-yellow-300'
+              } ${saving ? 'opacity-50 cursor-not-allowed' : 'cursor-pointer'}`}
+            >
+              <option value="pendiente">Pendiente</option>
+              <option value="aprobado">Aprobado</option>
+              <option value="rechazado">Rechazado</option>
+            </select>
           );
         }
         // Para otros roles, mostrar el badge simple original
@@ -1012,14 +1081,17 @@ export default function Episodios() {
                       const value = key.split('.').reduce((acc: any, k) => acc?.[k], episodio as any);
                       const isEditable = editableFields.has(key);
                       
+                      // Para gestión, el campo validado muestra dropdown directamente, no necesita click para editar
+                      const shouldBeClickable = isEditable && !(isGestion && key === 'validado');
+                      
                       return (
                         <td 
                           key={key}
                           className={`px-4 py-3 text-slate-700 ${
-                            isEditable ? 'bg-blue-50/50 font-medium cursor-pointer hover:bg-blue-100/70 transition-colors' : ''
+                            shouldBeClickable ? 'bg-blue-50/50 font-medium cursor-pointer hover:bg-blue-100/70 transition-colors' : ''
                           }`}
-                          onClick={() => isEditable && startEdit(rowIndex, key, value)}
-                          title={isEditable ? 'Hacer clic para editar' : ''}
+                          onClick={() => shouldBeClickable && startEdit(rowIndex, key, value)}
+                          title={shouldBeClickable ? 'Hacer clic para editar' : ''}
                         >
                           {renderCellValue(key, value, episodio, rowIndex)}
                   </td>
