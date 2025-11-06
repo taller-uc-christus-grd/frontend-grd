@@ -11,16 +11,36 @@ PATCH https://backend-grd-production.up.railway.app/api/episodios/1022626645 403
 
 ## 🔍 Causa del Problema
 
-El endpoint `PATCH /api/episodios/:id` actualmente solo permite el rol `finanzas`, pero **también debe permitir el rol `gestion`** cuando se están actualizando campos relacionados con la validación de gestión.
+El endpoint `PATCH /api/episodios/:id` actualmente solo permite el rol `finanzas`, pero **debe permitir ambos roles** (`finanzas` y `gestion`) con permisos diferentes según los campos que se están actualizando.
 
-## 📋 Campos que Gestión Puede Actualizar
+## 📋 Reglas de Permisos por Rol
 
-Los usuarios con rol `gestion` deben poder actualizar estos campos:
+### ✅ Rol `gestion` - Solo puede actualizar:
+- **`validado`** (boolean) - Aprobar o rechazar el episodio
+- **`comentariosGestion`** (string) - Comentarios de la revisión
+- **`fechaRevision`** (string ISO) - Fecha de la revisión
+- **`revisadoPor`** (string) - Email del usuario que revisó
 
-1. **`validado`** (boolean) - Aprobar o rechazar el episodio
-2. **`comentariosGestion`** (string) - Comentarios de la revisión
-3. **`fechaRevision`** (string ISO) - Fecha de la revisión
-4. **`revisadoPor`** (string) - Email del usuario que revisó
+**❌ NO puede editar:** Ningún campo financiero (montoAT, montoRN, etc.)
+
+### ✅ Rol `finanzas` - Solo puede actualizar:
+- **`estadoRN`** (string) - Estado del Reembolso
+- **`montoRN`** (number) - Monto de Reembolso
+- **`at`** (boolean) - Ajuste por Tecnología
+- **`atDetalle`** (string) - Detalle del Ajuste por Tecnología
+- **`montoAT`** (number) - Monto del Ajuste por Tecnología
+- **`diasDemoraRescate`** (number) - Días de Demora en Rescate
+- **`pagoDemora`** (number) - Pago por Demora en Rescate
+- **`pagoOutlierSup`** (number) - Pago por Outlier Superior
+- **`precioBaseTramo`** (number) - Precio Base por Tramo
+- **`montoFinal`** (number) - Monto Final (aunque se calcula automáticamente)
+- **`documentacion`** (string) - Documentación necesaria
+
+**❌ NO puede editar:** `validado`, `comentariosGestion`, `fechaRevision`, `revisadoPor`
+
+### ✅ Rol `admin` - Puede actualizar:
+- **Todos los campos** (tanto de gestión como financieros)
+
 
 ## ✅ Solución en el Backend
 
@@ -41,8 +61,8 @@ async function checkEpisodioPermissions(req, res, next) {
     'precioBaseTramo', 'montoFinal', 'valorGRD', 'documentacion'
   ];
   
-  // Campos que gestión puede editar
-  const gestionFields = [
+  // Campos que solo gestión puede editar
+  const gestionOnlyFields = [
     'validado', 'comentariosGestion', 'fechaRevision', 'revisadoPor'
   ];
   
@@ -52,8 +72,13 @@ async function checkEpisodioPermissions(req, res, next) {
     finanzasOnlyFields.includes(campo)
   );
   const tieneCamposGestion = camposSolicitados.some(campo => 
-    gestionFields.includes(campo)
+    gestionOnlyFields.includes(campo)
   );
+  
+  // Admin puede editar todo
+  if (user.role === 'admin') {
+    return next();
+  }
   
   // Si intenta editar campos de finanzas, debe tener rol finanzas
   if (tieneCamposFinanzas && user.role !== 'finanzas') {
@@ -71,17 +96,22 @@ async function checkEpisodioPermissions(req, res, next) {
     });
   }
   
-  // Si intenta editar ambos tipos, debe tener ambos roles (o admin)
-  if (tieneCamposFinanzas && tieneCamposGestion) {
-    if (!['finanzas', 'gestion', 'admin'].includes(user.role)) {
-      return res.status(403).json({
-        message: 'No tienes permisos para realizar esta acción.',
-        error: 'Forbidden'
-      });
-    }
+  // Si intenta editar campos que no son de su rol
+  if (user.role === 'finanzas' && tieneCamposGestion) {
+    return res.status(403).json({
+      message: 'No tienes permisos para validar episodios. Solo puedes editar campos financieros.',
+      error: 'Forbidden'
+    });
   }
   
-  // Si no tiene ningún rol permitido
+  if (user.role === 'gestion' && tieneCamposFinanzas) {
+    return res.status(403).json({
+      message: 'No tienes permisos para editar campos financieros. Solo puedes validar episodios.',
+      error: 'Forbidden'
+    });
+  }
+  
+  // Verificar que tenga al menos uno de los roles permitidos
   if (!['finanzas', 'gestion', 'admin'].includes(user.role)) {
     return res.status(403).json({
       message: 'No tienes permisos para actualizar episodios.',
@@ -103,9 +133,9 @@ router.patch(
 );
 ```
 
-### Opción 2: Permitir Ambos Roles en el Middleware Actual (Más Simple)
+### Opción 2: Permitir Ambos Roles en el Middleware Actual (Más Simple - NO RECOMENDADO)
 
-Si prefieres una solución más simple, modifica el middleware existente para permitir ambos roles:
+⚠️ **ADVERTENCIA**: Esta opción permite que ambos roles editen cualquier campo. Si quieres separar los permisos, usa la Opción 1.
 
 ```javascript
 // Middleware actual (probablemente solo permite 'finanzas')
@@ -118,8 +148,9 @@ function checkRole(roles) {
       });
     }
     
-    // Permitir ambos roles: finanzas y gestion
-    if (!roles.includes(req.user.role) && req.user.role !== 'gestion') {
+    // Permitir ambos roles: finanzas y gestion (y admin)
+    const rolesPermitidos = ['finanzas', 'gestion', 'admin'];
+    if (!rolesPermitidos.includes(req.user.role)) {
       return res.status(403).json({
         message: 'No tienes permisos para realizar esta acción',
         error: 'Forbidden'
@@ -140,6 +171,8 @@ router.patch(
   }
 );
 ```
+
+**⚠️ Problema**: Esta opción no valida qué campos puede editar cada rol, por lo que gestión podría editar campos financieros y finanzas podría validar episodios. **Usa la Opción 1** para tener control completo de permisos.
 
 ## 📤 Request que Envía el Frontend (Gestión)
 
@@ -180,11 +213,24 @@ PATCH /api/episodios/1022626645
 
 ## 🧪 Casos de Prueba
 
+### Gestión:
 1. ✅ Usuario `gestion` actualiza `validado` → Debe funcionar (200 OK)
 2. ✅ Usuario `gestion` actualiza `comentariosGestion` → Debe funcionar (200 OK)
-3. ❌ Usuario `gestion` intenta actualizar `montoAT` → 403 Forbidden
-4. ✅ Usuario `finanzas` actualiza `montoAT` → Debe funcionar (200 OK)
-5. ✅ Usuario `admin` actualiza cualquier campo → Debe funcionar (200 OK)
+3. ✅ Usuario `gestion` actualiza `fechaRevision` → Debe funcionar (200 OK)
+4. ✅ Usuario `gestion` actualiza `revisadoPor` → Debe funcionar (200 OK)
+5. ❌ Usuario `gestion` intenta actualizar `montoAT` → 403 Forbidden
+6. ❌ Usuario `gestion` intenta actualizar `estadoRN` → 403 Forbidden
+7. ❌ Usuario `gestion` intenta actualizar `montoRN` → 403 Forbidden
+
+### Finanzas:
+8. ✅ Usuario `finanzas` actualiza `montoAT` → Debe funcionar (200 OK)
+9. ✅ Usuario `finanzas` actualiza `estadoRN` → Debe funcionar (200 OK)
+10. ✅ Usuario `finanzas` actualiza `montoRN` → Debe funcionar (200 OK)
+11. ❌ Usuario `finanzas` intenta actualizar `validado` → 403 Forbidden
+12. ❌ Usuario `finanzas` intenta actualizar `comentariosGestion` → 403 Forbidden
+
+### Admin:
+13. ✅ Usuario `admin` actualiza cualquier campo → Debe funcionar (200 OK)
 
 ## 📝 Checklist de Implementación
 
