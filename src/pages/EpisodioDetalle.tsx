@@ -52,6 +52,48 @@ export default function EpisodioDetalle() {
   const fileInputRef = useRef<HTMLInputElement>(null);
   const replaceInputRef = useRef<HTMLInputElement>(null);
 
+  const DeleteConfirmationModal = ({ 
+    show, 
+    fileName, 
+    onConfirm, 
+    onCancel 
+  }: { 
+    show: boolean;
+    fileName: string;
+    onConfirm: () => void;
+    onCancel: () => void;
+  }) => {
+    if (!show) return null;
+
+    return (
+      <div className="fixed inset-0 bg-black/30 flex items-center justify-center z-50">
+        <div className="bg-white rounded-xl p-6 max-w-md w-full mx-4 shadow-xl">
+          <h3 className="text-lg font-semibold text-slate-900 mb-2">
+            Confirmar eliminación
+          </h3>
+          <p className="text-slate-600 mb-4">
+            ¿Estás seguro que deseas eliminar el archivo "{fileName}"?
+            Esta acción no se puede deshacer.
+          </p>
+          <div className="flex justify-end gap-3">
+            <button
+              onClick={onCancel}
+              className="px-4 py-2 text-slate-700 bg-slate-100 rounded-lg hover:bg-slate-200"
+            >
+              Cancelar
+            </button>
+            <button
+              onClick={onConfirm}
+              className="px-4 py-2 text-white bg-red-600 rounded-lg hover:bg-red-700"
+            >
+              Eliminar
+            </button>
+          </div>
+        </div>
+      </div>
+    );
+  };
+
   useEffect(() => {
     if (id) {
       loadEpisodio();
@@ -1004,6 +1046,13 @@ export default function EpisodioDetalle() {
           <p className='text-gray-400 text-sm mt-2'>Arrastra archivos o haz clic en el botón para comenzar</p>
         </div>
       )}
+      {/* Agregar el modal aquí */}
+      <DeleteConfirmationModal
+        show={deleteModal?.show || false}
+        fileName={deleteModal?.fileName || ''}
+        onConfirm={handleConfirmDelete}
+        onCancel={handleCancelDelete}
+        />
     </main>
   );
 
