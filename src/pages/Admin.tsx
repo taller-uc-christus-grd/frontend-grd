@@ -129,43 +129,6 @@ export default function Admin() {
     }));
   };
 
-  // Función para cargar configuración desde el backend
-  const loadConfig = async () => {
-    try {
-      setConfigLoading(true);
-      const configData = await getConfig();
-      setConfig({
-        maxFileSizeMB: configData.maxFileSizeMB || 10,
-        sessionTimeout: configData.sessionTimeout || 480,
-        maxLoginAttempts: configData.maxLoginAttempts || 3,
-        passwordMinLength: configData.passwordMinLength || 8
-      });
-      setConfigChanged(false);
-    } catch (error: any) {
-      console.error('Error al cargar configuración:', error);
-      setFeedback({ type: 'error', message: error.message || 'Error al cargar configuración' });
-    } finally {
-      setConfigLoading(false);
-    }
-  };
-
-  // Función para cargar logs desde el backend
-  const loadLogs = async () => {
-    try {
-      setLogsLoading(true);
-      const response = await getLogs({ 
-        level: logFilter !== 'all' ? logFilter : undefined,
-        limit: 100 
-      });
-      setLogs(response.logs);
-    } catch (error: any) {
-      console.error('Error al cargar logs:', error);
-      setFeedback({ type: 'error', message: error.message || 'Error al cargar logs' });
-    } finally {
-      setLogsLoading(false);
-    }
-  };
-
   // Funciones para configuración
   const handleConfigChange = (key: keyof SystemConfig, value: number) => {
     setConfig(prev => ({
