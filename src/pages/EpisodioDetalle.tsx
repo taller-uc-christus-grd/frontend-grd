@@ -302,7 +302,7 @@ export default function EpisodioDetalle() {
         console.error('🚫 Error 403 - Detalles:', {
           usuario: user?.email,
           rol: user?.role,
-          endpoint: url,
+          endpoint: error.config?.url,
           mensajeBackend: backendMessage,
           errorCompleto: error.response?.data
         });
