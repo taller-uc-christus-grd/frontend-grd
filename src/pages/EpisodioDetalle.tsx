@@ -11,7 +11,6 @@ import {
   uploadDocumento,
   getDocumentos,
   deleteDocumento,
-  replaceDocumento,
   type DocumentoCloudinary,
 } from '@/services/documents';
 
@@ -45,12 +44,10 @@ export default function EpisodioDetalle() {
   const [isDocumentosOpen, setIsDocumentosOpen] = useState(false);
   const [documentos, setDocumentos] = useState<Documento[]>([]);
   const [isDragOver, setIsDragOver] = useState(false);
-  const [replaceModal, setReplaceModal] = useState<{show: boolean, oldFile: string, newFile: string, documentoId: string} | null>(null);
   const [deleteModal, setDeleteModal] = useState<{show: boolean, documentoId: string, fileName: string} | null>(null);
   const [loadingDocumentos, setLoadingDocumentos] = useState(false);
   
   const fileInputRef = useRef<HTMLInputElement>(null);
-  const replaceInputRef = useRef<HTMLInputElement>(null);
 
   const DeleteConfirmationModal = ({ 
     show, 
@@ -667,84 +664,6 @@ export default function EpisodioDetalle() {
     }
   };
 
-  const handleReplaceFile = (documentoId: string) => {
-    const documento = documentos.find(doc => doc.id === documentoId);
-    if (!documento) return;
-
-    if (replaceInputRef.current) {
-      replaceInputRef.current.onchange = (event) => {
-        const files = (event.target as HTMLInputElement).files;
-        if (files && files.length > 0) {
-          const file = files[0];
-          setReplaceModal({
-            show: true,
-            oldFile: documento.nombre,
-            newFile: file.name,
-            documentoId: documentoId
-          });
-        }
-      };
-      replaceInputRef.current.click();
-    }
-  };
-
-  const handleConfirmReplace = async () => {
-    if (!replaceModal || !id) return;
-    const documentoId = replaceModal.documentoId;
-    const newFileName = replaceModal.newFile;
-    const files = replaceInputRef.current?.files;
-    
-    if (files && files.length > 0) {
-      const file = files[0];
-      const documento = documentos.find(doc => doc.id === documentoId);
-      
-      if (!documento) return;
-
-      // Marcar como cargando
-      setDocumentos(prev => prev.map(doc => 
-        doc.id === documentoId 
-          ? { ...doc, uploading: true }
-          : doc
-      ));
-
-      try {
-        // Reemplazar en Cloudinary
-        const documentoActualizado = await replaceDocumento(id, documento.public_id, file);
-        
-        // Actualizar el documento con los nuevos datos
-        setDocumentos(prev => prev.map(doc => 
-          doc.id === documentoId 
-            ? { ...documentoActualizado, uploading: false }
-            : doc
-        ));
-        
-        setSaveMessage(`Archivo "${newFileName}" reemplazado exitosamente`);
-        setTimeout(() => setSaveMessage(''), 3000);
-      } catch (error: any) {
-        console.error('Error al reemplazar documento:', error);
-        setSaveMessage(`Error al reemplazar "${newFileName}": ${error.response?.data?.message || error.message}`);
-        setTimeout(() => setSaveMessage(''), 5000);
-        
-        // Restaurar estado anterior
-        setDocumentos(prev => prev.map(doc => 
-          doc.id === documentoId 
-            ? { ...doc, uploading: false }
-            : doc
-        ));
-      }
-    }
-    setReplaceModal(null);
-    if (replaceInputRef.current) {
-      replaceInputRef.current.value = '';
-    }
-  };
-
-  const handleCancelReplace = () => {
-    setReplaceModal(null);
-    if (replaceInputRef.current) {
-      replaceInputRef.current.value = '';
-    }
-  };
 
   const handleDeleteFile = (documentoId: string) => {
     console.log('🗑️ handleDeleteFile llamado con:', documentoId);
@@ -1000,7 +919,6 @@ export default function EpisodioDetalle() {
         </div>
 
         <input ref={fileInputRef} type="file" multiple onChange={handleFileUpload} className="hidden" accept=".pdf,.doc,.docx,.jpg,.jpeg,.png" />
-        <input ref={replaceInputRef} type="file" onChange={() => {}} className="hidden" accept=".pdf,.doc,.docx,.jpg,.jpeg,.png" />
       </div>
 
       {/* Div 2: Documentos cargados */}
@@ -1039,9 +957,30 @@ export default function EpisodioDetalle() {
                         )}
                       </div>
                     </td>
-                    <td className='px-4 py-3 text-center text-gray-600'>{doc.fecha}</td>
-                    <td className='px-4 py-3 text-center text-gray-600'>{doc.usuario}</td>
-                    <td className='px-4 py-3 text-center text-gray-600'>{doc.tamaño}</td>
+                    <td className='px-4 py-3 text-center text-gray-600'>
+                      {doc.fecha ? (() => {
+                        try {
+                          // Intentar formatear la fecha si viene en formato ISO
+                          const fecha = new Date(doc.fecha);
+                          if (!isNaN(fecha.getTime())) {
+                            return fecha.toLocaleDateString('es-CL', {
+                              year: 'numeric',
+                              month: 'short',
+                              day: 'numeric',
+                              hour: '2-digit',
+                              minute: '2-digit'
+                            });
+                          }
+                          return doc.fecha;
+                        } catch {
+                          return doc.fecha;
+                        }
+                      })() : '-'}
+                    </td>
+                    <td className='px-4 py-3 text-center text-gray-600' title={doc.usuario}>
+                      {doc.usuario || '-'}
+                    </td>
+                    <td className='px-4 py-3 text-center text-gray-600'>{doc.tamaño || '-'}</td>
                     <td className='px-4 py-3'>
                       <div className='flex gap-2 justify-center'>
                         <button 
@@ -1051,14 +990,6 @@ export default function EpisodioDetalle() {
                           title='Descargar'
                         >
                           ↓
-                        </button>
-                        <button 
-                          onClick={() => handleReplaceFile(doc.id)} 
-                          disabled={doc.uploading}
-                          className='p-2 bg-slate-100 text-slate-700 rounded hover:bg-slate-200 transition-colors disabled:opacity-50 disabled:cursor-not-allowed'
-                          title='Reemplazar'
-                        >
-                          ✎
                         </button>
                         <button 
                           onClick={(e) => {
