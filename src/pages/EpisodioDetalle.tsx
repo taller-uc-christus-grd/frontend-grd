@@ -296,7 +296,16 @@ export default function EpisodioDetalle() {
           window.location.href = '/login';
         }, 2000);
       } else if (error.response?.status === 403) {
-        errorMessage = backendMessage || 'Acceso denegado. No tienes permisos para realizar esta acción.';
+        // Error 403: El backend está rechazando por permisos
+        // Esto puede ser porque el endpoint solo permite rol 'finanzas' pero el usuario es 'gestion'
+        errorMessage = backendMessage || 'Acceso denegado. El backend no permite que usuarios con rol "gestión" validen episodios. Verifica la configuración de permisos en el backend.';
+        console.error('🚫 Error 403 - Detalles:', {
+          usuario: user?.email,
+          rol: user?.role,
+          endpoint: url,
+          mensajeBackend: backendMessage,
+          errorCompleto: error.response?.data
+        });
       } else if (error.response?.status === 500) {
         // Mostrar mensaje específico del backend si está disponible
         errorMessage = backendMessage || 'Error del servidor. Por favor, intenta nuevamente más tarde.';
