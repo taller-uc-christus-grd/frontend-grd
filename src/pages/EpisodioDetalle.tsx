@@ -227,6 +227,15 @@ export default function EpisodioDetalle() {
     setSaveMessage('');
     
     try {
+      // Verificar que el usuario tenga token
+      const storedUser = localStorage.getItem('grd_user');
+      const userData = storedUser ? JSON.parse(storedUser) : null;
+      const token = userData?.token;
+      
+      if (!token) {
+        throw new Error('No se encontró token de autenticación. Por favor, inicia sesión nuevamente.');
+      }
+      
       // Intentar usar id si existe, sino usar episodio
       const episodeId = (episodio as any).id || episodio.episodio;
       const url = `/api/episodios/${episodeId}`;
@@ -240,6 +249,8 @@ export default function EpisodioDetalle() {
       console.log('🔄 Enviando PATCH a:', url);
       console.log('📦 Datos enviados:', payload);
       console.log('🆔 ID del episodio (usado):', episodeId);
+      console.log('👤 Usuario actual:', user?.email, 'Rol:', user?.role);
+      console.log('🔑 Token presente:', !!token);
       console.log('🔍 Datos del episodio:', {
         episodio: episodio.episodio,
         id: (episodio as any).id,
@@ -262,20 +273,35 @@ export default function EpisodioDetalle() {
         data: error.response?.data,
         url: error.config?.url,
         method: error.config?.method,
-        fullUrl: error.config?.baseURL + error.config?.url
+        fullUrl: error.config?.baseURL + error.config?.url,
+        headers: error.config?.headers
       });
       
       let errorMessage = 'Error al guardar los cambios';
+      
+      // Extraer mensaje de error del backend
+      const backendMessage = error.response?.data?.message || 
+                            error.response?.data?.error || 
+                            error.response?.data?.mensaje;
+      
       if (error.response?.status === 404) {
         errorMessage = `El episodio ${episodio?.episodio} no fue encontrado en el servidor. Verifica que el ID del episodio sea correcto.`;
       } else if (error.response?.status === 400) {
-        errorMessage = `Datos inválidos: ${error.response?.data?.message || 'El valor ingresado no es válido'}`;
+        errorMessage = backendMessage || `Datos inválidos: El valor ingresado no es válido`;
       } else if (error.response?.status === 401) {
-        errorMessage = 'No tienes permisos para realizar esta acción. Por favor, inicia sesión nuevamente.';
+        errorMessage = backendMessage || 'No tienes permisos para realizar esta acción. Por favor, inicia sesión nuevamente.';
+        // Limpiar sesión si es 401
+        localStorage.removeItem('grd_user');
+        setTimeout(() => {
+          window.location.href = '/login';
+        }, 2000);
+      } else if (error.response?.status === 403) {
+        errorMessage = backendMessage || 'Acceso denegado. No tienes permisos para realizar esta acción.';
       } else if (error.response?.status === 500) {
-        errorMessage = 'Error del servidor. Por favor, intenta nuevamente más tarde.';
-      } else if (error.response?.data?.message) {
-        errorMessage = error.response.data.message;
+        // Mostrar mensaje específico del backend si está disponible
+        errorMessage = backendMessage || 'Error del servidor. Por favor, intenta nuevamente más tarde.';
+      } else if (backendMessage) {
+        errorMessage = backendMessage;
       } else if (error.message) {
         errorMessage = error.message;
       }

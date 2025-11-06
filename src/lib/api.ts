@@ -26,6 +26,24 @@ api.interceptors.request.use(
     if (token) {
       // CLAVE: Adjuntar el token al header 'Authorization'
       config.headers.Authorization = `Bearer ${token}`;
+      
+      // Logging para debugging (solo en desarrollo)
+      if (import.meta.env.DEV) {
+        console.log('🔑 Token agregado a la petición:', {
+          url: config.url,
+          method: config.method,
+          hasToken: !!token,
+          tokenLength: token.length
+        });
+      }
+    } else {
+      // Logging si no hay token (solo en desarrollo)
+      if (import.meta.env.DEV) {
+        console.warn('⚠️ No se encontró token para la petición:', {
+          url: config.url,
+          method: config.method
+        });
+      }
     }
     
     // Si es FormData, NO establecer Content-Type manualmente - axios lo hace automáticamente con el boundary
@@ -94,6 +112,24 @@ api.interceptors.response.use(
         }
       }
     }
+    
+    // Si es un error 500 con mensaje de acceso denegado, loguear detalles
+    if (error.response?.status === 500) {
+      const errorMessage = error.response?.data?.message || 
+                          error.response?.data?.error || 
+                          error.response?.data?.mensaje;
+      if (errorMessage?.toLowerCase().includes('acceso denegado') || 
+          errorMessage?.toLowerCase().includes('access denied')) {
+        console.error('🚫 Error de acceso denegado (500):', {
+          message: errorMessage,
+          url: error.config?.url,
+          method: error.config?.method,
+          headers: error.config?.headers,
+          data: error.response?.data
+        });
+      }
+    }
+    
     return Promise.reject(error);
   }
 );
