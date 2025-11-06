@@ -63,10 +63,34 @@ export default function EpisodioDetalle() {
     onConfirm: () => void;
     onCancel: () => void;
   }) => {
+    console.log('🔍 DeleteConfirmationModal renderizado:', { show, fileName });
+    
     if (!show) return null;
 
+    const handleConfirmClick = (e: React.MouseEvent) => {
+      e.preventDefault();
+      e.stopPropagation();
+      console.log('✅ Botón confirmar eliminación clickeado');
+      onConfirm();
+    };
+
+    const handleCancelClick = (e: React.MouseEvent) => {
+      e.preventDefault();
+      e.stopPropagation();
+      console.log('❌ Botón cancelar clickeado');
+      onCancel();
+    };
+
     return (
-      <div className="fixed inset-0 bg-black/30 flex items-center justify-center z-50">
+      <div 
+        className="fixed inset-0 bg-black/50 flex items-center justify-center z-[9999]"
+        onClick={(e) => {
+          // Cerrar al hacer clic fuera del modal
+          if (e.target === e.currentTarget) {
+            handleCancelClick(e);
+          }
+        }}
+      >
         <div className="bg-white rounded-xl p-6 max-w-md w-full mx-4 shadow-xl">
           <h3 className="text-lg font-semibold text-slate-900 mb-2">
             Confirmar eliminación
@@ -77,14 +101,14 @@ export default function EpisodioDetalle() {
           </p>
           <div className="flex justify-end gap-3">
             <button
-              onClick={onCancel}
-              className="px-4 py-2 text-slate-700 bg-slate-100 rounded-lg hover:bg-slate-200"
+              onClick={handleCancelClick}
+              className="px-4 py-2 text-slate-700 bg-slate-100 rounded-lg hover:bg-slate-200 transition-colors"
             >
               Cancelar
             </button>
             <button
-              onClick={onConfirm}
-              className="px-4 py-2 text-white bg-red-600 rounded-lg hover:bg-red-700"
+              onClick={handleConfirmClick}
+              className="px-4 py-2 text-white bg-red-600 rounded-lg hover:bg-red-700 transition-colors"
             >
               Eliminar
             </button>
@@ -723,18 +747,36 @@ export default function EpisodioDetalle() {
   };
 
   const handleDeleteFile = (documentoId: string) => {
+    console.log('🗑️ handleDeleteFile llamado con:', documentoId);
+    console.log('📋 Documentos disponibles:', documentos);
+    
     const documento = documentos.find(doc => doc.id === documentoId);
-    if (!documento) return;
+    if (!documento) {
+      console.error('❌ Documento no encontrado con ID:', documentoId);
+      setSaveMessage(`Error: Documento no encontrado`);
+      setTimeout(() => setSaveMessage(''), 3000);
+      return;
+    }
+    
+    console.log('✅ Documento encontrado:', documento);
     setDeleteModal({
       show: true,
       documentoId: documentoId,
       fileName: documento.nombre
     });
+    console.log('✅ Modal de eliminación configurado');
   };
 
   const handleConfirmDelete = async () => {
+    console.log('🚀 handleConfirmDelete llamado');
+    console.log('📋 Estado del modal:', deleteModal);
+    console.log('📋 ID del episodio:', id);
+    
     if (!deleteModal || !id) {
       console.error('❌ No hay modal de eliminación o ID de episodio');
+      setSaveMessage('Error: No se puede eliminar el documento. Falta información.');
+      setTimeout(() => setSaveMessage(''), 5000);
+      setDeleteModal(null);
       return;
     }
     
@@ -1019,10 +1061,16 @@ export default function EpisodioDetalle() {
                           ✎
                         </button>
                         <button 
-                          onClick={() => handleDeleteFile(doc.id)} 
+                          onClick={(e) => {
+                            e.preventDefault();
+                            e.stopPropagation();
+                            console.log('🔴 Botón eliminar clickeado para documento:', doc.id);
+                            handleDeleteFile(doc.id);
+                          }}
                           disabled={doc.uploading}
                           className='p-2 bg-red-100 text-red-700 rounded hover:bg-red-200 transition-colors disabled:opacity-50 disabled:cursor-not-allowed'
                           title='Eliminar'
+                          type="button"
                         >
                           ×
                         </button>
@@ -1489,6 +1537,14 @@ export default function EpisodioDetalle() {
           )}
         </div>
       )}
+
+      {/* Modal de confirmación de eliminación - también disponible en vista principal */}
+      <DeleteConfirmationModal
+        show={deleteModal?.show || false}
+        fileName={deleteModal?.fileName || ''}
+        onConfirm={handleConfirmDelete}
+        onCancel={handleCancelDelete}
+      />
     </main>
   );
 }
