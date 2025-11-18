@@ -79,14 +79,11 @@ export default function Episodios() {
     if (isFinanzas) {
       // Finanzas puede editar campos financieros
       FINAL_COLUMNS.forEach(([header, key, editable]) => {
-        if (editable && key !== 'validado') { // validado es solo para gestión
+        if (editable && key !== 'validado') {
           editableFields.add(key);
         }
       });
-    }
-    
-    if (isGestion) {
-      // Gestión puede editar el campo validado
+      // Finanzas es el perfil responsable de aprobar/rechazar episodios
       editableFields.add('validado');
     }
     
@@ -97,7 +94,10 @@ export default function Episodios() {
 
   // Función para iniciar edición
   const startEdit = (rowIndex: number, field: string, currentValue: any) => {
-    if ((!isFinanzas && !isGestion) || !editableFields.has(field)) return;
+    // Solo Finanzas (o perfiles con permisos financieros) pueden editar campos,
+    // y solo Finanzas puede editar 'validado'.
+    if (!isFinanzas && !isCodificador) return;
+    if (!editableFields.has(field)) return;
     
     setEditingCell({ row: rowIndex, field });
     
@@ -424,83 +424,32 @@ export default function Episodios() {
     if (key !== 'validado' && (value === null || value === undefined)) return '-';
     
     switch (key) {
-      case 'validado':
-        // Para gestión, mostrar dropdown directamente
-        if (isGestion) {
-          // Manejar null/undefined como 'pendiente' (default)
-          const currentValueStr = value === true ? 'aprobado' : value === false ? 'rechazado' : 'pendiente';
-          return (
-            <select
-              value={currentValueStr}
-              onChange={async (e) => {
-                const newValue = e.target.value;
-                // Convertir string a boolean/null
-                let validatedValue: any = null;
-                if (newValue === 'aprobado') {
-                  validatedValue = true;
-                } else if (newValue === 'rechazado') {
-                  validatedValue = false;
-                } else {
-                  validatedValue = null; // pendiente
-                }
-                
-                // Guardar automáticamente
-                setSaving(true);
-                try {
-                  const episodeId = (episodio as any).id || episodio.episodio;
-                  const url = `/api/episodios/${episodeId}`;
-                  const payload = { validado: validatedValue };
-                  
-                  const response = await api.patch(url, payload);
-                  
-                  // Actualizar el episodio en la lista
-                  setEpisodios(prevEpisodios => {
-                    const index = prevEpisodios.findIndex(ep => {
-                      const epId = (ep as any).id || ep.episodio;
-                      const searchId = (episodio as any).id || episodio.episodio;
-                      return epId === searchId || ep.episodio === episodio.episodio;
-                    });
-                    
-                    if (index === -1) return prevEpisodios;
-                    
-                    return [
-                      ...prevEpisodios.slice(0, index),
-                      { ...response.data },
-                      ...prevEpisodios.slice(index + 1)
-                    ];
-                  });
-                  
-                  setSaveMessage(`✅ Estado actualizado exitosamente`);
-                  setTimeout(() => setSaveMessage(''), 3000);
-                } catch (error: any) {
-                  console.error('Error al actualizar estado:', error);
-                  setSaveMessage(`❌ Error: ${error.response?.data?.message || error.message}`);
-                  setTimeout(() => setSaveMessage(''), 5000);
-                } finally {
-                  setSaving(false);
-                }
-              }}
-              disabled={saving}
-              className={`px-2 py-1 text-xs border rounded font-medium ${
-                currentValueStr === 'aprobado'
-                  ? 'bg-green-100 text-green-800 border-green-300'
-                  : currentValueStr === 'rechazado'
-                  ? 'bg-red-100 text-red-800 border-red-300'
-                  : 'bg-yellow-100 text-yellow-800 border-yellow-300'
-              } ${saving ? 'opacity-50 cursor-not-allowed' : 'cursor-pointer'}`}
-            >
-              <option value="pendiente">Pendiente</option>
-              <option value="aprobado">Aprobado</option>
-              <option value="rechazado">Rechazado</option>
-            </select>
-          );
-        }
-        // Para otros roles, mostrar el badge simple original
+      case 'validado': {
+        // Mostrar el estado como badge de solo lectura para todos los perfiles
+        // (Finanzas igual puede editar haciendo click en la celda, porque usa startEdit)
+        const estado =
+          value === true ? 'aprobado' :
+          value === false ? 'rechazado' :
+          'pendiente';
+
+        const badgeClass =
+          estado === 'aprobado'
+            ? 'badge-success'
+            : estado === 'rechazado'
+            ? 'badge-error'
+            : 'badge-warning';
+
+        const label =
+          estado === 'aprobado' ? 'Aprobado' :
+          estado === 'rechazado' ? 'Rechazado' :
+          'Pendiente';
+
         return (
-          <span className={`badge-${value ? 'success' : 'warning'}`}>
-            {value ? '✓' : '○'}
+          <span className={badgeClass}>
+            {label}
           </span>
         );
+      }
       
       case 'at':
         // Manejar tanto boolean como "S"/"N"
@@ -947,25 +896,27 @@ export default function Episodios() {
           <div className="bg-gradient-to-br from-fuchsia-50 to-pink-50 border-t border-fuchsia-200 px-6 py-6">
             <div className="flex items-center gap-3 mb-3">
               <img src={icon4} alt="Gestión" className="w-7 h-7 object-contain" style={{ filter: 'invert(17%) sepia(96%) saturate(5067%) hue-rotate(300deg) brightness(95%) contrast(96%)' }} />
-              <h3 className="text-base font-open-sauce font-medium text-fuchsia-900">Campos editables para Gestión</h3>
+              <h3 className="text-base font-open-sauce font-medium text-fuchsia-900">
+                Visualización para Gestión
+              </h3>
             </div>
             <div className="text-sm text-slate-700 mb-4">
               <p className="flex items-start gap-2">
                 <span className="text-fuchsia-500 mt-1">•</span>
-                <span><strong className="font-semibold text-slate-900">VALIDADO</strong> - Aprobar o rechazar episodios</span>
+                <span>
+                  <strong className="font-semibold text-slate-900">VALIDADO</strong> indica si un episodio está aprobado, rechazado o pendiente.
+                  Solo el perfil de <strong>Finanzas</strong> puede cambiar este estado.
+                </span>
               </p>
             </div>
-            {/* Instrucciones primero */}
             <div className="mb-6 -mx-6 px-6 py-4 bg-white/80 border-l-4 border-fuchsia-500 rounded-r-lg shadow-sm">
               <h4 className="text-sm font-semibold text-fuchsia-900 mb-3">Instrucciones</h4>
               <div className="space-y-2.5">
                 <p className="text-sm text-slate-700 flex items-start gap-2.5">
                   <span className="text-fuchsia-500 mt-0.5 font-bold">•</span>
-                  <span>Haz clic en el campo VALIDADO para aprobar o rechazar episodios. Los cambios se reflejan inmediatamente en el sistema.</span>
-                </p>
-                <p className="text-sm text-slate-700 flex items-start gap-2.5">
-                  <span className="text-fuchsia-500 mt-0.5 font-bold">•</span>
-                  <span>Los cambios se guardan automáticamente en el servidor al confirmar la edición.</span>
+                  <span>
+                    Revisa el estado de VALIDADO para hacer seguimiento al avance del proceso, pero no podrás modificarlo desde este módulo.
+                  </span>
                 </p>
               </div>
             </div>
