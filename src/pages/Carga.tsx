@@ -290,16 +290,45 @@ export default function Carga() {
     // Proyección SOLO a necesarias para la vista/edición
     const present = new Set(_rawHeaders);
     const headersForView = REQUIRED_HEADERS.filter(h => present.has(h));
+    
+    // Agregar "Convenio" si está presente en el archivo (aunque no sea requerida)
+    // Insertarlo después de "Nombre" (orden: RUT, Nombre, Convenio)
+    const convenioHeader = _rawHeaders.find(h => 
+      h.toLowerCase().includes('convenio') || 
+      h.toLowerCase() === 'convenio'
+    );
+    
+    let allHeadersForView = headersForView;
+    if (convenioHeader && !headersForView.includes(convenioHeader)) {
+      // Buscar la posición de "Nombre" en headersForView
+      const nombreIndexInView = headersForView.indexOf('Nombre');
+      if (nombreIndexInView >= 0) {
+        // Insertar "Convenio" después de "Nombre"
+        allHeadersForView = [
+          ...headersForView.slice(0, nombreIndexInView + 1),
+          convenioHeader,
+          ...headersForView.slice(nombreIndexInView + 1)
+        ];
+      } else {
+        // Si no se encuentra Nombre en la vista, agregar al final
+        allHeadersForView = [...headersForView, convenioHeader];
+      }
+    }
+    
     const rowsForView = _rawRows.map(r => {
       const o: any = {};
       REQUIRED_HEADERS.forEach(h => { o[h] = r[h] ?? ''; });
+      // Agregar Convenio si existe
+      if (convenioHeader) {
+        o[convenioHeader] = r[convenioHeader] ?? '';
+      }
       return o;
     });
 
     // Guarda estado
     setRawHeaders(_rawHeaders);
     setRawRows(_rawRows);
-    setViewHeaders(REQUIRED_HEADERS.slice());
+    setViewHeaders(allHeadersForView);
     setViewRows(rowsForView);
     setOpenPrecheck(true);
     
@@ -311,13 +340,23 @@ export default function Carga() {
 
   // Convierte filas corregidas (SOLO necesarias) a cambios en el dataset COMPLETO y sube
   async function uploadFixedRows(editedViewRows: any[]) {
-    // Merge: aplicar cambios de columnas necesarias a las filas completas
+    // Buscar el header de Convenio si existe
+    const convenioHeader = rawHeaders.find(h => 
+      h.toLowerCase().includes('convenio') || 
+      h.toLowerCase() === 'convenio'
+    );
+    
+    // Merge: aplicar cambios de columnas necesarias + Convenio a las filas completas
     const merged = rawRows.map((full, idx) => {
       const v = editedViewRows[idx] ?? {};
       const copy = { ...full };
       REQUIRED_HEADERS.forEach(h => {
         if (h in v) copy[h] = v[h];
       });
+      // Preservar cambios de Convenio si existe
+      if (convenioHeader && convenioHeader in v) {
+        copy[convenioHeader] = v[convenioHeader];
+      }
       return copy;
     });
 
