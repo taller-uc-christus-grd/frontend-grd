@@ -20,6 +20,7 @@ export interface Episode {
   episodio: string;              // "Episodio CMBD"
   rut?: string;                  // "RUT"
   nombre?: string;               // "Nombre"
+  convenio?: string | null;       // "Convenio"
   fechaIngreso?: string;         // "Fecha Ingreso completa" (YYYY-MM-DD)
   fechaAlta?: string;            // "Fecha Completa" (YYYY-MM-DD)
   servicioAlta?: string;         // "Servicio Egreso (Descripción)"
@@ -88,6 +89,7 @@ export interface FinalRow {
   episodio: string;              // Episodio CMBD
   rut: string;                   // RUT
   nombre: string;                // Nombre
+  convenio: string | null;        // Convenio
   tipoEpisodio: string;          // Tipo Actividad
   fechaIngreso: string;          // Fecha Ingreso completa
   fechaAlta: string;             // Fecha Completa

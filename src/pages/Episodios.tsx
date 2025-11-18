@@ -575,6 +575,13 @@ export default function Episodios() {
           </span>
         ) : '-';
       
+      case 'convenio':
+        return value ? (
+          <span className="text-xs text-slate-700">{value}</span>
+        ) : (
+          <span className="text-slate-400">-</span>
+        );
+      
       default:
         return value || '-';
     }

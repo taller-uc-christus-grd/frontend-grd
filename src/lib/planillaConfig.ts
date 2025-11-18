@@ -24,6 +24,7 @@ export const FINAL_COLUMNS = [
   ['Episodio', 'episodio', false],
   ['Rut Paciente', 'rut', false],
   ['Nombre Paciente', 'nombre', false],
+  ['Convenio', 'convenio', false], // viene de BD (no editable)
   ['TIPO EPISODIO', 'tipoEpisodio', false], // viene del extracto (no editable)
   ['Fecha de ingreso', 'fechaIngreso', false],
   ['Fecha Alta', 'fechaAlta', false],
