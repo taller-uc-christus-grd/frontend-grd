@@ -26,6 +26,7 @@ export default function Episodios() {
   const [searchTerm, setSearchTerm] = useState('');
   const [filterValidated, setFilterValidated] = useState<'all' | 'validated' | 'pending'>('all');
   const [filterOutlier, setFilterOutlier] = useState<'all' | 'inlier' | 'outlier'>('all');
+  const [filterConvenio, setFilterConvenio] = useState<string>(''); // Filtro de convenio (solo para finanzas)
   
   // Estados para edición
   const [editingCell, setEditingCell] = useState<{row: number, field: string} | null>(null);
@@ -69,8 +70,17 @@ export default function Episodios() {
       );
     }
 
+    // Filtro por convenio (solo para finanzas, filtra en tiempo real)
+    if (isFinanzas && filterConvenio.trim() !== '') {
+      const convenioTerm = filterConvenio.trim().toLowerCase();
+      filtered = filtered.filter(ep => {
+        const convenio = ep.convenio?.toLowerCase() || '';
+        return convenio.startsWith(convenioTerm);
+      });
+    }
+
     return filtered;
-  }, [episodios, searchTerm, filterValidated, filterOutlier]);
+  }, [episodios, searchTerm, filterValidated, filterOutlier, filterConvenio, isFinanzas]);
 
   // Campos editables según rol del usuario
   const getEditableFields = () => {
@@ -593,6 +603,7 @@ export default function Episodios() {
   // Cargar episodios automáticamente al montar el componente
   useEffect(() => {
     loadEpisodios();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   // Función para cargar episodios del backend
@@ -986,7 +997,7 @@ export default function Episodios() {
 
       {/* Div 3: Filtros y búsqueda */}
       <div className="mb-6 rounded-2xl border border-slate-200 bg-white shadow-sm p-6">
-        <div className="grid md:grid-cols-4 gap-6">
+        <div className={`grid gap-6 ${isFinanzas ? 'md:grid-cols-5' : 'md:grid-cols-4'}`}>
           {/* Búsqueda */}
           <div>
             <label className="block text-sm font-medium text-slate-700 mb-2">Buscar</label>
@@ -1027,6 +1038,20 @@ export default function Episodios() {
             </select>
           </div>
 
+          {/* Filtro por convenio (solo para finanzas) */}
+          {isFinanzas && (
+            <div>
+              <label className="block text-sm font-medium text-slate-700 mb-2">Convenio</label>
+              <input
+                type="text"
+                className="w-full px-4 py-2.5 border border-slate-300 rounded-xl focus:ring-2 focus:ring-purple-500 focus:border-transparent transition-all"
+                placeholder="Filtrar por convenio..."
+                value={filterConvenio}
+                onChange={(e) => setFilterConvenio(e.target.value)}
+              />
+            </div>
+          )}
+
           {/* Botón de recarga */}
           <div className="flex items-end">
             <button
@@ -1065,6 +1090,28 @@ export default function Episodios() {
             <Link to="/carga" className="px-4 py-2 rounded-lg bg-purple-600 text-white hover:bg-purple-700">
               Cargar Archivo
             </Link>
+          </div>
+        ) : filteredEpisodios.length === 0 ? (
+          <div className="text-center py-12">
+            <div className="text-6xl mb-4">🔍</div>
+            <h3 className="text-lg font-semibold text-slate-900 mb-2">No se encontraron episodios</h3>
+            <p className="text-slate-600 mb-6">
+              {filterConvenio && isFinanzas 
+                ? `No hay episodios con convenio que comience con "${filterConvenio}"`
+                : 'No hay episodios que coincidan con los filtros aplicados'
+              }
+            </p>
+            <button
+              onClick={() => {
+                setSearchTerm('');
+                setFilterValidated('all');
+                setFilterOutlier('all');
+                setFilterConvenio('');
+              }}
+              className="px-4 py-2 rounded-lg bg-purple-600 text-white hover:bg-purple-700"
+            >
+              Limpiar Filtros
+            </button>
           </div>
         ) : (
           <div className="overflow-x-auto">
