@@ -25,6 +25,18 @@ export default function EpisodioDetalle() {
   const location = useLocation();
   const isGestion = hasRole(user, ['gestion']);
   const isFinanzas = hasRole(user, ['finanzas']);
+  const isCodificador = hasRole(user, ['codificador']);
+  
+  // Log para debug
+  useEffect(() => {
+    console.log('🔍 EpisodioDetalle - Información del usuario:', {
+      user: user,
+      userRole: user?.role,
+      isCodificador: isCodificador,
+      isFinanzas: isFinanzas,
+      isGestion: isGestion
+    });
+  }, [user, isCodificador, isFinanzas, isGestion]);
   
   const [episodio, setEpisodio] = useState<Episode | null>(null);
   const [loading, setLoading] = useState(true);
@@ -324,7 +336,16 @@ export default function EpisodioDetalle() {
 
   // Función para iniciar edición de campo financiero
   const startEditField = (field: string, currentValue: any) => {
-    if (!isFinanzas) return;
+    // Campo AT (S/N) solo puede ser editado por codificador
+    if (field === 'at') {
+      if (!isCodificador) return;
+    } else if (field === 'atDetalle' || field === 'montoAT') {
+      // Campos AT Detalle y Monto AT solo pueden ser editados por finanzas
+      if (!isFinanzas) return;
+    } else {
+      // Otros campos pueden ser editados por finanzas
+      if (!isFinanzas) return;
+    }
     
     setEditingField(field);
     if (field === 'at') {
@@ -347,7 +368,16 @@ export default function EpisodioDetalle() {
 
   // Función para guardar campo editado
   const saveField = async (field: string) => {
-    if (!episodio || !isFinanzas || savingField) return;
+    // Campo AT (S/N) solo puede ser editado por codificador
+    if (field === 'at') {
+      if (!episodio || !isCodificador || savingField) return;
+    } else if (field === 'atDetalle' || field === 'montoAT') {
+      // Campos AT Detalle y Monto AT solo pueden ser editados por finanzas
+      if (!episodio || !isFinanzas || savingField) return;
+    } else {
+      // Otros campos pueden ser editados por finanzas
+      if (!episodio || !isFinanzas || savingField) return;
+    }
     
     setSavingField(true);
     setSaveMessage('');
@@ -503,8 +533,38 @@ export default function EpisodioDetalle() {
 
   // Renderizar campo editable
   const renderEditableField = (field: string, label: string, currentValue: any, isCurrency: boolean = false) => {
-    if (!isFinanzas) {
-      // Si no es finanzas, mostrar solo lectura
+    // Determinar si el campo puede ser editado según el rol
+    // Campo AT (S/N) solo puede ser editado por codificador
+    // Campos AT Detalle y Monto AT solo pueden ser editados por finanzas
+    // Otros campos pueden ser editados por finanzas
+    const isCampoAT = field === 'at';
+    const isCampoATFinanzas = field === 'atDetalle' || field === 'montoAT';
+    
+    let canEdit = false;
+    if (isCampoAT) {
+      canEdit = isCodificador;
+    } else if (isCampoATFinanzas) {
+      canEdit = isFinanzas;
+    } else {
+      canEdit = isFinanzas;
+    }
+    
+    // Log para debug cuando se intenta editar campos AT
+    if (isCampoAT || isCampoATFinanzas) {
+      console.log('🔍 renderEditableField - Campo AT:', {
+        field: field,
+        isCampoAT: isCampoAT,
+        isCampoATFinanzas: isCampoATFinanzas,
+        isCodificador: isCodificador,
+        isFinanzas: isFinanzas,
+        userRole: user?.role,
+        canEdit: canEdit
+      });
+    }
+    
+    if (!canEdit) {
+      // Si no tiene permisos para editar, mostrar solo lectura (sin botón de editar)
+      // Para finanzas, los campos AT se muestran como solo lectura
       return (
         <div className="bg-slate-50 p-3 rounded-lg border border-slate-200">
           <div className="text-xs font-medium text-slate-500 mb-1">{label}</div>
@@ -514,7 +574,9 @@ export default function EpisodioDetalle() {
               : 'text-slate-400'
           }`}>
             {currentValue !== null && currentValue !== undefined 
-              ? (isCurrency ? formatCurrency(currentValue) : currentValue.toString())
+              ? (isCurrency ? formatCurrency(currentValue) : 
+                 field === 'atDetalle' ? String(currentValue).trim() : 
+                 currentValue.toString())
               : 'No disponible'}
           </div>
         </div>

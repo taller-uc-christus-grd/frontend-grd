@@ -86,13 +86,25 @@ export default function Episodios() {
   const getEditableFields = () => {
     const editableFields = new Set<string>();
     
+    // Campo AT (S/N) que solo codificador puede editar
+    const campoAT = 'at';
+    // Campos AT Detalle y Monto AT que solo finanzas puede editar
+    const camposATFinanzas = ['atDetalle', 'montoAT'];
+    
     if (isFinanzas) {
-      // Finanzas puede editar campos financieros
+      // Finanzas puede editar campos financieros, EXCEPTO el campo AT (S/N)
       FINAL_COLUMNS.forEach(([header, key, editable]) => {
-        if (editable && key !== 'validado') { // validado es solo para gestión
+        if (editable && key !== 'validado' && key !== campoAT) {
+          // Excluir campo AT (S/N) y validado
           editableFields.add(key);
         }
       });
+    }
+    
+    if (isCodificador) {
+      // Codificador puede editar SOLO el campo AT (S/N)
+      editableFields.add(campoAT);
+      // NO puede editar atDetalle ni montoAT
     }
     
     if (isGestion) {
@@ -107,7 +119,24 @@ export default function Episodios() {
 
   // Función para iniciar edición
   const startEdit = (rowIndex: number, field: string, currentValue: any) => {
-    if ((!isFinanzas && !isGestion) || !editableFields.has(field)) return;
+    // Campo AT (S/N) solo puede ser editado por codificador
+    const campoAT = 'at';
+    // Campos AT Detalle y Monto AT solo pueden ser editados por finanzas
+    const camposATFinanzas = ['atDetalle', 'montoAT'];
+    const isCampoAT = field === campoAT;
+    const isCampoATFinanzas = camposATFinanzas.includes(field);
+    
+    // Verificar permisos según el campo
+    if (isCampoAT) {
+      // Campo AT (S/N) solo para codificador
+      if (!isCodificador || !editableFields.has(field)) return;
+    } else if (isCampoATFinanzas) {
+      // Campos AT Detalle y Monto AT solo para finanzas
+      if (!isFinanzas || !editableFields.has(field)) return;
+    } else {
+      // Otros campos para finanzas o gestión
+      if ((!isFinanzas && !isGestion) || !editableFields.has(field)) return;
+    }
     
     setEditingCell({ row: rowIndex, field });
     
@@ -595,6 +624,16 @@ export default function Episodios() {
           <span className="text-slate-400">-</span>
         );
       
+      case 'atDetalle':
+        // Mostrar atDetalle como texto
+        return value ? (
+          <span className="text-slate-700" title={value}>
+            {String(value).trim()}
+          </span>
+        ) : (
+          <span className="text-slate-400">-</span>
+        );
+      
       default:
         return value || '-';
     }
@@ -902,10 +941,6 @@ export default function Episodios() {
                       <span className="text-purple-500 mt-0.5 font-bold">•</span>
                       <span><strong>Estado RN:</strong> Valores permitidos: "Aprobado", "Pendiente", "Rechazado" (case-sensitive) o vacío (null).</span>
                     </p>
-                    <p className="text-sm text-slate-700 flex items-start gap-2.5">
-                      <span className="text-purple-500 mt-0.5 font-bold">•</span>
-                      <span><strong>AT (S/N):</strong> Valores permitidos: "S", "s", "N", "n" (se normaliza a "S" o "N").</span>
-                    </p>
                   </div>
                 </div>
                 
@@ -915,10 +950,6 @@ export default function Episodios() {
                     <p className="flex items-start gap-2">
                       <span className="text-purple-500 mt-1">•</span>
                       <span><strong className="font-semibold text-slate-900">Estado RN</strong> - Estado del reembolso</span>
-                    </p>
-                    <p className="flex items-start gap-2">
-                      <span className="text-purple-500 mt-1">•</span>
-                      <span><strong className="font-semibold text-slate-900">AT (S/N)</strong> - Ajuste por Tecnología</span>
                     </p>
                     <p className="flex items-start gap-2">
                       <span className="text-purple-500 mt-1">•</span>
