@@ -575,6 +575,16 @@ export default function Episodios() {
           </span>
         ) : '-';
       
+      case 'convenio':
+        // Mostrar convenio si tiene valor, sino mostrar '-'
+        return value ? (
+          <span className="text-slate-700" title={value}>
+            {value}
+          </span>
+        ) : (
+          <span className="text-slate-400">-</span>
+        );
+      
       default:
         return value || '-';
     }
@@ -650,6 +660,7 @@ export default function Episodios() {
           id: (episodiosData[0] as any).id,
           at: episodiosData[0].at,
           estadoRN: episodiosData[0].estadoRN,
+          convenio: episodiosData[0].convenio, // Verificar campo convenio
           keys: Object.keys(episodiosData[0])
         });
       }

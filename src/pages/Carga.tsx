@@ -293,10 +293,11 @@ export default function Carga() {
     
     // Agregar "Convenio" si está presente en el archivo (aunque no sea requerida)
     // Insertarlo después de "Nombre" (orden: RUT, Nombre, Convenio)
-    const convenioHeader = _rawHeaders.find(h => 
-      h.toLowerCase().includes('convenio') || 
-      h.toLowerCase() === 'convenio'
-    );
+    // Buscar variaciones: "Convenios (cod)", "Convenio", "Convenios", etc.
+    const convenioHeader = _rawHeaders.find(h => {
+      const normalized = h.toLowerCase().trim();
+      return normalized.includes('convenio') || normalized.includes('convenios');
+    });
     
     let allHeadersForView = headersForView;
     if (convenioHeader && !headersForView.includes(convenioHeader)) {
@@ -340,11 +341,17 @@ export default function Carga() {
 
   // Convierte filas corregidas (SOLO necesarias) a cambios en el dataset COMPLETO y sube
   async function uploadFixedRows(editedViewRows: any[]) {
-    // Buscar el header de Convenio si existe
-    const convenioHeader = rawHeaders.find(h => 
-      h.toLowerCase().includes('convenio') || 
-      h.toLowerCase() === 'convenio'
-    );
+    // Buscar el header de Convenio si existe (buscar "Convenios (cod)", "Convenio", etc.)
+    const convenioHeader = rawHeaders.find(h => {
+      const normalized = h.toLowerCase().trim();
+      return normalized.includes('convenio') || normalized.includes('convenios');
+    });
+    
+    console.log('📤 Preparando archivo para subir:', {
+      convenioHeader,
+      rawHeaders: rawHeaders.slice(0, 10), // Primeras 10 columnas
+      primeraFila: editedViewRows[0] ? Object.keys(editedViewRows[0]) : []
+    });
     
     // Merge: aplicar cambios de columnas necesarias + Convenio a las filas completas
     const merged = rawRows.map((full, idx) => {
@@ -356,12 +363,41 @@ export default function Carga() {
       // Preservar cambios de Convenio si existe
       if (convenioHeader && convenioHeader in v) {
         copy[convenioHeader] = v[convenioHeader];
+        console.log(`📝 Fila ${idx + 1}: Convenio = "${v[convenioHeader]}"`);
       }
       return copy;
     });
 
+    // Verificar que Convenio esté en los datos antes de serializar
+    if (merged.length > 0 && convenioHeader) {
+      const primeraFila = merged[0];
+      console.log('✅ Verificación antes de serializar:', {
+        tieneConvenio: convenioHeader in primeraFila,
+        valorConvenio: primeraFila[convenioHeader],
+        todasLasColumnas: Object.keys(primeraFila)
+      });
+    }
+
     // Serializar TODO el dataset (completo) y enviar
-    const ws = XLSX.utils.json_to_sheet(merged, { header: rawHeaders.length ? rawHeaders : undefined });
+    // Asegurar que todas las columnas estén presentes, incluyendo convenio
+    const allHeaders = rawHeaders.length > 0 ? [...rawHeaders] : Object.keys(merged[0] || {});
+    
+    // Verificar que convenio esté en los headers antes de serializar
+    if (convenioHeader && !allHeaders.includes(convenioHeader)) {
+      allHeaders.push(convenioHeader);
+      console.log(`⚠️ Convenio header no estaba en rawHeaders, agregado: "${convenioHeader}"`);
+    }
+    
+    // Asegurar que todas las filas tengan todas las columnas
+    const mergedWithAllHeaders = merged.map(row => {
+      const completeRow: any = {};
+      allHeaders.forEach(header => {
+        completeRow[header] = row[header] ?? '';
+      });
+      return completeRow;
+    });
+    
+    const ws = XLSX.utils.json_to_sheet(mergedWithAllHeaders, { header: allHeaders });
     const wb = XLSX.utils.book_new();
     XLSX.utils.book_append_sheet(wb, ws, 'SIGESA_FULL');
     const out = XLSX.write(wb, { type: 'array', bookType: 'xlsx' });
@@ -370,6 +406,15 @@ export default function Carga() {
       file ? `FIXED_${file.name.replace(/\.[^.]+$/, '')}.xlsx` : 'fixed.xlsx',
       { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' }
     );
+    
+    // Log final para verificar
+    if (mergedWithAllHeaders.length > 0 && convenioHeader) {
+      console.log('📤 Archivo serializado - Verificación final:', {
+        convenioHeader,
+        valorEnPrimeraFila: mergedWithAllHeaders[0][convenioHeader],
+        todasLasColumnas: Object.keys(mergedWithAllHeaders[0]).filter(k => k.toLowerCase().includes('convenio'))
+      });
+    }
 
     await uploadToBackend(fixedFile);
     setOpenPrecheck(false);
@@ -433,6 +478,20 @@ export default function Carga() {
   function apply(r: ImportSyncResponse, wasReplace: boolean) {
     setLastImport(r.summary);
     setEpisodios(r.episodes);
+    
+    // Log para debug: verificar que convenio esté en los episodios
+    if (r.episodes.length > 0) {
+      console.log('📥 Episodios recibidos después de importar:', {
+        total: r.episodes.length,
+        primerEpisodio: {
+          episodio: r.episodes[0].episodio,
+          convenio: (r.episodes[0] as any).convenio,
+          tieneConvenio: 'convenio' in (r.episodes[0] as any),
+          todasLasKeys: Object.keys(r.episodes[0])
+        }
+      });
+    }
+    
     const msg =
       `Validado: ${r.summary.valid}/${r.summary.total}` +
       (r.summary.errors ? ` (errores: ${r.summary.errors})` : '');
