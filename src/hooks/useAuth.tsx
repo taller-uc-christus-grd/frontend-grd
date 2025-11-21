@@ -81,6 +81,52 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     }
   }
   
+  /**
+   * Obtiene el usuario actual autenticado desde el backend
+   * Usa el token almacenado para hacer una petición GET /api/auth/me
+   * @returns Usuario actual si está autenticado
+   * @throws Error si no hay token o la autenticación falla
+   */
+  async function getCurrentUser(): Promise<User> {
+    try {
+      const response = await api.get('/api/auth/me');
+      const userData = response.data.user || response.data;
+      const storedUser = getStoredUser();
+      const token = storedUser?.token || userData.token;
+
+      if (!userData || !userData.role) {
+        throw new Error('Respuesta del servidor inválida');
+      }
+
+      const currentUser: User = {
+        id: userData.id || userData._id || '',
+        email: userData.email,
+        role: userData.role as Role,
+        token: token || ''
+      };
+
+      // Actualizar usuario almacenado
+      setUser(currentUser);
+      storeUser(currentUser);
+
+      // Actualizar token en el header
+      if (token) {
+        api.defaults.headers.common['Authorization'] = `Bearer ${token}`;
+      }
+
+      return currentUser;
+    } catch (error: any) {
+      // Si falla la autenticación, limpiar sesión
+      if (error.response?.status === 401) {
+        setUser(null);
+        storeUser(null);
+        delete api.defaults.headers.common['Authorization'];
+        throw new Error('Sesión expirada. Por favor, inicia sesión nuevamente.');
+      }
+      throw error;
+    }
+  }
+  
   async function logout() {
     try {
       // Opcional: llamar al endpoint de logout del backend
@@ -101,7 +147,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     window.location.href = '/login';
   }
   
-  const value = useMemo(() => ({ user, login, logout }), [user]);
+  const value = useMemo(() => ({ user, login, logout, getCurrentUser }), [user]);
   return <Ctx.Provider value={value}>{children}</Ctx.Provider>;
 }
 
