@@ -1080,9 +1080,81 @@ export default function Episodios() {
       // El backend debería devolver { items: Episode[], total: number }
       let episodiosData = response.data?.items || response.data || [];
       
+      // CRÍTICO: Log de la respuesta completa del backend ANTES de procesar
+      console.log('📥 RESPUESTA COMPLETA DEL BACKEND (response.data):', response.data);
+      
+      if (episodiosData.length > 0) {
+        const primerEpisodio = episodiosData[0];
+        
+        // IMPORTANTE: Log completo del primer episodio SIN modificar
+        console.log('🔍 PRIMER EPISODIO COMPLETO (SIN PROCESAR):', JSON.stringify(primerEpisodio, null, 2));
+        
+        // Buscar campos relacionados con AT
+        const todasLasKeys = Object.keys(primerEpisodio);
+        const keysConAt = todasLasKeys.filter(k => 
+          k.toLowerCase().includes('at') || 
+          k.toLowerCase().includes('detalle') ||
+          k.toLowerCase().includes('ajuste') ||
+          k.toLowerCase().includes('tecnologia')
+        );
+        
+        console.log('🔍 TODAS LAS KEYS DEL EPISODIO:', todasLasKeys);
+        console.log('🔍 KEYS QUE CONTIENEN "at", "detalle", "ajuste" o "tecnologia":', keysConAt);
+        console.log('🔍 VALORES DE ESAS KEYS:', keysConAt.map(k => ({ 
+          key: k, 
+          value: primerEpisodio[k], 
+          tipo: typeof primerEpisodio[k] 
+        })));
+        
+        // VERIFICACIÓN ESPECÍFICA PARA precioBaseTramo
+        const keysConPrecio = todasLasKeys.filter(k => 
+          k.toLowerCase().includes('precio') || 
+          k.toLowerCase().includes('base') || 
+          k.toLowerCase().includes('tramo')
+        );
+        console.log('💰 KEYS QUE CONTIENEN "precio", "base" o "tramo":', keysConPrecio);
+        console.log('💰 VALORES DE PRECIO BASE:', keysConPrecio.map(k => ({ 
+          key: k, 
+          value: primerEpisodio[k], 
+          tipo: typeof primerEpisodio[k] 
+        })));
+        console.log('💰 VERIFICACIÓN precioBaseTramo:', {
+          tienePrecioBaseTramo: 'precioBaseTramo' in primerEpisodio,
+          precioBaseTramoValue: primerEpisodio.precioBaseTramo,
+          precioBaseTramoTipo: typeof primerEpisodio.precioBaseTramo,
+          precioBaseTramoEsNull: primerEpisodio.precioBaseTramo === null,
+          precioBaseTramoEsUndefined: primerEpisodio.precioBaseTramo === undefined,
+          convenio: (primerEpisodio as any).convenio,
+          peso: primerEpisodio.peso,
+          pesoTipo: typeof primerEpisodio.peso
+        });
+        
+        const verificacionEspecifica: any = {
+          tieneAtDetalle: 'atDetalle' in primerEpisodio,
+          tieneAt_detalle: 'at_detalle' in primerEpisodio,
+          atDetalleValue: primerEpisodio.atDetalle,
+          at_detalleValue: (primerEpisodio as any).at_detalle,
+          atValue: primerEpisodio.at,
+          montoATValue: primerEpisodio.montoAT
+        };
+        console.log('🔍 VERIFICACIÓN ESPECÍFICA:', verificacionEspecifica);
+      }
+      
       // Normalizar TODOS los valores de campos editables al cargar
       // IMPORTANTE: Usar ajustesParaNormalizar (variable local) en lugar del estado para evitar problemas de timing
       episodiosData = episodiosData.map((ep: any) => {
+        // CRÍTICO: Log del episodio ANTES de cualquier normalización
+        const atDetalleOriginal = ep.atDetalle;
+        console.log('📥 Episodio ANTES de normalización:', {
+          episodio: ep.episodio,
+          at: ep.at,
+          atDetalle: atDetalleOriginal,
+          atDetalleTipo: typeof atDetalleOriginal,
+          atDetalleEsNull: atDetalleOriginal === null,
+          atDetalleEsUndefined: atDetalleOriginal === undefined,
+          montoAT: ep.montoAT
+        });
+        
         // Normalizar AT: convertir boolean a "S"/"N"
         if (ep.at === true || ep.at === 'S' || ep.at === 's') {
           ep.at = 'S';
@@ -1099,75 +1171,34 @@ export default function Episodios() {
           ep.estadoRN = String(ep.estadoRN);
         }
         
-        // Normalizar atDetalle: asegurar que coincida exactamente con uno de los ajustes disponibles
-        // IMPORTANTE: Solo normalizar si AT = 'S' (si AT = 'N', se limpia más abajo)
-        if (ep.at === 'S') {
-          // CRÍTICO: Si atDetalle viene del backend, SIEMPRE mantenerlo (aunque sea null)
-          // Solo normalizar si hay un valor y si hay ajustes disponibles para comparar
-          if (ep.atDetalle === null || ep.atDetalle === undefined || ep.atDetalle === '') {
-            ep.atDetalle = null;
-            console.log('📋 atDetalle es null/vacío para episodio:', ep.episodio);
-          } else {
-            // Preservar el valor original del backend ANTES de intentar normalizar
-            const atDetalleOriginal = String(ep.atDetalle);
-            const atDetalleTrimmed = atDetalleOriginal.trim();
-            
-            // CRÍTICO: Usar ajustesParaNormalizar (variable local)
-            const ajustesParaUsar = ajustesParaNormalizar || [];
-            
-            console.log('🔍 Normalizando atDetalle para episodio:', {
-              episodio: ep.episodio,
-              at: ep.at,
-              atDetalleOriginal: atDetalleOriginal,
-              atDetalleTrimmed: atDetalleTrimmed,
-              ajustesParaNormalizarLength: ajustesParaNormalizar?.length || 0,
-              ajustesParaUsarLength: ajustesParaUsar.length
-            });
-            
-            // Si hay ajustes disponibles, intentar encontrar coincidencia
-            if (ajustesParaUsar.length > 0) {
-              // Buscar el ajuste que coincide exactamente (con trim)
-              const ajusteCoincidente = ajustesParaUsar.find(a => {
-                const ajusteAt = (a.at || '').trim();
-                return ajusteAt === atDetalleTrimmed;
-              });
-              
-              if (ajusteCoincidente) {
-                // Si se encuentra, usar el valor exacto del catálogo (pero manteniendo el valor si es igual)
-                ep.atDetalle = (ajusteCoincidente.at || '').trim();
-                console.log('✅ atDetalle encontrado en catálogo:', {
-                  episodio: ep.episodio,
-                  original: atDetalleTrimmed,
-                  final: ep.atDetalle
-                });
-              } else {
-                // Si NO se encuentra, mantener el valor del backend (NO se pierde)
-                ep.atDetalle = atDetalleTrimmed;
-                console.log('⚠️ atDetalle NO encontrado en catálogo, manteniendo valor del backend:', {
-                  episodio: ep.episodio,
-                  atDetalle: ep.atDetalle,
-                  ajustesDisponibles: ajustesParaUsar.map(a => (a.at || '').trim()).filter(Boolean)
-                });
-              }
-            } else {
-              // Si NO hay ajustes cargados, mantener el valor del backend tal cual
-              ep.atDetalle = atDetalleTrimmed;
-              console.log('⚠️ No hay ajustes cargados, manteniendo valor del backend:', {
-                episodio: ep.episodio,
-                atDetalle: ep.atDetalle
-              });
-            }
-          }
-        } else if (ep.at === 'N') {
+        // Normalizar atDetalle: SIMPLIFICADO - mantener siempre el valor del backend
+        // Solo limpiar si AT = 'N', de lo contrario mantener exactamente como viene
+        if (ep.at === 'N') {
           // Si AT = "N", limpiar atDetalle y montoAT automáticamente
           ep.at = 'N';
           ep.atDetalle = null;
           ep.montoAT = 0;
           console.log('🧹 Limpiando atDetalle y montoAT porque AT = N para episodio:', ep.episodio);
+        } else if (ep.at === 'S') {
+          // Si AT = 'S', mantener atDetalle tal como viene del backend
+          // Solo hacer trim si tiene valor (no cambiar si es null)
+          if (ep.atDetalle !== null && ep.atDetalle !== undefined && ep.atDetalle !== '') {
+            // Hacer trim pero mantener el valor (no buscar en catálogo para no perderlo)
+            ep.atDetalle = String(ep.atDetalle).trim();
+            console.log('✅ Manteniendo atDetalle del backend para episodio:', {
+              episodio: ep.episodio,
+              at: ep.at,
+              atDetalle: ep.atDetalle
+            });
+          } else {
+            // Si viene null/vacío y AT = 'S', mantener null
+            ep.atDetalle = null;
+            console.log('📋 atDetalle es null/vacío para episodio:', ep.episodio);
+          }
         } else {
-          // Si AT no es 'S' ni 'N', mantener atDetalle tal como viene (no limpiar)
-          // Puede ser que el backend devuelva un valor aunque AT no esté normalizado aún
-          if (ep.atDetalle && ep.atDetalle !== null && ep.atDetalle !== '') {
+          // Si AT no es 'S' ni 'N' (caso raro), mantener atDetalle como viene
+          if (ep.atDetalle !== null && ep.atDetalle !== undefined && ep.atDetalle !== '') {
+            ep.atDetalle = String(ep.atDetalle).trim();
             console.log('⚠️ AT no normalizado pero atDetalle tiene valor, manteniendo:', {
               episodio: ep.episodio,
               at: ep.at,
@@ -1181,7 +1212,14 @@ export default function Episodios() {
           episodio: ep.episodio,
           at: ep.at,
           atDetalle: ep.atDetalle,
-          montoAT: ep.montoAT
+          atDetalleTipo: typeof ep.atDetalle,
+          atDetalleOriginal: atDetalleOriginal,
+          cambio: atDetalleOriginal !== ep.atDetalle ? '⚠️ CAMBIÓ' : '✅ MANTUVO',
+          montoAT: ep.montoAT,
+          precioBaseTramo: ep.precioBaseTramo,
+          precioBaseTramoTipo: typeof ep.precioBaseTramo,
+          peso: ep.peso,
+          convenio: (ep as any).convenio
         });
         
         // Normalizar campos numéricos: asegurar que sean números
@@ -1205,12 +1243,21 @@ export default function Episodios() {
       
       // Log para debug: verificar estructura de los episodios
       if (episodiosData.length > 0) {
+        const primerEp = episodiosData[0];
         console.log('📋 Estructura del primer episodio:', {
-          episodio: episodiosData[0].episodio,
-          id: (episodiosData[0] as any).id,
-          at: episodiosData[0].at,
-          estadoRN: episodiosData[0].estadoRN,
-          keys: Object.keys(episodiosData[0])
+          episodio: primerEp.episodio,
+          id: (primerEp as any).id,
+          at: primerEp.at,
+          atDetalle: primerEp.atDetalle, // ⚠️ VERIFICAR SI ESTÁ
+          montoAT: primerEp.montoAT,
+          estadoRN: primerEp.estadoRN,
+          precioBaseTramo: primerEp.precioBaseTramo, // 💰 VERIFICAR PRECIO BASE
+          precioBaseTramoTipo: typeof primerEp.precioBaseTramo,
+          peso: primerEp.peso,
+          convenio: (primerEp as any).convenio,
+          todasLasKeys: Object.keys(primerEp),
+          keysConAt: Object.keys(primerEp).filter(k => k.toLowerCase().includes('at') || k.toLowerCase().includes('detalle')),
+          keysConPrecio: Object.keys(primerEp).filter(k => k.toLowerCase().includes('precio') || k.toLowerCase().includes('base') || k.toLowerCase().includes('tramo'))
         });
       }
     } catch (error) {
