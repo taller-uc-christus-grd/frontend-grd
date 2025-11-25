@@ -103,6 +103,30 @@ export default function Dashboard() {
             </Link>
           )}
 
+          {/* Precios Convenios (finanzas + gestión) */}
+          {hasRole(user, ['finanzas', 'gestion']) && (
+            <Link to="/precios-convenios" className="rounded-2xl border border-slate-200 bg-white/90 shadow-sm p-6 transition-all hover:shadow-md hover:-translate-y-0.5 hover:ring-1 hover:ring-green-200 group">
+              <div className="flex items-center mb-3">
+                <img src={documentImg} alt="Precios Convenios" className="w-8 h-8 mr-3 select-none object-contain" style={{ filter: 'invert(48%) sepia(79%) saturate(2476%) hue-rotate(86deg) brightness(118%) contrast(119%)' }} />
+                <div className="text-green-600 text-lg font-medium">Precios Convenios</div>
+              </div>
+              <p className="text-sm text-slate-600 mb-4">Gestiona los precios de convenios por aseguradora, tipo y tramo.</p>
+              <button className="text-xs px-3 py-1 rounded-full bg-gray-100 text-gray-600 hover:bg-gray-200 transition-colors duration-300">Haz click para entrar</button>
+            </Link>
+          )}
+
+          {/* Ajustes Por Tecnología (finanzas + gestión) */}
+          {hasRole(user, ['finanzas', 'gestion']) && (
+            <Link to="/ajustes-tecnologia" className="rounded-2xl border border-slate-200 bg-white/90 shadow-sm p-6 transition-all hover:shadow-md hover:-translate-y-0.5 hover:ring-1 hover:ring-blue-200 group">
+              <div className="flex items-center mb-3">
+                <img src={documentImg} alt="Ajustes Por Tecnología" className="w-8 h-8 mr-3 select-none object-contain" style={{ filter: 'invert(27%) sepia(51%) saturate(2878%) hue-rotate(346deg) brightness(104%) contrast(97%)' }} />
+                <div className="text-blue-600 text-lg font-medium">Ajustes Por Tecnología</div>
+              </div>
+              <p className="text-sm text-slate-600 mb-4">Gestiona los ajustes por tecnología (AT) y sus montos asociados.</p>
+              <button className="text-xs px-3 py-1 rounded-full bg-gray-100 text-gray-600 hover:bg-gray-200 transition-colors duration-300">Haz click para entrar</button>
+            </Link>
+          )}
+
           {/* Catálogos: solo codificador */}
           {hasRole(user, ['codificador']) && (
             <Link to="/catalogos" className="rounded-2xl border border-slate-200 bg-white/90 shadow-sm p-6 transition-all hover:shadow-md hover:-translate-y-0.5 hover:ring-1 hover:ring-purple-200 group">

@@ -26,6 +26,7 @@ export interface Episode {
   motivoEgreso?: string;         // "Motivo Egreso (Descripción)"
   grdCodigo?: string;            // "IR GRD (Código)"
   peso?: number;                 // "Peso Medio [Norma IR]"
+  pesoGrd?: number;              // "Peso GRD Medio (Todos)"
   inlierOutlier?: InlierFlag;    // "IR Alta Inlier / Outlier"
   estanciaReal?: number;         // "Estancia real del episodio"
 
@@ -96,6 +97,7 @@ export interface FinalRow {
   motivoEgreso: string;          // Motivo Egreso (Descripción)
   grdCodigo: string;             // IR GRD (Código)
   peso: number;                  // Peso Medio [Norma IR]
+  pesoGrd: number | null;        // Peso GRD Medio (Todos)
   montoRN: number | null;        // Facturación Total del episodio
   inlierOutlier: InlierFlag;     // IR Alta Inlier / Outlier
   grupoDentroNorma: boolean;     // calculado (S/N)
