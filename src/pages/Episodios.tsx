@@ -77,32 +77,41 @@ export default function Episodios() {
   }, [episodios, searchTerm, filterValidated, filterOutlier]);
 
   // Campos editables según rol del usuario
-  const getEditableFields = () => {
-    const editableFields = new Set<string>();
-    
-    if (isFinanzas) {
-      // Finanzas puede editar campos financieros, EXCEPTO at, atDetalle, montoAT (solo codificador)
-      FINAL_COLUMNS.forEach(([header, key, editable]) => {
-        if (editable && key !== 'validado' && key !== 'at' && key !== 'atDetalle' && key !== 'montoAT') {
-          editableFields.add(key);
-        }
-      });
-    }
-    
-    if (isCodificador) {
-      // Codificador puede editar AT(S/N) y AT Detalle (montoAT es solo lectura, se autocompleta)
-      editableFields.add('at');
-      editableFields.add('atDetalle');
-      // montoAT NO es editable, solo se autocompleta
-    }
-    
-    if (isGestion) {
-      // Gestión puede editar el campo validado
-      editableFields.add('validado');
-    }
-    
-    return editableFields;
-  };
+const getEditableFields = () => {
+  const editableFields = new Set<string>();
+  
+  if (isFinanzas) {
+    // Finanzas puede editar campos financieros + VALIDADO,
+    // EXCEPTO at, atDetalle, montoAT (AT es de codificador/gestión)
+    FINAL_COLUMNS.forEach(([header, key, editable]) => {
+      if (
+        editable &&
+        key !== 'at' &&
+        key !== 'atDetalle' &&
+        key !== 'montoAT'
+      ) {
+        editableFields.add(key);
+      }
+    });
+
+    // Nos aseguramos explícitamente que VALIDADO sí está
+    editableFields.add('validado');
+  }
+  
+  if (isCodificador) {
+    // Codificador puede editar AT(S/N) y AT Detalle (montoAT es solo lectura)
+    editableFields.add('at');
+    editableFields.add('atDetalle');
+  }
+
+  if (isGestion) {
+    // Gestión NO valida, pero SÍ puede editar ajustes por tecnología
+    editableFields.add('at');
+    editableFields.add('atDetalle');
+  }
+  
+  return editableFields;
+};
 
   const editableFields = getEditableFields();
 
@@ -119,11 +128,24 @@ export default function Episodios() {
   const startEdit = (rowIndex: number, field: string, currentValue: any) => {
     // Verificar permisos según rol
     if (!editableFields.has(field)) return;
+
+    // AT y AT Detalle: Codificador o Gestión
     if (field === 'at' || field === 'atDetalle') {
-      if (!isCodificador) return;
+      if (!isCodificador && !isGestion) return;
     }
-    if (field === 'validado' && !isGestion) return;
-    if (field !== 'validado' && field !== 'at' && field !== 'atDetalle' && !isFinanzas && !isCodificador) return;
+
+    // VALIDADO: solo Finanzas
+    if (field === 'validado' && !isFinanzas) return;
+
+    // Otros campos: solo Finanzas (campos financieros)
+    if (
+      field !== 'validado' &&
+      field !== 'at' &&
+      field !== 'atDetalle' &&
+      !isFinanzas
+    ) {
+      return;
+    }
     
     setEditingCell({ row: rowIndex, field });
     
@@ -831,17 +853,19 @@ export default function Episodios() {
     
     switch (key) {
       case 'validado':
-        // Para gestión, mostrar dropdown directamente
-        if (isGestion) {
+        // Para Finanzas, mostrar dropdown directamente
+        if (isFinanzas) {
           // Manejar null/undefined como 'pendiente' (default)
-          const currentValueStr = value === true ? 'aprobado' : value === false ? 'rechazado' : 'pendiente';
+          const currentValueStr =
+            value === true ? 'aprobado' : value === false ? 'rechazado' : 'pendiente';
+
           return (
             <select
               value={currentValueStr}
               onChange={async (e) => {
                 const newValue = e.target.value;
-                // Convertir string a boolean/null
                 let validatedValue: any = null;
+
                 if (newValue === 'aprobado') {
                   validatedValue = true;
                 } else if (newValue === 'rechazado') {
@@ -849,17 +873,15 @@ export default function Episodios() {
                 } else {
                   validatedValue = null; // pendiente
                 }
-                
-                // Guardar automáticamente
+
                 setSaving(true);
                 try {
                   const episodeId = (episodio as any).id || episodio.episodio;
                   const url = `/api/episodios/${episodeId}`;
                   const payload = { validado: validatedValue };
-                  
+
                   const response = await api.patch(url, payload);
-                  
-                  // Actualizar el episodio en la lista
+
                   setEpisodios(prevEpisodios => {
                     const index = prevEpisodios.findIndex(ep => {
                       const epId = (ep as any).id || ep.episodio;
@@ -876,11 +898,11 @@ export default function Episodios() {
                     ];
                   });
                   
-                  setSaveMessage(`✅ Estado actualizado exitosamente`);
+                  setSaveMessage(` Estado actualizado exitosamente`);
                   setTimeout(() => setSaveMessage(''), 3000);
                 } catch (error: any) {
                   console.error('Error al actualizar estado:', error);
-                  setSaveMessage(`❌ Error: ${error.response?.data?.message || error.message}`);
+                  setSaveMessage(` Error: ${error.response?.data?.message || error.message}`);
                   setTimeout(() => setSaveMessage(''), 5000);
                 } finally {
                   setSaving(false);
@@ -901,7 +923,8 @@ export default function Episodios() {
             </select>
           );
         }
-        // Para otros roles, mostrar el badge simple original
+
+        // Para otros roles, mostrar badge simple
         return (
           <span className={`badge-${value ? 'success' : 'warning'}`}>
             {value ? '✓' : '○'}
@@ -913,7 +936,7 @@ export default function Episodios() {
         const atValue = value === true || value === 'S' || String(value || '').toUpperCase() === 'S';
         const atDisplay = atValue ? 'Sí' : 'No';
         const atValueNormalized = atValue ? 'S' : 'N';
-        console.log('📊 AT renderizado en tabla:', { 
+        console.log(' AT renderizado en tabla:', { 
           original: value, 
           tipo: typeof value,
           display: atDisplay,
@@ -1557,13 +1580,18 @@ export default function Episodios() {
         {isGestion && (
           <div className="bg-gradient-to-br from-fuchsia-50 to-pink-50 border-t border-fuchsia-200 px-6 py-6">
             <div className="flex items-center gap-3 mb-3">
-              <img src={icon4} alt="Gestión" className="w-7 h-7 object-contain" style={{ filter: 'invert(17%) sepia(96%) saturate(5067%) hue-rotate(300deg) brightness(95%) contrast(96%)' }} />
-              <h3 className="text-base font-open-sauce font-medium text-fuchsia-900">Campos editables para Gestión</h3>
+              <img src={icon4} ... />
+              <h3 className="text-base font-open-sauce font-medium text-fuchsia-900">
+                Campos editables para Gestión
+              </h3>
             </div>
             <div className="text-sm text-slate-700 mb-4">
               <p className="flex items-start gap-2">
                 <span className="text-fuchsia-500 mt-1">•</span>
-                <span><strong className="font-semibold text-slate-900">VALIDADO</strong> - Aprobar o rechazar episodios</span>
+                <span>
+                  <strong className="font-semibold text-slate-900">AT (S/N)</strong> y <strong>AT Detalle</strong> - Ajustes por tecnología.
+                  El <strong>Monto AT</strong> se autocompleta automáticamente y es de solo lectura.
+                </span>
               </p>
             </div>
             {/* Instrucciones primero */}
@@ -1693,24 +1721,20 @@ export default function Episodios() {
                       const isEditable = editableFields.has(key);
                       
                       // Determinar si el campo debe ser clickeable
-                      // montoAT nunca es editable (solo se autocompleta)
-                      // Para gestión, el campo validado muestra dropdown directamente, no necesita click para editar
-                      // Para codificador, at y atDetalle son editables y deben ser clickeables
                       let shouldBeClickable = false;
-                      
+
                       if (key === 'montoAT') {
                         // montoAT nunca es editable
                         shouldBeClickable = false;
-                      } else if (isGestion && key === 'validado') {
-                        // Para gestión, validado muestra dropdown directamente, no necesita click
+                      } else if (isFinanzas && key === 'validado') {
+                        // Para Finanzas, VALIDADO ya tiene dropdown directo, no usamos startEdit
                         shouldBeClickable = false;
                       } else if (isEditable) {
-                        // Si el campo es editable según el rol, debe ser clickeable
                         shouldBeClickable = true;
                       }
-                      
-                      // Verificar permisos específicos para at y atDetalle (solo codificador)
-                      if ((key === 'at' || key === 'atDetalle') && !isCodificador) {
+
+                      // AT y AT Detalle: clickeables solo si Codificador o Gestión
+                      if ((key === 'at' || key === 'atDetalle') && !isCodificador && !isGestion) {
                         shouldBeClickable = false;
                       }
                       
