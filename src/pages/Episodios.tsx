@@ -1580,7 +1580,7 @@ const getEditableFields = () => {
         {isGestion && (
           <div className="bg-gradient-to-br from-fuchsia-50 to-pink-50 border-t border-fuchsia-200 px-6 py-6">
             <div className="flex items-center gap-3 mb-3">
-              <img src={icon4} ... />
+              <img src={icon4} alt="Gestión" className="w-6 h-6 object-contain" style={{ filter: 'invert(17%) sepia(96%) saturate(5067%) hue-rotate(300deg) brightness(95%) contrast(96%)' }} />
               <h3 className="text-base font-open-sauce font-medium text-fuchsia-900">
                 Campos editables para Gestión
               </h3>
