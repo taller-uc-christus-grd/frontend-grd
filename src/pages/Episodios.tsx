@@ -96,18 +96,28 @@ const getEditableFields = () => {
 
     // Nos aseguramos explícitamente que VALIDADO sí está
     editableFields.add('validado');
+    
+    // Para casos fuera de norma, Finanzas puede hacer override manual de valorGRD y montoFinal
+    // Estos campos se agregan dinámicamente cuando el episodio está fuera de norma
+    editableFields.add('valorGRD');
+    editableFields.add('montoFinal');
   }
   
   if (isCodificador) {
     // Codificador puede editar AT(S/N) y AT Detalle (montoAT es solo lectura)
     editableFields.add('at');
     editableFields.add('atDetalle');
+    
+    // Para casos fuera de norma, Codificador puede hacer override manual de valorGRD y montoFinal
+    editableFields.add('valorGRD');
+    editableFields.add('montoFinal');
   }
 
   if (isGestion) {
-    // Gestión NO valida, pero SÍ puede editar ajustes por tecnología
+    // Gestión NO valida, pero SÍ puede editar ajustes por tecnología y precioBaseTramo
     editableFields.add('at');
     editableFields.add('atDetalle');
+    editableFields.add('precioBaseTramo');
   }
   
   return editableFields;
@@ -134,6 +144,21 @@ const getEditableFields = () => {
       if (!isCodificador && !isGestion) return;
     }
 
+    // precioBaseTramo: Gestión o Finanzas
+    if (field === 'precioBaseTramo') {
+      if (!isGestion && !isFinanzas) return;
+    }
+
+    // valorGRD y montoFinal: solo editables para Finanzas o Codificador cuando el episodio está fuera de norma
+    if (field === 'valorGRD' || field === 'montoFinal') {
+      const episodio = filteredEpisodios[rowIndex];
+      const esFueraDeNorma = episodio.grupoDentroNorma === false;
+      const tienePermiso = (isFinanzas || isCodificador);
+      if (!esFueraDeNorma || !tienePermiso) {
+        return;
+      }
+    }
+
     // VALIDADO: solo Finanzas
     if (field === 'validado' && !isFinanzas) return;
 
@@ -142,6 +167,9 @@ const getEditableFields = () => {
       field !== 'validado' &&
       field !== 'at' &&
       field !== 'atDetalle' &&
+      field !== 'precioBaseTramo' &&
+      field !== 'valorGRD' &&
+      field !== 'montoFinal' &&
       !isFinanzas
     ) {
       return;
@@ -192,8 +220,12 @@ const getEditableFields = () => {
         valorEncontradoEnAjustes: ajustesTecnologia.some(a => (a.at || '').trim() === atDetalleVal)
       });
     } else if (field === 'estadoRN') {
-      // Manejar null, undefined y strings vacíos
-      setEditValue(currentValue || '');
+      // Manejar null, undefined y strings vacíos - convertir a 'Pendiente' si es null
+      if (currentValue === null || currentValue === undefined || currentValue === '') {
+        setEditValue('Pendiente');
+      } else {
+        setEditValue(String(currentValue));
+      }
     } else {
       setEditValue(currentValue?.toString() || '');
     }
@@ -261,10 +293,11 @@ const getEditableFields = () => {
       if (field === 'estadoRN') {
         // Normalizar: aceptar valores válidos o convertir a null
         const estadoVal = String(editValue).trim();
-        if (estadoVal === '' || !['Aprobado', 'Pendiente', 'Rechazado'].includes(estadoVal)) {
+        if (estadoVal === '' || estadoVal === 'Pendiente' || !['Aprobado', 'Pendiente', 'Rechazado'].includes(estadoVal)) {
+          // Pendiente se envía como null al backend
           validatedValue = null;
         } else {
-          validatedValue = estadoVal; // Case-sensitive exacto
+          validatedValue = estadoVal; // Case-sensitive exacto: 'Aprobado' o 'Rechazado'
         }
         payload = { [field]: validatedValue };
         console.log('📤 estadoRN validado para enviar:', validatedValue, 'desde editValue:', editValue);
@@ -497,6 +530,21 @@ const getEditableFields = () => {
           // Asegurar que AT esté normalizado
           episodioActualizado.at = updatedEpisodioFromBackend.at;
           
+          // Asegurar que estadoRN esté normalizado (usar el valor que enviamos si estamos actualizando estadoRN)
+          if (field === 'estadoRN') {
+            // Si estamos actualizando estadoRN, usar el valor validado que enviamos
+            episodioActualizado.estadoRN = validatedValue as any;
+            console.log('✅ estadoRN forzado al valor enviado:', validatedValue);
+          } else {
+            // Si no estamos actualizando estadoRN, normalizar el valor que viene del backend
+            const estadoRNValue = updatedEpisodioFromBackend.estadoRN as any;
+            if (estadoRNValue === null || estadoRNValue === undefined || estadoRNValue === '') {
+              episodioActualizado.estadoRN = null as any;
+            } else {
+              episodioActualizado.estadoRN = String(estadoRNValue) as any;
+            }
+          }
+          
           console.log('🔄 ACTUALIZANDO episodio:', {
             index,
             episodio: episodioNumber,
@@ -659,18 +707,27 @@ const getEditableFields = () => {
       return (
         <div className="flex items-center gap-1">
           {key === 'estadoRN' ? (
-            <input
-              type="text"
+            <select
               value={editValue || ''}
               onChange={(e) => {
-                console.log('🔄 estadoRN ingresado:', e.target.value);
-                setEditValue(e.target.value);
+                const newValue = e.target.value;
+                console.log('🔄 estadoRN onChange:', { newValue, editValueActual: editValue });
+                setEditValue(newValue);
+              }}
+              onClick={(e) => {
+                e.stopPropagation();
+              }}
+              onMouseDown={(e) => {
+                e.stopPropagation();
               }}
               className="px-2 py-1 text-xs border rounded w-32"
               autoFocus
-              placeholder="Aprobado, Pendiente, Rechazado"
-              title="Valores permitidos: Aprobado, Pendiente, Rechazado (case-sensitive) o vacío"
-            />
+            >
+              <option value="">-- Seleccionar --</option>
+              <option value="Aprobado">Aprobado</option>
+              <option value="Pendiente">Pendiente</option>
+              <option value="Rechazado">Rechazado</option>
+            </select>
           ) : key === 'at' ? (
             <select
               value={editValue || ''}
@@ -965,6 +1022,89 @@ const getEditableFields = () => {
         );
       
       case 'estadoRN':
+        // Para Finanzas, mostrar dropdown directamente (similar a validado)
+        if (isFinanzas) {
+          // Manejar null/undefined como 'Pendiente' (default)
+          const currentValueStr = value === 'Aprobado' ? 'Aprobado' : 
+                                  value === 'Rechazado' ? 'Rechazado' : 
+                                  'Pendiente';
+
+          return (
+            <select
+              value={currentValueStr}
+              onChange={async (e) => {
+                const newValue = e.target.value;
+                let validatedValue: any = null;
+
+                if (newValue === 'Aprobado') {
+                  validatedValue = 'Aprobado';
+                } else if (newValue === 'Rechazado') {
+                  validatedValue = 'Rechazado';
+                } else {
+                  validatedValue = null; // pendiente
+                }
+
+                setSaving(true);
+                try {
+                  const episodeId = (episodio as any).id || episodio.episodio;
+                  const url = `/api/episodios/${episodeId}`;
+                  const payload = { estadoRN: validatedValue };
+
+                  console.log('🔄 Actualizando estadoRN:', { url, payload, validatedValue });
+
+                  const response = await api.patch(url, payload);
+
+                  setEpisodios(prevEpisodios => {
+                    const index = prevEpisodios.findIndex(ep => {
+                      const epId = (ep as any).id || ep.episodio;
+                      const searchId = (episodio as any).id || episodio.episodio;
+                      return epId === searchId || ep.episodio === episodio.episodio;
+                    });
+                    
+                    if (index === -1) return prevEpisodios;
+                    
+                    // Actualizar con la respuesta del backend
+                    const updatedEpisodio = response.data?.data || response.data;
+                    const episodioActualizado = { 
+                      ...prevEpisodios[index],
+                      ...updatedEpisodio,
+                      estadoRN: validatedValue // Asegurar que estadoRN esté actualizado
+                    };
+                    
+                    return [
+                      ...prevEpisodios.slice(0, index),
+                      episodioActualizado,
+                      ...prevEpisodios.slice(index + 1)
+                    ];
+                  });
+                  
+                  setSaveMessage(`✅ Estado RN actualizado exitosamente`);
+                  setTimeout(() => setSaveMessage(''), 3000);
+                } catch (error: any) {
+                  console.error('Error al actualizar estadoRN:', error);
+                  setSaveMessage(`❌ Error: ${error.response?.data?.message || error.message}`);
+                  setTimeout(() => setSaveMessage(''), 5000);
+                } finally {
+                  setSaving(false);
+                }
+              }}
+              disabled={saving}
+              className={`px-2 py-1 text-xs border rounded font-medium ${
+                currentValueStr === 'Aprobado'
+                  ? 'bg-green-100 text-green-800 border-green-300'
+                  : currentValueStr === 'Rechazado'
+                  ? 'bg-red-100 text-red-800 border-red-300'
+                  : 'bg-yellow-100 text-yellow-800 border-yellow-300'
+              } ${saving ? 'opacity-50 cursor-not-allowed' : 'cursor-pointer'}`}
+            >
+              <option value="Pendiente">Pendiente</option>
+              <option value="Aprobado">Aprobado</option>
+              <option value="Rechazado">Rechazado</option>
+            </select>
+          );
+        }
+
+        // Para otros roles, mostrar badge simple
         const estadoDisplay = value ? String(value) : '-';
         console.log('📊 estadoRN renderizado en tabla:', { original: value, display: estadoDisplay });
         return value ? (
@@ -1528,6 +1668,10 @@ const getEditableFields = () => {
                       <span className="text-purple-500 mt-0.5 font-bold">•</span>
                       <span><strong>Estado RN:</strong> Valores permitidos: "Aprobado", "Pendiente", "Rechazado" (case-sensitive) o vacío (null).</span>
                     </p>
+                    <p className="text-sm text-slate-700 flex items-start gap-2.5">
+                      <span className="text-purple-500 mt-0.5 font-bold">•</span>
+                      <span><strong>Casos fuera de norma:</strong> Para episodios marcados como "Fuera de norma", puedes ingresar manualmente <strong>Valor GRD</strong> y <strong>Monto Final</strong> para hacer override de los cálculos automáticos.</span>
+                    </p>
                     {/* AT(S/N) ahora es solo para Codificador */}
                   </div>
                 </div>
@@ -1564,7 +1708,11 @@ const getEditableFields = () => {
                     </p>
                     <p className="flex items-start gap-2">
                       <span className="text-purple-500 mt-1">•</span>
-                      <span><strong className="font-semibold text-slate-900">Monto Final</strong> - Monto final (calculado por backend)</span>
+                      <span><strong className="font-semibold text-slate-900">Monto Final</strong> - Monto final (calculado automáticamente, editable solo para casos fuera de norma)</span>
+                    </p>
+                    <p className="flex items-start gap-2">
+                      <span className="text-purple-500 mt-1">•</span>
+                      <span><strong className="font-semibold text-slate-900">Valor GRD</strong> - Valor GRD (calculado automáticamente, editable solo para casos fuera de norma)</span>
                     </p>
                     <p className="flex items-start gap-2">
                       <span className="text-purple-500 mt-1">•</span>
@@ -1591,6 +1739,12 @@ const getEditableFields = () => {
                 <span>
                   <strong className="font-semibold text-slate-900">AT (S/N)</strong> y <strong>AT Detalle</strong> - Ajustes por tecnología.
                   El <strong>Monto AT</strong> se autocompleta automáticamente y es de solo lectura.
+                </span>
+              </p>
+              <p className="flex items-start gap-2 mt-2">
+                <span className="text-fuchsia-500 mt-1">•</span>
+                <span>
+                  <strong className="font-semibold text-slate-900">Precio Base por Tramo</strong> - Precio base del episodio según el convenio y tramo.
                 </span>
               </p>
             </div>
@@ -1736,6 +1890,20 @@ const getEditableFields = () => {
                       // AT y AT Detalle: clickeables solo si Codificador o Gestión
                       if ((key === 'at' || key === 'atDetalle') && !isCodificador && !isGestion) {
                         shouldBeClickable = false;
+                      }
+                      
+                      // precioBaseTramo: clickeable solo si Gestión o Finanzas
+                      if (key === 'precioBaseTramo' && !isGestion && !isFinanzas) {
+                        shouldBeClickable = false;
+                      }
+                      
+                      // valorGRD y montoFinal: solo editables para Finanzas o Codificador cuando el episodio está fuera de norma
+                      if ((key === 'valorGRD' || key === 'montoFinal') && shouldBeClickable) {
+                        const esFueraDeNorma = episodio.grupoDentroNorma === false;
+                        const tienePermiso = (isFinanzas || isCodificador);
+                        if (!esFueraDeNorma || !tienePermiso) {
+                          shouldBeClickable = false;
+                        }
                       }
                       
                       return (
