@@ -1316,7 +1316,11 @@ export default function EpisodioDetalle() {
             <div className="bg-slate-50 p-3 rounded-lg border border-slate-200">
               <div className="text-xs font-medium text-slate-500 mb-1">Estado</div>
               <span className={`inline-flex px-2 py-1 rounded-full text-xs font-medium ${
-                episodio.inlierOutlier === 'Outlier' ? 'bg-orange-100 text-orange-800' : 'bg-blue-100 text-blue-800'
+                episodio.inlierOutlier === 'Outlier Superior' || episodio.inlierOutlier === 'Outlier Inferior' || episodio.inlierOutlier === 'Outlier'
+                  ? 'bg-red-100 text-red-800'
+                  : episodio.inlierOutlier === 'Inlier'
+                  ? 'bg-green-100 text-green-800'
+                  : 'bg-gray-100 text-gray-800'
               }`}>
                 {episodio.inlierOutlier || 'No disponible'}
               </span>
@@ -1324,9 +1328,13 @@ export default function EpisodioDetalle() {
             <div className="bg-slate-50 p-3 rounded-lg border border-slate-200">
               <div className="text-xs font-medium text-slate-500 mb-1">Grupo norma</div>
               <span className={`inline-flex px-2 py-1 rounded-full text-xs font-medium ${
-                episodio.grupoDentroNorma ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'
+                episodio.grupoDentroNorma === true ? 'bg-green-100 text-green-800' : 
+                episodio.grupoDentroNorma === false ? 'bg-red-100 text-red-800' : 
+                'bg-gray-100 text-gray-800'
               }`}>
-                {episodio.grupoDentroNorma ? 'Sí' : 'No'}
+                {episodio.grupoDentroNorma === true ? 'Sí' : 
+                 episodio.grupoDentroNorma === false ? 'No' : 
+                 'No disponible'}
               </span>
             </div>
           </div>

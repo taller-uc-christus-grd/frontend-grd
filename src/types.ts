@@ -10,9 +10,9 @@ export interface User {
 
 // === Estados (lo tuyo, con un pequeño ajuste en Inlier) ===
 export type EstadoRN = 'Aprobado' | 'Pendiente' | 'Rechazado' | null;
-// En la fuente aparece "Outliers Superiores" e incluso "-".
-// Dejamos compatibilidad con "Outlier" por si aparece en algún dataset.
-export type InlierFlag = 'Inlier' | 'Outliers Superiores' | 'Outlier' | '-' | null;
+// Valores posibles para inlierOutlier: "Inlier", "Outlier Superior", "Outlier Inferior"
+// Dejamos compatibilidad con variaciones por si aparecen en algún dataset.
+export type InlierFlag = 'Inlier' | 'Outlier Superior' | 'Outlier Inferior' | 'Outliers Superiores' | 'Outlier' | '-' | null;
 
 // === Episodio base (tu tipo original, lo mantengo) ===
 export interface Episode {
@@ -52,6 +52,7 @@ export interface Episode {
   montoRN?: number;              // Facturación Total del episodio
   precioBaseTramo?: number;      // Precio base por tramo correspondiente
   grupoDentroNorma?: boolean;    // Grupo dentro de norma S/N
+  enNorma?: string | null;       // Campo calculado: "Si" (dentro de norma), "No" (fuera de norma), o null
   diasEstada?: number;           // Días de Estada
   documentacion?: string;        // Documentación necesaria
 
@@ -101,6 +102,7 @@ export interface FinalRow {
   montoRN: number | null;        // Facturación Total del episodio
   inlierOutlier: InlierFlag;     // IR Alta Inlier / Outlier
   grupoDentroNorma: boolean;     // calculado (S/N)
+  enNorma: string | null;        // Campo calculado: "Si" (dentro de norma), "No" (fuera de norma), o null
   diasEstada: number;            // Estancia del Episodio
 
   // Derivados de catálogos (solo lectura)

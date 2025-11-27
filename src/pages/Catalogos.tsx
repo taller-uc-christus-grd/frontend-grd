@@ -1,5 +1,6 @@
 // src/pages/Catalogos.tsx
 import { useEffect, useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import {
   uploadNormaMinsal,
   getNormaMinsal,
@@ -8,6 +9,7 @@ import {
 type UploadState = { loading: boolean; ok?: boolean; msg?: string };
 
 export default function Catalogos() {
+  const navigate = useNavigate();
   const [norma, setNorma] = useState<File|null>(null);
 
   const [sNorma, setSNorma] = useState<UploadState>({ loading:false });
@@ -48,6 +50,8 @@ export default function Catalogos() {
           ok:true, 
           msg:`✅ Importación exitosa: ${validCount} registros válidos de ${totalCount} total${errorCount > 0 ? ` (${errorCount} errores)` : ''}` 
         });
+        // Limpiar el archivo seleccionado después de subir exitosamente
+        setNorma(null);
       } else {
         setSNorma({ loading:false, ok:false, msg:r.error || 'Error al procesar el archivo' });
       }
@@ -112,6 +116,16 @@ export default function Catalogos() {
                   : 'bg-red-50 text-red-700 border border-red-200'
               }`}>
                 {sNorma.msg}
+                {sNorma.ok && (
+                  <div className="mt-3">
+                    <button
+                      onClick={() => navigate('/carga')}
+                      className="w-full px-4 py-2 bg-blue-600 text-white rounded-lg font-medium hover:bg-blue-700 transition-colors duration-200"
+                    >
+                      → Subir Archivo Maestro
+                    </button>
+                  </div>
+                )}
               </div>
             )}
 

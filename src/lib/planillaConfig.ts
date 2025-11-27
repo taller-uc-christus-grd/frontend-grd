@@ -42,8 +42,8 @@ export const FINAL_COLUMNS = [
   ['Pago por outlier superior', 'pagoOutlierSup', true], // editable solo para finanzas
   ['DOCUMENTACIÓN NECESARIA', 'documentacion', true], // texto libre
   ['Inlier/Outlier', 'inlierOutlier', false],
-  ['Grupo dentro de norma S/N', 'grupoDentroNorma', false],
-  ['Días de Estada', 'diasEstada', false],
+  ['En norma', 'enNorma', false], // Campo calculado: "Si" (dentro de norma), "No" (fuera de norma), o null
+  ['Días de Estadía', 'diasEstada', false],
   ['Precio Base por tramo correspondiente', 'precioBaseTramo', true], // editable solo para finanzas
   ['Valor GRD', 'valorGRD', false], // CALCULADO: peso * precioBaseTramo (no editable)
   ['Monto Final', 'montoFinal', true], // editable solo para finanzas

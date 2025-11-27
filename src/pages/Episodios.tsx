@@ -460,7 +460,8 @@ export default function Episodios() {
     }
     
     // Manejar null/undefined para campos que no sean validado (validado se maneja en el switch)
-    if (key !== 'validado' && (value === null || value === undefined)) return '-';
+    // EXCEPCIÓN: enNorma se maneja en su propio case, no devolver '-' aquí
+    if (key !== 'validado' && key !== 'enNorma' && (value === null || value === undefined)) return '-';
     
     switch (key) {
       case 'validado':
@@ -552,21 +553,57 @@ export default function Episodios() {
           <span className="badge-error">{atDisplay}</span>
         );
       
-      case 'inlierOutlier':
+      case 'inlierOutlier': {
+        const inlierValue = value ? String(value) : '-';
+        let badgeClass = 'badge-success'; // Por defecto para Inlier
+        if (inlierValue === 'Outlier Superior' || inlierValue === 'Outlier Inferior' || inlierValue === 'Outlier') {
+          badgeClass = 'badge-error'; // Rojo para outliers
+        } else if (inlierValue === 'Inlier') {
+          badgeClass = 'badge-success'; // Verde para inlier
+        }
         return (
-          <span className={`badge-${
-            value === 'Outlier' ? 'warning' : 'success'
-          }`}>
-            {value || '-'}
+          <span className={badgeClass}>
+            {inlierValue}
           </span>
         );
+      }
       
-      case 'grupoDentroNorma':
-        return value ? (
-          <span className="badge-success">Sí</span>
-        ) : (
-          <span className="badge-error">No</span>
-        );
+      case 'enNorma': {
+        // Campo calculado: "Si" (dentro de norma), "No" (fuera de norma), o null
+        // Si "Inlier/Outlier" está vacío, "En norma" también debe estar vacío
+        const inlierValueForEnNorma = episodio.inlierOutlier;
+        // Verificar si inlierOutlier está vacío (null, undefined, string vacío, o "-")
+        const isInlierEmpty = !inlierValueForEnNorma || 
+          (typeof inlierValueForEnNorma === 'string' && (inlierValueForEnNorma.trim() === '' || inlierValueForEnNorma.trim() === '-'));
+        
+        // Si inlierOutlier está vacío, siempre mostrar vacío, sin importar el valor de enNorma
+        if (isInlierEmpty) {
+          return <span className="text-slate-400">-</span>;
+        }
+        
+        // Si enNorma es null/undefined pero inlierOutlier tiene valor, calcularlo
+        if (value === undefined || value === null) {
+          if (inlierValueForEnNorma && typeof inlierValueForEnNorma === 'string') {
+            const normalized = inlierValueForEnNorma.trim().toLowerCase();
+            const calculatedValue = normalized === 'inlier' ? 'Si' : 'No';
+            return calculatedValue === 'Si' ? (
+              <span className="badge-success">Si</span>
+            ) : (
+              <span className="badge-error">No</span>
+            );
+          }
+          return <span className="text-slate-400">-</span>;
+        }
+        
+        // Si tiene valor, mostrarlo
+        if (value === 'Si' || value === 'Sí') {
+          return <span className="badge-success">Si</span>;
+        } else if (value === 'No') {
+          return <span className="badge-error">No</span>;
+        } else {
+          return <span className="text-slate-400">-</span>;
+        }
+      }
       
       case 'estadoRN':
         const estadoDisplay = value ? String(value) : '-';
@@ -696,6 +733,26 @@ export default function Episodios() {
           }
         });
         
+        // Normalizar enNorma: si inlierOutlier está vacío, enNorma también debe estar vacío
+        const inlierValue = ep.inlierOutlier;
+        // Verificar si inlierOutlier está vacío (null, undefined, string vacío, o "-")
+        const isInlierEmpty = !inlierValue || 
+          (typeof inlierValue === 'string' && (inlierValue.trim() === '' || inlierValue.trim() === '-'));
+        
+        if (isInlierEmpty) {
+          // Si inlierOutlier está vacío, enNorma también debe estar vacío (null)
+          ep.enNorma = null;
+        } else if (!ep.enNorma || (ep.enNorma !== 'Si' && ep.enNorma !== 'Sí' && ep.enNorma !== 'No')) {
+          // Si no tiene valor o tiene un valor inválido, calcularlo basado en inlierOutlier
+          if (inlierValue && typeof inlierValue === 'string') {
+            const normalized = inlierValue.trim().toLowerCase();
+            ep.enNorma = normalized === 'inlier' ? 'Si' : 'No';
+          }
+        } else if (ep.enNorma === 'Sí') {
+          // Normalizar 'Sí' a 'Si' para consistencia
+          ep.enNorma = 'Si';
+        }
+        
         return ep;
       });
       
@@ -710,7 +767,10 @@ export default function Episodios() {
           id: (episodiosData[0] as any).id,
           at: episodiosData[0].at,
           estadoRN: episodiosData[0].estadoRN,
-          convenio: episodiosData[0].convenio, // Verificar campo convenio
+          convenio: episodiosData[0].convenio,
+          enNorma: (episodiosData[0] as any).enNorma,
+          inlierOutlier: episodiosData[0].inlierOutlier,
+          tieneEnNorma: 'enNorma' in episodiosData[0],
           keys: Object.keys(episodiosData[0])
         });
       }
