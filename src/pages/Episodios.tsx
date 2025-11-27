@@ -1600,7 +1600,7 @@ const getEditableFields = () => {
               <div className="space-y-2.5">
                 <p className="text-sm text-slate-700 flex items-start gap-2.5">
                   <span className="text-fuchsia-500 mt-0.5 font-bold">•</span>
-                  <span>Haz clic en el campo VALIDADO para aprobar o rechazar episodios. Los cambios se reflejan inmediatamente en el sistema.</span>
+                  <span>Los cambios se reflejan inmediatamente en el sistema.</span>
                 </p>
                 <p className="text-sm text-slate-700 flex items-start gap-2.5">
                   <span className="text-fuchsia-500 mt-0.5 font-bold">•</span>
