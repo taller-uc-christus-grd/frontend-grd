@@ -11,6 +11,7 @@ export const REQUIRED_HEADERS = [
   'Motivo Egreso (Descripción)',
   'IR GRD (Código)',
   'Peso Medio [Norma IR]',
+  'Peso GRD Medio (Todos)',
   'IR Alta Inlier / Outlier',
   'Estancia real del episodio',
 ] as const;
@@ -48,6 +49,7 @@ export function detectDuplicates(values: any[]) {
 // Números que validamos en precheck
 const NUMERIC_HEADERS = new Set<string>([
   'Peso Medio [Norma IR]',
+  'Peso GRD Medio (Todos)',
   'Estancia real del episodio',
 ]);
 
@@ -128,6 +130,15 @@ export function validateRows(headers: string[], rows: any[]): PrecheckIssue[] {
         rowIndex: idx,
         column: 'Peso Medio [Norma IR]',
         message: `Fila ${idx + 2}: Peso inválido`,
+      });
+    }
+    const pesoGrd = toNumberLoose(r['Peso GRD Medio (Todos)']);
+    if (Number.isNaN(pesoGrd)) {
+      issues.push({
+        type: 'invalid',
+        rowIndex: idx,
+        column: 'Peso GRD Medio (Todos)',
+        message: `Fila ${idx + 2}: Peso GRD inválido`,
       });
     }
     const estReal = toNumberLoose(r['Estancia real del episodio']);

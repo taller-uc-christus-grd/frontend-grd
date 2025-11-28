@@ -14,7 +14,9 @@ import EpisodioDetalle from '@/pages/EpisodioDetalle'
 import Exportaciones from '@/pages/Exportaciones'
 import Admin from '@/pages/Admin'
 import Protected from '@/components/Protected'
-import Catalogos from '@/pages/Catalogos' 
+import Catalogos from '@/pages/Catalogos'
+import PreciosConvenios from '@/pages/PreciosConvenios'
+import AjustesPorTecnologia from '@/pages/AjustesPorTecnologia'
 // Wrapper para poder anidar rutas protegidas con roles opcionales
 import type { Role } from '@/types'
 
@@ -71,6 +73,8 @@ export default function App() {
             {/* Finanzas y Gestión - sin admin */}
             <Route element={<ProtectedWrapper roles={['finanzas', 'gestion']} />}>
               <Route path="/exportaciones" element={<Exportaciones />} />
+              <Route path="/precios-convenios" element={<PreciosConvenios />} />
+              <Route path="/ajustes-tecnologia" element={<AjustesPorTecnologia />} />
             </Route>
 
             {/* Solo Codificador → Carga de catálogos */}

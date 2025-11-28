@@ -35,7 +35,7 @@ export const FINAL_COLUMNS = [
   ['Monto AT', 'montoAT', true], // EDITABLE - ingreso manual por finanzas
   ['Tipo de Alta', 'motivoEgreso', false],
   ['IR - GRD', 'grdCodigo', false],
-  ['PESO', 'peso', false],
+  ['PESO GRD', 'peso', false],
   ['MONTO RN', 'montoRN', true], // editable solo para finanzas
   ['Días de demora rescate', 'diasDemoraRescate', true],
   ['Pago demora rescate', 'pagoDemora', true], // ahora editable manualmente

@@ -19,6 +19,7 @@ import {
 // Números que validamos en precheck (campos de la vista)
 const NUMERIC_HEADERS = new Set<string>([
   'Peso Medio [Norma IR]',
+  'Peso GRD Medio (Todos)',
   'Estancia real del episodio',
 ]);
 
@@ -536,6 +537,7 @@ export default function Carga() {
             <p>• Fecha de ingreso</p>
             <p>• Fecha de alta</p>
             <p>• Peso medio [Norma IR]</p>
+            <p>• Peso GRD Medio (Todos)</p>
             <p>• Estancia real del episodio</p>
           </div>
         </div>
