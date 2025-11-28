@@ -1,5 +1,6 @@
 // src/pages/Catalogos.tsx
 import { useEffect, useState } from 'react';
+import { Link } from 'react-router-dom';
 import {
   uploadNormaMinsal,
   getNormaMinsal,
@@ -113,6 +114,16 @@ export default function Catalogos() {
               }`}>
                 {sNorma.msg}
               </div>
+            )}
+
+            {sNorma.ok && (
+              <Link
+                to="/carga"
+                className="w-full px-4 py-2.5 bg-indigo-600 text-white rounded-lg font-medium hover:bg-indigo-700 transition-colors duration-200 flex items-center justify-center gap-2"
+              >
+                <span>→</span>
+                <span>Ir a Carga de Archivo Maestro</span>
+              </Link>
             )}
 
             <div className="text-xs text-gray-500 bg-gray-50 p-3 rounded-lg">
