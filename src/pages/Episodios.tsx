@@ -26,6 +26,7 @@ export default function Episodios() {
   const [searchTerm, setSearchTerm] = useState('');
   const [filterValidated, setFilterValidated] = useState<'all' | 'validated' | 'pending'>('all');
   const [filterOutlier, setFilterOutlier] = useState<'all' | 'inlier' | 'outlier'>('all');
+  const [filterConvenio, setFilterConvenio] = useState<string>(''); // Filtro de convenio (solo para finanzas)
   
   // Estados para edición
   const [editingCell, setEditingCell] = useState<{row: number, field: string} | null>(null);
@@ -73,8 +74,17 @@ export default function Episodios() {
       );
     }
 
+    // Filtro por convenio (solo para finanzas, filtra en tiempo real)
+    if (isFinanzas && filterConvenio.trim() !== '') {
+      const convenioTerm = filterConvenio.trim().toLowerCase();
+      filtered = filtered.filter(ep => {
+        const convenio = ep.convenio?.toLowerCase() || '';
+        return convenio.includes(convenioTerm);
+      });
+    }
+
     return filtered;
-  }, [episodios, searchTerm, filterValidated, filterOutlier]);
+  }, [episodios, searchTerm, filterValidated, filterOutlier, filterConvenio, isFinanzas]);
 
   // Campos editables según rol del usuario
 const getEditableFields = () => {
@@ -1184,6 +1194,17 @@ const getEditableFields = () => {
           <span className="text-slate-400">-</span>
         );
       
+      case 'convenio':
+        // Mostrar el código del convenio
+        const convenioDisplay = value ? String(value).trim() : '';
+        return convenioDisplay ? (
+          <span className="text-slate-700 font-medium" title={convenioDisplay}>
+            {convenioDisplay}
+          </span>
+        ) : (
+          <span className="text-slate-400">-</span>
+        );
+      
       default:
         return value || '-';
     }
@@ -1334,6 +1355,13 @@ const getEditableFields = () => {
           ep.estadoRN = String(ep.estadoRN);
         }
         
+        // Normalizar convenio: asegurar que sea string (puede ser vacío pero nunca null/undefined)
+        if (ep.convenio === null || ep.convenio === undefined) {
+          ep.convenio = '';
+        } else {
+          ep.convenio = String(ep.convenio).trim();
+        }
+        
         // Normalizar atDetalle: SIMPLIFICADO - mantener siempre el valor del backend
         // Solo limpiar si AT = 'N', de lo contrario mantener exactamente como viene
         if (ep.at === 'N') {
@@ -1396,6 +1424,21 @@ const getEditableFields = () => {
             ep[fieldName] = 0;
           }
         });
+        
+        // Asegurar que convenio esté presente (preservar del backend)
+        if (!('convenio' in ep)) {
+          ep.convenio = '';
+        }
+        
+        // Log final para verificar que convenio está presente
+        if (episodiosData.indexOf(ep) < 3) {
+          console.log('✅ Episodio finalizado - convenio:', {
+            episodio: ep.episodio,
+            convenio: ep.convenio,
+            tieneConvenio: 'convenio' in ep,
+            tipo: typeof ep.convenio
+          });
+        }
         
         return ep;
       });
@@ -1768,7 +1811,7 @@ const getEditableFields = () => {
 
       {/* Div 3: Filtros y búsqueda */}
       <div className="mb-6 rounded-2xl border border-slate-200 bg-white shadow-sm p-6">
-        <div className="grid md:grid-cols-4 gap-6">
+        <div className={`grid gap-6 ${isFinanzas ? 'md:grid-cols-5' : 'md:grid-cols-4'}`}>
           {/* Búsqueda */}
           <div>
             <label className="block text-sm font-medium text-slate-700 mb-2">Buscar</label>
@@ -1808,6 +1851,20 @@ const getEditableFields = () => {
               <option value="outlier">Outlier</option>
             </select>
           </div>
+
+          {/* Filtro por convenio (solo para finanzas) */}
+          {isFinanzas && (
+            <div>
+              <label className="block text-sm font-medium text-slate-700 mb-2">Convenio</label>
+              <input
+                type="text"
+                className="w-full px-4 py-2.5 border border-slate-300 rounded-xl focus:ring-2 focus:ring-purple-500 focus:border-transparent transition-all"
+                placeholder="Filtrar por convenio..."
+                value={filterConvenio}
+                onChange={(e) => setFilterConvenio(e.target.value)}
+              />
+            </div>
+          )}
 
           {/* Botón de recarga */}
           <div className="flex items-end">
@@ -1872,6 +1929,19 @@ const getEditableFields = () => {
                   <tr key={episodio.episodio} className="border-b border-slate-100 hover:bg-slate-50/50 transition-colors">
                     {FINAL_COLUMNS.map(([header, key, editable]) => {
                       const value = key.split('.').reduce((acc: any, k) => acc?.[k], episodio as any);
+                      
+                      // Debug para convenio
+                      if (key === 'convenio' && process.env.NODE_ENV === 'development') {
+                        console.log('🔍 Renderizando convenio:', {
+                          key,
+                          value,
+                          episodioKeys: Object.keys(episodio),
+                          tieneConvenio: 'convenio' in episodio,
+                          convenioDirecto: (episodio as any).convenio,
+                          tipo: typeof value
+                        });
+                      }
+                      
                       const isEditable = editableFields.has(key);
                       
                       // Determinar si el campo debe ser clickeable
