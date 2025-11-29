@@ -89,6 +89,20 @@ export default function Episodios() {
     return filtered;
   }, [episodios, searchTerm, filterValidated, filterOutlier, filterConvenio, isFinanzas]);
 
+  // Lista de campos editables para finanzas que deben mostrar el ícono
+  const camposEditablesFinanzas = [
+    'estadoRN',
+    'at',
+    'atDetalle',
+    'montoAT',
+    'montoRN',
+    'diasDemoraRescate',
+    'pagoDemora',
+    'pagoOutlierSup',
+    'documentacion',
+    'precioBaseTramo'
+  ];
+
   // Campos editables según rol del usuario
 const getEditableFields = () => {
   const editableFields = new Set<string>();
@@ -146,7 +160,8 @@ const getEditableFields = () => {
     isFinanzas,
     isGestion,
     isCodificador,
-    editableFields: Array.from(editableFields)
+    editableFields: Array.from(editableFields),
+    camposEditablesFinanzas: camposEditablesFinanzas
   });
 
   // Función para iniciar edición
@@ -706,33 +721,24 @@ const getEditableFields = () => {
   // Función helper para agregar ícono de edición a campos editables
   const wrapWithEditIcon = (content: React.ReactNode, key: string, rowIndex: number, episodio?: Episode) => {
     const isEditing = editingCell?.row === rowIndex && editingCell?.field === key;
-    const isEditable = editableFields.has(key);
-    
-    // Lista de campos editables para finanzas que deben mostrar el ícono
-    const camposEditablesFinanzas = [
-      'estadoRN',
-      'at',
-      'atDetalle',
-      'montoAT',
-      'montoRN',
-      'diasDemoraRescate',
-      'pagoDemora',
-      'pagoOutlierSup',
-      'documentacion',
-      'precioBaseTramo'
-    ];
     
     // Mostrar ícono si es finanzas, el campo está en la lista y no está siendo editado
     if (isFinanzas && camposEditablesFinanzas.includes(key) && !isEditing) {
+      // Debug temporal
+      if (process.env.NODE_ENV === 'development') {
+        console.log('✅ Mostrando ícono de edición para:', { key, isFinanzas, isEditing });
+      }
+      
       return (
         <div className="flex items-center gap-1.5">
           <span>{content}</span>
           <svg 
-            className="w-3.5 h-3.5 text-blue-500 opacity-70 flex-shrink-0" 
+            className="w-4 h-4 text-blue-600 flex-shrink-0" 
             fill="none" 
             stroke="currentColor" 
             viewBox="0 0 24 24"
             aria-label="Campo editable"
+            style={{ minWidth: '16px', minHeight: '16px' }}
           >
             <path 
               strokeLinecap="round" 
@@ -743,6 +749,16 @@ const getEditableFields = () => {
           </svg>
         </div>
       );
+    }
+    
+    // Debug temporal - ver por qué no se muestra
+    if (isFinanzas && process.env.NODE_ENV === 'development') {
+      if (!camposEditablesFinanzas.includes(key)) {
+        console.log('⚠️ Campo no está en lista:', key);
+      }
+      if (isEditing) {
+        console.log('⚠️ Campo está siendo editado:', key);
+      }
     }
     
     return content;
