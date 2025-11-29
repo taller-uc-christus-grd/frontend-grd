@@ -718,6 +718,139 @@ const getEditableFields = () => {
     setEditValue('');
   };
 
+  // Función para obtener campos editables en orden según FINAL_COLUMNS
+  // Solo incluye campos que usan startEdit (excluye dropdowns directos como validado y estadoRN para finanzas)
+  const getEditableFieldsInOrder = (rowIndex: number) => {
+    const editableFieldsList: string[] = [];
+    const episodio = filteredEpisodios[rowIndex];
+    
+    // Para finanzas, incluir todos los campos editables que usan startEdit (no dropdowns directos)
+    if (isFinanzas) {
+      FINAL_COLUMNS.forEach(([header, key, editable]) => {
+        // Excluir campos con dropdown directo (estos no usan startEdit)
+        if (key === 'validado' || key === 'estadoRN') {
+          return; // No incluir en navegación TAB porque tienen dropdown directo
+        }
+        
+        // Si el campo está en la lista de editables para finanzas
+        if (camposEditablesFinanzas.includes(key)) {
+          // Validaciones especiales para campos condicionales
+          if (key === 'valorGRD' || key === 'montoFinal') {
+            const esFueraDeNorma = episodio?.grupoDentroNorma === false;
+            if (!esFueraDeNorma) {
+              return; // No incluir si no está fuera de norma
+            }
+          }
+          
+          editableFieldsList.push(key);
+        }
+        
+        // precioBaseTramo está marcado como false en planillaConfig pero es editable para finanzas
+        if (key === 'precioBaseTramo' && editableFields.has(key)) {
+          editableFieldsList.push(key);
+        }
+      });
+    } else {
+      // Para otros roles, usar la lógica de editableFields
+      FINAL_COLUMNS.forEach(([header, key, editable]) => {
+        if (!editableFields.has(key)) return;
+        
+        // Validaciones especiales
+        if (key === 'valorGRD' || key === 'montoFinal') {
+          const esFueraDeNorma = episodio?.grupoDentroNorma === false;
+          const tienePermiso = (isFinanzas || isCodificador);
+          if (!esFueraDeNorma || !tienePermiso) {
+            return;
+          }
+        }
+        
+        editableFieldsList.push(key);
+      });
+    }
+    
+    return editableFieldsList;
+  };
+
+  // Función para encontrar el siguiente campo editable
+  const findNextEditableField = (currentField: string, rowIndex: number, direction: 'next' | 'prev' = 'next') => {
+    const editableFieldsList = getEditableFieldsInOrder(rowIndex);
+    const currentIndex = editableFieldsList.indexOf(currentField);
+    
+    if (currentIndex === -1) return null;
+    
+    if (direction === 'next') {
+      // Si hay un siguiente campo en la misma fila
+      if (currentIndex < editableFieldsList.length - 1) {
+        return {
+          field: editableFieldsList[currentIndex + 1],
+          rowIndex: rowIndex
+        };
+      }
+      // Si es el último campo, podría ir a la siguiente fila (opcional)
+      // Por ahora, volvemos al primero de la misma fila
+      return {
+        field: editableFieldsList[0],
+        rowIndex: rowIndex
+      };
+    } else {
+      // Si hay un campo anterior en la misma fila
+      if (currentIndex > 0) {
+        return {
+          field: editableFieldsList[currentIndex - 1],
+          rowIndex: rowIndex
+        };
+      }
+      // Si es el primer campo, ir al último
+      return {
+        field: editableFieldsList[editableFieldsList.length - 1],
+        rowIndex: rowIndex
+      };
+    }
+  };
+
+  // Función para navegar al siguiente campo con TAB
+  const handleTabNavigation = (e: React.KeyboardEvent, currentField: string, rowIndex: number, currentValue: any) => {
+    // Solo permitir navegación con TAB para usuarios de finanzas
+    if (!isFinanzas) return;
+    
+    // Solo manejar TAB
+    if (e.key !== 'Tab') return;
+    
+    // No navegar si está guardando
+    if (saving) {
+      e.preventDefault();
+      return;
+    }
+    
+    const isShiftTab = e.shiftKey;
+    
+    // Encontrar el siguiente campo editable
+    const nextField = findNextEditableField(
+      currentField, 
+      rowIndex, 
+      isShiftTab ? 'prev' : 'next'
+    );
+    
+    if (nextField) {
+      e.preventDefault();
+      
+      // Cerrar la edición actual (sin guardar automáticamente)
+      // El usuario puede guardar con el botón ✓ antes de navegar si quiere mantener los cambios
+      setEditingCell(null);
+      setEditValue('');
+      
+      // Pequeño delay para asegurar que el estado se actualice
+      setTimeout(() => {
+        // Obtener el valor del siguiente campo
+        const nextEpisodio = filteredEpisodios[nextField.rowIndex];
+        const nextValue = nextField.field.split('.').reduce((acc: any, k) => acc?.[k], nextEpisodio as any);
+        
+        // Iniciar edición del siguiente campo
+        startEdit(nextField.rowIndex, nextField.field, nextValue);
+      }, 50);
+    }
+  };
+
   // Función helper para agregar ícono de edición a campos editables
   const wrapWithEditIcon = (content: React.ReactNode, key: string, rowIndex: number, episodio?: Episode) => {
     const isEditing = editingCell?.row === rowIndex && editingCell?.field === key;
@@ -793,6 +926,7 @@ const getEditableFields = () => {
                 console.log('🔄 estadoRN onChange:', { newValue, editValueActual: editValue });
                 setEditValue(newValue);
               }}
+              onKeyDown={(e) => handleTabNavigation(e, key, rowIndex, value)}
               onClick={(e) => {
                 e.stopPropagation();
               }}
@@ -820,6 +954,7 @@ const getEditableFields = () => {
                 // Solo actualizar el estado del input, NO actualizar la lista hasta que se guarde
                 setEditValue(newValue);
               }}
+              onKeyDown={(e) => handleTabNavigation(e, key, rowIndex, value)}
               onClick={(e) => {
                 e.stopPropagation();
               }}
@@ -919,6 +1054,7 @@ const getEditableFields = () => {
                   });
                 }, 0);
               }}
+              onKeyDown={(e) => handleTabNavigation(e, key, rowIndex, value)}
               onClick={(e) => {
                 // Prevenir que el click en el select dispare el onClick del td
                 e.stopPropagation();
@@ -948,6 +1084,7 @@ const getEditableFields = () => {
             <select
               value={editValue}
               onChange={(e) => setEditValue(e.target.value)}
+              onKeyDown={(e) => handleTabNavigation(e, key, rowIndex, value)}
               className="px-2 py-1 text-xs border rounded"
               autoFocus
             >
@@ -960,6 +1097,7 @@ const getEditableFields = () => {
               type={key.includes('monto') || key.includes('pago') || key.includes('precio') || key.includes('valor') ? 'number' : 'text'}
               value={editValue}
               onChange={(e) => setEditValue(e.target.value)}
+              onKeyDown={(e) => handleTabNavigation(e, key, rowIndex, value)}
               className="px-2 py-1 text-xs border rounded w-20"
               autoFocus
               min="0"
