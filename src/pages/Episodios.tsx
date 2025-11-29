@@ -12,6 +12,7 @@ import api from '@/lib/api';
 import icon3 from '@/assets/icon3.png';
 import icon4 from '@/assets/icon4.png';
 import icon1 from '@/assets/icon1.png';
+import FormulaModal from '@/components/FormulaModal';
 
 export default function Episodios() {
   const { user } = useAuth();
@@ -48,6 +49,17 @@ export default function Episodios() {
   
   // Estado para mensajes de confirmación
   const [saveMessage, setSaveMessage] = useState<string>('');
+  
+  // Estado para el modal de fórmula
+  const [formulaModal, setFormulaModal] = useState<{
+    isOpen: boolean;
+    formula: string;
+    title: string;
+  }>({
+    isOpen: false,
+    formula: '',
+    title: ''
+  });
 
   // Filtros y búsqueda
   const filteredEpisodios = useMemo(() => {
@@ -1235,9 +1247,9 @@ const getEditableFields = () => {
         });
         return wrapWithEditIcon(
           atValue ? (
-            <span className="badge-success">{atDisplay}</span>
-          ) : (
-            <span className="badge-error">{atDisplay}</span>
+          <span className="badge-success">{atDisplay}</span>
+        ) : (
+          <span className="badge-error">{atDisplay}</span>
           ),
           key,
           rowIndex,
@@ -1259,9 +1271,9 @@ const getEditableFields = () => {
       case 'grupoDentroNorma':
         return wrapWithEditIcon(
           value ? (
-            <span className="badge-success">Sí</span>
-          ) : (
-            <span className="badge-error">No</span>
+          <span className="badge-success">Sí</span>
+        ) : (
+          <span className="badge-error">No</span>
           ),
           key,
           rowIndex,
@@ -1358,14 +1370,14 @@ const getEditableFields = () => {
         console.log('📊 estadoRN renderizado en tabla:', { original: value, display: estadoDisplay });
         return wrapWithEditIcon(
           value ? (
-            <span className={`badge-${
-              value === 'Aprobado' ? 'success' : 
-              value === 'Pendiente' ? 'warning' : 'error'
-            }`}>
-              {estadoDisplay}
-            </span>
-          ) : (
-            <span className="text-slate-400">-</span>
+          <span className={`badge-${
+            value === 'Aprobado' ? 'success' : 
+            value === 'Pendiente' ? 'warning' : 'error'
+          }`}>
+            {estadoDisplay}
+          </span>
+        ) : (
+          <span className="text-slate-400">-</span>
           ),
           key,
           rowIndex,
@@ -1404,16 +1416,76 @@ const getEditableFields = () => {
       case 'pagoOutlierSup':
       case 'pagoDemora':
       case 'precioBaseTramo':
-      case 'valorGRD':
-      case 'montoFinal':
-        const formattedValue = value ? formatCurrency(value) : '-';
+        const precioFormattedValue = value ? formatCurrency(value) : '-';
         return wrapWithEditIcon(
           <div className="flex items-center gap-1">
             <span className={hasErrors ? 'text-red-600' : hasWarnings ? 'text-yellow-600' : ''}>
-              {formattedValue}
+              {precioFormattedValue}
             </span>
             {hasErrors && <span className="text-red-500 text-xs">⚠️</span>}
             {hasWarnings && !hasErrors && <span className="text-yellow-500 text-xs">⚠️</span>}
+          </div>,
+          key,
+          rowIndex,
+          episodio
+        );
+      
+      case 'valorGRD':
+        const valorGRDFormatted = value ? formatCurrency(value) : '-';
+        return wrapWithEditIcon(
+          <div className="flex items-center gap-1.5">
+            <span className={hasErrors ? 'text-red-600' : hasWarnings ? 'text-yellow-600' : ''}>
+              {valorGRDFormatted}
+            </span>
+            {hasErrors && <span className="text-red-500 text-xs">⚠️</span>}
+            {hasWarnings && !hasErrors && <span className="text-yellow-500 text-xs">⚠️</span>}
+            <button
+              onClick={(e) => {
+                e.stopPropagation();
+                setFormulaModal({
+                  isOpen: true,
+                  formula: 'Valor GRD = Peso GRD × Precio Base por Tramo',
+                  title: 'Fórmula: Valor GRD'
+                });
+              }}
+              className="text-blue-600 hover:text-blue-700 transition-colors"
+              title="Ver fórmula de cálculo"
+            >
+              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 7h6m0 10v-3m-3 3h.01M9 17h.01M9 14h.01M12 14h.01M15 11h.01M12 11h.01M9 11h.01M7 21h10a2 2 0 002-2V5a2 2 0 00-2-2H7a2 2 0 00-2 2v14a2 2 0 002 2z" />
+              </svg>
+            </button>
+          </div>,
+          key,
+          rowIndex,
+          episodio
+        );
+      
+      case 'montoFinal':
+        const montoFinalFormatted = value ? formatCurrency(value) : '-';
+        return wrapWithEditIcon(
+          <div className="flex items-center gap-1.5">
+            <span className={hasErrors ? 'text-red-600' : hasWarnings ? 'text-yellow-600' : ''}>
+              {montoFinalFormatted}
+            </span>
+            {hasErrors && <span className="text-red-500 text-xs">⚠️</span>}
+            {hasWarnings && !hasErrors && <span className="text-yellow-500 text-xs">⚠️</span>}
+            <button
+              onClick={(e) => {
+                e.stopPropagation();
+                setFormulaModal({
+                  isOpen: true,
+                  formula: 'Monto Final = Valor GRD + Monto AT + Pago Outlier Superior + Pago Demora',
+                  title: 'Fórmula: Monto Final'
+                });
+              }}
+              className="text-blue-600 hover:text-blue-700 transition-colors"
+              title="Ver fórmula de cálculo"
+            >
+              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 7h6m0 10v-3m-3 3h.01M9 17h.01M9 14h.01M12 14h.01M15 11h.01M12 11h.01M9 11h.01M7 21h10a2 2 0 002-2V5a2 2 0 00-2-2H7a2 2 0 00-2 2v14a2 2 0 002 2z" />
+              </svg>
+            </button>
           </div>,
           key,
           rowIndex,
@@ -1463,9 +1535,9 @@ const getEditableFields = () => {
       case 'documentacion':
         return wrapWithEditIcon(
           value ? (
-            <span className="text-xs text-gray-600 max-w-32 truncate" title={value}>
-              {value}
-            </span>
+          <span className="text-xs text-gray-600 max-w-32 truncate" title={value}>
+            {value}
+          </span>
           ) : (
             <span className="text-slate-400">-</span>
           ),
@@ -1479,11 +1551,11 @@ const getEditableFields = () => {
         const atDetalleDisplay = value ? String(value).trim() : '';
         return wrapWithEditIcon(
           atDetalleDisplay ? (
-            <span className="text-xs text-slate-700 max-w-[200px] truncate" title={atDetalleDisplay}>
-              {atDetalleDisplay}
-            </span>
-          ) : (
-            <span className="text-slate-400">-</span>
+          <span className="text-xs text-slate-700 max-w-[200px] truncate" title={atDetalleDisplay}>
+            {atDetalleDisplay}
+          </span>
+        ) : (
+          <span className="text-slate-400">-</span>
           ),
           key,
           rowIndex,
@@ -1495,11 +1567,11 @@ const getEditableFields = () => {
         const convenioDisplay = value ? String(value).trim() : '';
         return wrapWithEditIcon(
           convenioDisplay ? (
-            <span className="text-slate-700 font-medium" title={convenioDisplay}>
-              {convenioDisplay}
-            </span>
-          ) : (
-            <span className="text-slate-400">-</span>
+          <span className="text-slate-700 font-medium" title={convenioDisplay}>
+            {convenioDisplay}
+          </span>
+        ) : (
+          <span className="text-slate-400">-</span>
           ),
           key,
           rowIndex,
@@ -2366,7 +2438,7 @@ const getEditableFields = () => {
                       );
                     })}
                   <td className="px-4 py-3">
-                      <div className="flex gap-3 items-center">
+                      <div className="flex gap-3 items-center flex-wrap">
                         <Link
                           to={`/episodios/${episodio.episodio}`}
                           className="text-indigo-600 hover:text-indigo-700 font-medium text-sm hover:underline transition-colors"
@@ -2465,6 +2537,14 @@ const getEditableFields = () => {
           </div>
         )}
       </div>
+      
+      {/* Modal de fórmula */}
+      <FormulaModal
+        isOpen={formulaModal.isOpen}
+        onClose={() => setFormulaModal({ isOpen: false, formula: '', title: '' })}
+        formula={formulaModal.formula}
+        title={formulaModal.title}
+      />
     </main>
   );
 }
