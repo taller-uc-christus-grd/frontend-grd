@@ -722,43 +722,53 @@ const getEditableFields = () => {
   const wrapWithEditIcon = (content: React.ReactNode, key: string, rowIndex: number, episodio?: Episode) => {
     const isEditing = editingCell?.row === rowIndex && editingCell?.field === key;
     
+    // Componente del ícono de edición
+    const EditIcon = () => (
+      <svg 
+        className="w-4 h-4 text-blue-600 flex-shrink-0" 
+        fill="none" 
+        stroke="currentColor" 
+        viewBox="0 0 24 24"
+        aria-label="Campo editable"
+        style={{ minWidth: '16px', minHeight: '16px' }}
+      >
+        <path 
+          strokeLinecap="round" 
+          strokeLinejoin="round" 
+          strokeWidth={2} 
+          d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" 
+        />
+      </svg>
+    );
+    
     // Mostrar ícono si es finanzas, el campo está en la lista y no está siendo editado
     if (isFinanzas && camposEditablesFinanzas.includes(key) && !isEditing) {
-      // Debug temporal
-      if (process.env.NODE_ENV === 'development') {
-        console.log('✅ Mostrando ícono de edición para:', { key, isFinanzas, isEditing });
-      }
-      
       return (
         <div className="flex items-center gap-1.5">
           <span>{content}</span>
-          <svg 
-            className="w-4 h-4 text-blue-600 flex-shrink-0" 
-            fill="none" 
-            stroke="currentColor" 
-            viewBox="0 0 24 24"
-            aria-label="Campo editable"
-            style={{ minWidth: '16px', minHeight: '16px' }}
-          >
-            <path 
-              strokeLinecap="round" 
-              strokeLinejoin="round" 
-              strokeWidth={2} 
-              d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" 
-            />
-          </svg>
+          <EditIcon />
         </div>
       );
     }
     
-    // Debug temporal - ver por qué no se muestra
-    if (isFinanzas && process.env.NODE_ENV === 'development') {
-      if (!camposEditablesFinanzas.includes(key)) {
-        console.log('⚠️ Campo no está en lista:', key);
-      }
-      if (isEditing) {
-        console.log('⚠️ Campo está siendo editado:', key);
-      }
+    // Mostrar ícono para 'validado' solo si es gestión
+    if (isGestion && key === 'validado' && !isEditing) {
+      return (
+        <div className="flex items-center gap-1.5">
+          <span>{content}</span>
+          <EditIcon />
+        </div>
+      );
+    }
+    
+    // Mostrar ícono para 'estadoRN' si es finanzas (incluido en la lista, pero también para dropdowns)
+    if (isFinanzas && key === 'estadoRN' && !isEditing) {
+      return (
+        <div className="flex items-center gap-1.5">
+          <span>{content}</span>
+          <EditIcon />
+        </div>
+      );
     }
     
     return content;
@@ -981,13 +991,13 @@ const getEditableFields = () => {
     
     switch (key) {
       case 'validado':
-        // Para Finanzas, mostrar dropdown directamente
+        // Para Finanzas, mostrar dropdown directamente con ícono
         if (isFinanzas) {
           // Manejar null/undefined como 'pendiente' (default)
           const currentValueStr =
             value === true ? 'aprobado' : value === false ? 'rechazado' : 'pendiente';
 
-          return (
+          const selectDropdown = (
             <select
               value={currentValueStr}
               onChange={async (e) => {
@@ -1050,9 +1060,23 @@ const getEditableFields = () => {
               <option value="rechazado">Rechazado</option>
             </select>
           );
+          
+          return wrapWithEditIcon(selectDropdown, key, rowIndex, episodio);
         }
 
-        // Para otros roles, mostrar badge simple
+        // Para Gestión, mostrar badge con ícono
+        if (isGestion) {
+          return wrapWithEditIcon(
+            <span className={`badge-${value ? 'success' : 'warning'}`}>
+              {value ? '✓' : '○'}
+            </span>,
+            key,
+            rowIndex,
+            episodio
+          );
+        }
+
+        // Para otros roles, mostrar badge simple sin ícono
         return (
           <span className={`badge-${value ? 'success' : 'warning'}`}>
             {value ? '✓' : '○'}
@@ -1107,14 +1131,14 @@ const getEditableFields = () => {
         );
       
       case 'estadoRN':
-        // Para Finanzas, mostrar dropdown directamente (similar a validado)
+        // Para Finanzas, mostrar dropdown directamente con ícono
         if (isFinanzas) {
           // Manejar null/undefined como 'Pendiente' (default)
           const currentValueStr = value === 'Aprobado' ? 'Aprobado' : 
                                   value === 'Rechazado' ? 'Rechazado' : 
                                   'Pendiente';
 
-          return (
+          const selectDropdown = (
             <select
               value={currentValueStr}
               onChange={async (e) => {
@@ -1187,6 +1211,8 @@ const getEditableFields = () => {
               <option value="Rechazado">Rechazado</option>
             </select>
           );
+          
+          return wrapWithEditIcon(selectDropdown, key, rowIndex, episodio);
         }
 
         // Para otros roles, mostrar badge simple
