@@ -1313,7 +1313,18 @@ export default function EpisodioDetalle() {
           <div className="space-y-4">
             {renderEditableField('estadoRN', 'Estado RN', episodio.estadoRN)}
             {renderEditableField('montoRN', 'Monto RN', episodio.montoRN, true)}
-            {renderEditableField('precioBaseTramo', 'Precio Base por Tramo', episodio.precioBaseTramo, true)}
+            {/* Precio Base por Tramo: NO EDITABLE - calculado automáticamente desde precios convenios */}
+            <div className="mb-4">
+              <label className="block text-sm font-medium text-slate-700 mb-1">
+                Precio Base por Tramo
+              </label>
+              <p className="text-slate-900 font-medium">
+                {episodio.precioBaseTramo ? formatCurrency(episodio.precioBaseTramo) : 'No disponible'}
+              </p>
+              <p className="text-xs text-slate-500 mt-1">
+                Calculado automáticamente desde precios convenios
+              </p>
+            </div>
             {/* Valor GRD es calculado automáticamente: peso * precioBaseTramo */}
             <div className="mb-4">
               <label className="block text-sm font-medium text-slate-700 mb-1">

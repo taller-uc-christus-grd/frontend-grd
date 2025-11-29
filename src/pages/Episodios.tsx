@@ -37,6 +37,9 @@ export default function Episodios() {
   const [ajustesTecnologia, setAjustesTecnologia] = useState<Array<{id?: string, at?: string, monto?: number}>>([]);
   const [loadingAjustes, setLoadingAjustes] = useState(false);
   
+  // NOTA: precioBaseTramo, valorGRD y montoFinal vienen calculados desde el backend
+  // No se recalculan en el frontend, solo se refresca la lista después de actualizar precios
+  
   // Los catálogos se manejan en el backend
   
   // Estados para validaciones
@@ -124,10 +127,10 @@ const getEditableFields = () => {
   }
 
   if (isGestion) {
-    // Gestión NO valida, pero SÍ puede editar ajustes por tecnología y precioBaseTramo
+    // Gestión NO valida, pero SÍ puede editar ajustes por tecnología
     editableFields.add('at');
     editableFields.add('atDetalle');
-    editableFields.add('precioBaseTramo');
+    // precioBaseTramo ya NO es editable - se calcula automáticamente desde precios convenios
   }
   
   return editableFields;
@@ -154,9 +157,9 @@ const getEditableFields = () => {
       if (!isCodificador && !isGestion) return;
     }
 
-    // precioBaseTramo: Gestión o Finanzas
+    // precioBaseTramo: NO EDITABLE - se calcula automáticamente desde precios convenios
     if (field === 'precioBaseTramo') {
-      if (!isGestion && !isFinanzas) return;
+      return; // No permitir edición
     }
 
     // valorGRD y montoFinal: solo editables para Finanzas o Codificador cuando el episodio está fuera de norma
@@ -1236,10 +1239,38 @@ const getEditableFields = () => {
       if (!ajustesTecnologia || ajustesTecnologia.length === 0) {
         await loadAjustesTecnologia(); // Cargar ajustes primero
       }
-      await loadEpisodios(); // Luego cargar episodios (necesita ajustesTecnologia para normalizar atDetalle)
+      await loadEpisodios(); // Luego cargar episodios
     };
     loadData();
   }, []);
+  
+  // Escuchar cambios en precios convenios para recargar episodios automáticamente
+  // El backend recalcula precioBaseTramo, valorGRD y montoFinal automáticamente
+  // Solo necesitamos refrescar la lista para ver los valores actualizados
+  useEffect(() => {
+    const handlePreciosConveniosChanged = async (event: Event) => {
+      console.log('🔄 Evento preciosConveniosChanged recibido, recargando episodios...');
+      console.log('🔄 Detalles del evento:', event);
+      
+      // Pequeño delay para asegurar que el backend haya procesado el cambio
+      await new Promise(resolve => setTimeout(resolve, 500));
+      
+      // Recargar episodios del backend (que ya tienen los valores recalculados)
+      // El timestamp asegura que no use caché
+      console.log('📥 Iniciando recarga de episodios con timestamp:', Date.now());
+      await loadEpisodios();
+      console.log('✅ Recarga de episodios completada');
+    };
+    
+    console.log('👂 Registrando listener para preciosConveniosChanged');
+    window.addEventListener('preciosConveniosChanged', handlePreciosConveniosChanged);
+    
+    return () => {
+      console.log('🔇 Removiendo listener para preciosConveniosChanged');
+      window.removeEventListener('preciosConveniosChanged', handlePreciosConveniosChanged);
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []); // Solo montar/desmontar el listener una vez
   
   // Función para cargar ajustes de tecnología del backend
   const loadAjustesTecnologia = async () => {
@@ -1256,8 +1287,9 @@ const getEditableFields = () => {
       setLoadingAjustes(false);
     }
   };
-
+  
   // Función para cargar episodios del backend
+  // precioBaseTramo, valorGRD y montoFinal vienen calculados desde el backend
   const loadEpisodios = async () => {
     setLoading(true);
     setError(null);
@@ -1445,6 +1477,9 @@ const getEditableFields = () => {
           });
         }
         
+        // NOTA: precioBaseTramo, valorGRD y montoFinal vienen calculados desde el backend
+        // No se recalculan en el frontend, solo se usan los valores tal cual vienen
+        
         // Normalizar campos numéricos: asegurar que sean números
         const numericFields = ['montoAT', 'montoRN', 'pagoOutlierSup', 'pagoDemora', 'precioBaseTramo', 'valorGRD', 'montoFinal', 'diasDemoraRescate', 'pesoGrd'];
         numericFields.forEach(fieldName => {
@@ -1488,7 +1523,7 @@ const getEditableFields = () => {
       
       setEpisodios(episodiosData);
       
-      console.log('Episodios cargados:', episodiosData.length);
+      console.log('✅ Episodios cargados desde el backend:', episodiosData.length);
       
       // Log para debug: verificar estructura de los episodios
       if (episodiosData.length > 0) {
@@ -1509,9 +1544,15 @@ const getEditableFields = () => {
           keysConPrecio: Object.keys(primerEp).filter(k => k.toLowerCase().includes('precio') || k.toLowerCase().includes('base') || k.toLowerCase().includes('tramo'))
         });
       }
-    } catch (error) {
-      console.error('Error cargando episodios:', error);
-      setError('Error al cargar episodios. Usando datos de demostración.');
+    } catch (error: any) {
+      console.error('❌ Error cargando episodios:', error);
+      console.error('❌ Detalles del error:', {
+        message: error?.message,
+        response: error?.response?.data,
+        status: error?.response?.status,
+        stack: error?.stack
+      });
+      setError(`Error al cargar episodios: ${error?.response?.data?.message || error?.message || 'Error desconocido'}. Usando datos de demostración.`);
       
       // Datos mock para desarrollo (eliminar cuando esté el backend)
       const mockEpisodios: Episode[] = [
@@ -2021,8 +2062,8 @@ const getEditableFields = () => {
                         shouldBeClickable = false;
                       }
                       
-                      // precioBaseTramo: clickeable solo si Gestión o Finanzas
-                      if (key === 'precioBaseTramo' && !isGestion && !isFinanzas) {
+                      // precioBaseTramo: NO EDITABLE - se calcula automáticamente desde precios convenios
+                      if (key === 'precioBaseTramo') {
                         shouldBeClickable = false;
                       }
                       

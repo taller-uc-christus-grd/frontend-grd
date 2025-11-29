@@ -173,6 +173,14 @@ export default function PreciosConvenios() {
         setEditValue('');
         setMessage('✅ Campo guardado correctamente');
         setTimeout(() => setMessage(''), 3000);
+        
+        // Notificar que los precios convenios cambiaron para recargar episodios
+        if (field === 'precio' || field === 'convenio' || field === 'tramo' || field === 'fechaAdmision' || field === 'fechaFin') {
+          console.log('📢 Disparando evento preciosConveniosChanged por cambio en:', field);
+          window.dispatchEvent(new CustomEvent('preciosConveniosChanged', { 
+            detail: { field, precioId: precio.id, timestamp: Date.now() } 
+          }));
+        }
         return;
       }
 
@@ -182,6 +190,14 @@ export default function PreciosConvenios() {
       setEditValue('');
       setMessage('✅ Cambios guardados correctamente');
       setTimeout(() => setMessage(''), 3000);
+      
+      // Notificar que los precios convenios cambiaron para recargar episodios
+      if (field === 'precio' || field === 'convenio' || field === 'tramo' || field === 'fechaAdmision' || field === 'fechaFin') {
+        console.log('📢 Disparando evento preciosConveniosChanged por cambio en:', field);
+        window.dispatchEvent(new CustomEvent('preciosConveniosChanged', { 
+          detail: { field, precioId: precio.id, timestamp: Date.now() } 
+        }));
+      }
     } catch (error: any) {
       console.error('❌ Error al guardar:', error);
       console.error('📋 Detalles del error:', {
@@ -264,6 +280,12 @@ export default function PreciosConvenios() {
       setPrecios(prev => prev.filter((_, i) => i !== rowIndex));
       setMessage('✅ Registro eliminado correctamente');
       setTimeout(() => setMessage(''), 3000);
+      
+      // Notificar que los precios convenios cambiaron para recargar episodios
+      console.log('📢 Disparando evento preciosConveniosChanged por eliminación de precio');
+      window.dispatchEvent(new CustomEvent('preciosConveniosChanged', { 
+        detail: { action: 'delete', timestamp: Date.now() } 
+      }));
     } catch (error: any) {
       console.error('Error al eliminar:', error);
       setMessage(`❌ Error al eliminar: ${error.response?.data?.message || error.message}`);
