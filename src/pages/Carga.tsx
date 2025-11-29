@@ -200,6 +200,7 @@ export default function Carga() {
   const [viewRows, setViewRows] = useState<any[]>([]);
   const [rawHeaders, setRawHeaders] = useState<string[]>([]);
   const [rawRows, setRawRows] = useState<any[]>([]);
+  const [convenioHeaderName, setConvenioHeaderName] = useState<string | null>(null);
 
   useEffect(() => {
     getEpisodesMeta()
@@ -291,17 +292,53 @@ export default function Carga() {
     // Proyección SOLO a necesarias para la vista/edición
     const present = new Set(_rawHeaders);
     const headersForView = REQUIRED_HEADERS.filter(h => present.has(h));
+    
+    // Agregar "Convenios (cod)" si está presente en el archivo (para mostrar en previsualización)
+    // Debe aparecer después de "Nombre" (índice 3 en REQUIRED_HEADERS)
+    // Buscar de manera flexible para encontrar variaciones del nombre
+    const convenioHeaders = ['Convenios (cod)', 'Convenios  (cod)', 'Convenios(cod)', 'Convenio (cod)', 'Convenio'];
+    let convenioHeaderFound: string | undefined;
+    
+    // Primero buscar coincidencia exacta
+    convenioHeaderFound = convenioHeaders.find(h => present.has(h));
+    
+    // Si no se encuentra exacto, buscar por coincidencia parcial (case-insensitive)
+    if (!convenioHeaderFound) {
+      for (const header of _rawHeaders) {
+        const normalizedHeader = header.toLowerCase().trim();
+        if (normalizedHeader.includes('convenio') && (normalizedHeader.includes('cod') || normalizedHeader === 'convenio')) {
+          convenioHeaderFound = header;
+          break;
+        }
+      }
+    }
+    
+    if (convenioHeaderFound && !headersForView.includes(convenioHeaderFound)) {
+      // Insertar después de "Nombre" (índice 3)
+      const nombreIndex = headersForView.indexOf('Nombre');
+      if (nombreIndex !== -1) {
+        headersForView.splice(nombreIndex + 1, 0, convenioHeaderFound);
+      } else {
+        headersForView.push(convenioHeaderFound);
+      }
+    }
+    
     const rowsForView = _rawRows.map(r => {
       const o: any = {};
       REQUIRED_HEADERS.forEach(h => { o[h] = r[h] ?? ''; });
+      // Agregar convenio si está presente
+      if (convenioHeaderFound) {
+        o[convenioHeaderFound] = r[convenioHeaderFound] ?? '';
+      }
       return o;
     });
 
     // Guarda estado
     setRawHeaders(_rawHeaders);
     setRawRows(_rawRows);
-    setViewHeaders(REQUIRED_HEADERS.slice());
+    setViewHeaders(headersForView);
     setViewRows(rowsForView);
+    setConvenioHeaderName(convenioHeaderFound || null);
     setOpenPrecheck(true);
     
     } catch (e: any) {
@@ -319,6 +356,10 @@ export default function Carga() {
       REQUIRED_HEADERS.forEach(h => {
         if (h in v) copy[h] = v[h];
       });
+      // También aplicar cambios al campo de convenio si está presente
+      if (convenioHeaderName && convenioHeaderName in v) {
+        copy[convenioHeaderName] = v[convenioHeaderName];
+      }
       return copy;
     });
 
