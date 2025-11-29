@@ -196,7 +196,7 @@ export default function PlanillaFinal(){
 
                   <div>
                     <label className="form-label">Peso GRD</label>
-                    <p className="text-[var(--text-secondary)]">{ep.peso ?? '—'}</p>
+                    <p className="text-[var(--text-secondary)]">{ep.pesoGrd?.toFixed(2) ?? '—'}</p>
                   </div>
 
                   <div>

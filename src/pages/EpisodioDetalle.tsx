@@ -1249,7 +1249,7 @@ export default function EpisodioDetalle() {
             </div>
             <div className="bg-slate-50 p-3 rounded-lg border border-slate-200">
               <div className="text-xs font-medium text-slate-500 mb-1">Peso GRD</div>
-              <div className="text-sm font-semibold text-slate-900">{episodio.peso?.toFixed(2) || 'No disponible'}</div>
+              <div className="text-sm font-semibold text-slate-900">{episodio.pesoGrd?.toFixed(2) || 'No disponible'}</div>
             </div>
             <div className="bg-slate-50 p-3 rounded-lg border border-slate-200">
               <div className="text-xs font-medium text-slate-500 mb-1">Estado</div>

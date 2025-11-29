@@ -1172,6 +1172,24 @@ const getEditableFields = () => {
       case 'peso':
         return value ? value.toFixed(2) : '-';
       
+      case 'pesoGrd':
+        // Campo: pesoGrd (number | null)
+        // Viene de "Peso GRD Medio (Todos)" del archivo maestro
+        // NO usar 'peso' - ese es otro campo diferente
+        if (process.env.NODE_ENV === 'development') {
+          console.log('🔍 PESO GRD - Debug:', {
+            key: 'pesoGrd',
+            value,
+            valueType: typeof value,
+            isNull: value === null,
+            isUndefined: value === undefined,
+            episodioPesoGrd: episodio.pesoGrd,
+            episodioPeso: episodio.peso,
+            episodioKeys: Object.keys(episodio).filter(k => k.toLowerCase().includes('peso'))
+          });
+        }
+        return value !== null && value !== undefined ? value.toFixed(2) : '-';
+      
       case 'diasEstada':
       case 'diasDemoraRescate':
         return value || '-';
@@ -1413,8 +1431,22 @@ const getEditableFields = () => {
           convenio: (ep as any).convenio
         });
         
+        // CRÍTICO: Log específico para pesoGrd ANTES de normalizar
+        if (process.env.NODE_ENV === 'development') {
+          console.log('🔍 PESO GRD - ANTES de normalización:', {
+            episodio: ep.episodio,
+            pesoGrdOriginal: ep.pesoGrd,
+            pesoGrdTipo: typeof ep.pesoGrd,
+            pesoOriginal: ep.peso,
+            pesoTipo: typeof ep.peso,
+            tienePesoGrd: 'pesoGrd' in ep,
+            tienePeso: 'peso' in ep,
+            todosLosCampos: Object.keys(ep).filter(k => k.toLowerCase().includes('peso'))
+          });
+        }
+        
         // Normalizar campos numéricos: asegurar que sean números
-        const numericFields = ['montoAT', 'montoRN', 'pagoOutlierSup', 'pagoDemora', 'precioBaseTramo', 'valorGRD', 'montoFinal', 'diasDemoraRescate'];
+        const numericFields = ['montoAT', 'montoRN', 'pagoOutlierSup', 'pagoDemora', 'precioBaseTramo', 'valorGRD', 'montoFinal', 'diasDemoraRescate', 'pesoGrd'];
         numericFields.forEach(fieldName => {
           const value = ep[fieldName];
           if (value !== null && value !== undefined) {
@@ -1424,6 +1456,17 @@ const getEditableFields = () => {
             ep[fieldName] = 0;
           }
         });
+        
+        // CRÍTICO: Log específico para pesoGrd DESPUÉS de normalizar
+        if (process.env.NODE_ENV === 'development') {
+          console.log('🔍 PESO GRD - DESPUÉS de normalización:', {
+            episodio: ep.episodio,
+            pesoGrdFinal: ep.pesoGrd,
+            pesoGrdTipo: typeof ep.pesoGrd,
+            pesoFinal: ep.peso,
+            pesoTipo: typeof ep.peso
+          });
+        }
         
         // Asegurar que convenio esté presente (preservar del backend)
         if (!('convenio' in ep)) {
@@ -1929,6 +1972,22 @@ const getEditableFields = () => {
                   <tr key={episodio.episodio} className="border-b border-slate-100 hover:bg-slate-50/50 transition-colors">
                     {FINAL_COLUMNS.map(([header, key, editable]) => {
                       const value = key.split('.').reduce((acc: any, k) => acc?.[k], episodio as any);
+                      
+                      // Debug para pesoGrd - VERIFICAR QUÉ VALOR ESTÁ LLEGANDO
+                      if (key === 'pesoGrd' && process.env.NODE_ENV === 'development') {
+                        console.log('🔍 PESO GRD - Extracción del valor:', {
+                          header: 'PESO GRD',
+                          key: 'pesoGrd',
+                          value,
+                          valueType: typeof value,
+                          episodioPesoGrd: episodio.pesoGrd,
+                          episodioPeso: episodio.peso,
+                          tienePesoGrd: 'pesoGrd' in episodio,
+                          tienePeso: 'peso' in episodio,
+                          todosLosCamposPeso: Object.keys(episodio).filter(k => k.toLowerCase().includes('peso')),
+                          episodioCompleto: JSON.stringify(episodio, null, 2)
+                        });
+                      }
                       
                       // Debug para convenio
                       if (key === 'convenio' && process.env.NODE_ENV === 'development') {
