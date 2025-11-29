@@ -708,54 +708,41 @@ const getEditableFields = () => {
     const isEditing = editingCell?.row === rowIndex && editingCell?.field === key;
     const isEditable = editableFields.has(key);
     
-    // Solo mostrar ícono si es editable para finanzas y no está siendo editado
-    if (isFinanzas && isEditable && !isEditing) {
-      // Determinar si el campo debe ser clickeable (misma lógica que en el render de la tabla)
-      let shouldBeClickable = false;
-      
-      // Solo bloquear campos que tienen dropdown directo (no necesitan ícono)
-      if (isFinanzas && key === 'validado') {
-        shouldBeClickable = false; // Ya tiene dropdown directo
-      } else if (isFinanzas && key === 'estadoRN') {
-        shouldBeClickable = false; // Ya tiene dropdown directo
-      } else if (isEditable) {
-        // TODOS los demás campos editables deben mostrar el ícono
-        // Incluye: at, atDetalle, montoAT, montoRN, diasDemoraRescate, 
-        // pagoDemora, pagoOutlierSup, documentacion, precioBaseTramo
-        shouldBeClickable = true;
-      }
-      
-      // Validación especial para valorGRD y montoFinal (solo cuando está fuera de norma)
-      if ((key === 'valorGRD' || key === 'montoFinal') && shouldBeClickable) {
-        const episodioParaValidar = episodio || filteredEpisodios[rowIndex];
-        const esFueraDeNorma = episodioParaValidar?.grupoDentroNorma === false;
-        const tienePermiso = (isFinanzas || isCodificador);
-        if (!esFueraDeNorma || !tienePermiso) {
-          shouldBeClickable = false;
-        }
-      }
-      
-      if (shouldBeClickable) {
-        return (
-          <div className="flex items-center gap-1.5">
-            <span>{content}</span>
-            <svg 
-              className="w-3.5 h-3.5 text-blue-500 opacity-70 flex-shrink-0" 
-              fill="none" 
-              stroke="currentColor" 
-              viewBox="0 0 24 24"
-              aria-label="Campo editable"
-            >
-              <path 
-                strokeLinecap="round" 
-                strokeLinejoin="round" 
-                strokeWidth={2} 
-                d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" 
-              />
-            </svg>
-          </div>
-        );
-      }
+    // Lista de campos editables para finanzas que deben mostrar el ícono
+    const camposEditablesFinanzas = [
+      'estadoRN',
+      'at',
+      'atDetalle',
+      'montoAT',
+      'montoRN',
+      'diasDemoraRescate',
+      'pagoDemora',
+      'pagoOutlierSup',
+      'documentacion',
+      'precioBaseTramo'
+    ];
+    
+    // Mostrar ícono si es finanzas, el campo está en la lista y no está siendo editado
+    if (isFinanzas && camposEditablesFinanzas.includes(key) && !isEditing) {
+      return (
+        <div className="flex items-center gap-1.5">
+          <span>{content}</span>
+          <svg 
+            className="w-3.5 h-3.5 text-blue-500 opacity-70 flex-shrink-0" 
+            fill="none" 
+            stroke="currentColor" 
+            viewBox="0 0 24 24"
+            aria-label="Campo editable"
+          >
+            <path 
+              strokeLinecap="round" 
+              strokeLinejoin="round" 
+              strokeWidth={2} 
+              d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" 
+            />
+          </svg>
+        </div>
+      );
     }
     
     return content;
