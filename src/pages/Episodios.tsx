@@ -1,4 +1,4 @@
-import { useState, useMemo, useEffect } from 'react';
+import React, { useState, useMemo, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { FINAL_COLUMNS } from '@/lib/planillaConfig';
 import type { Episode } from '@/types';
@@ -94,24 +94,26 @@ const getEditableFields = () => {
   const editableFields = new Set<string>();
   
   if (isFinanzas) {
-    // Finanzas puede editar campos financieros + VALIDADO,
-    // EXCEPTO at, atDetalle, montoAT (AT es de codificador/gestión)
+    // Finanzas puede editar TODOS estos campos:
+    // ESTADO RN, AT (S/N), AT detalle, Monto AT, MONTO RN, 
+    // Días de demora rescate, Pago demora rescate, Pago por outlier superior, 
+    // DOCUMENTACION NECESARIA, Precio Base por tramo correspondiente
+    
+    // Incluir TODOS los campos editables de FINAL_COLUMNS (sin exclusiones)
     FINAL_COLUMNS.forEach(([header, key, editable]) => {
-      if (
-        editable &&
-        key !== 'at' &&
-        key !== 'atDetalle' &&
-        key !== 'montoAT'
-      ) {
-        editableFields.add(key);
+      if (editable) {
+        editableFields.add(key); // Incluye: estadoRN, at, atDetalle, montoAT, montoRN, 
+                                  // diasDemoraRescate, pagoDemora, pagoOutlierSup, documentacion
       }
     });
 
     // Nos aseguramos explícitamente que VALIDADO sí está
     editableFields.add('validado');
     
+    // Agregar precioBaseTramo explícitamente (aunque en planillaConfig está como false)
+    editableFields.add('precioBaseTramo');
+    
     // Para casos fuera de norma, Finanzas puede hacer override manual de valorGRD y montoFinal
-    // Estos campos se agregan dinámicamente cuando el episodio está fuera de norma
     editableFields.add('valorGRD');
     editableFields.add('montoFinal');
   }
@@ -152,15 +154,11 @@ const getEditableFields = () => {
     // Verificar permisos según rol
     if (!editableFields.has(field)) return;
 
-    // AT y AT Detalle: Codificador o Gestión
-    if (field === 'at' || field === 'atDetalle') {
-      if (!isCodificador && !isGestion) return;
-    }
+    // AT y AT Detalle: ahora también editables para Finanzas
+    // (removida la restricción que solo permitía codificador/gestión)
 
-    // precioBaseTramo: NO EDITABLE - se calcula automáticamente desde precios convenios
-    if (field === 'precioBaseTramo') {
-      return; // No permitir edición
-    }
+    // precioBaseTramo: ahora editable para finanzas
+    // (removida la restricción)
 
     // valorGRD y montoFinal: solo editables para Finanzas o Codificador cuando el episodio está fuera de norma
     if (field === 'valorGRD' || field === 'montoFinal') {
@@ -178,9 +176,6 @@ const getEditableFields = () => {
     // Otros campos: solo Finanzas (campos financieros)
     if (
       field !== 'validado' &&
-      field !== 'at' &&
-      field !== 'atDetalle' &&
-      field !== 'precioBaseTramo' &&
       field !== 'valorGRD' &&
       field !== 'montoFinal' &&
       !isFinanzas
@@ -708,6 +703,64 @@ const getEditableFields = () => {
     setEditValue('');
   };
 
+  // Función helper para agregar ícono de edición a campos editables
+  const wrapWithEditIcon = (content: React.ReactNode, key: string, rowIndex: number, episodio?: Episode) => {
+    const isEditing = editingCell?.row === rowIndex && editingCell?.field === key;
+    const isEditable = editableFields.has(key);
+    
+    // Solo mostrar ícono si es editable para finanzas y no está siendo editado
+    if (isFinanzas && isEditable && !isEditing) {
+      // Determinar si el campo debe ser clickeable (misma lógica que en el render de la tabla)
+      let shouldBeClickable = false;
+      
+      // Solo bloquear campos que tienen dropdown directo (no necesitan ícono)
+      if (isFinanzas && key === 'validado') {
+        shouldBeClickable = false; // Ya tiene dropdown directo
+      } else if (isFinanzas && key === 'estadoRN') {
+        shouldBeClickable = false; // Ya tiene dropdown directo
+      } else if (isEditable) {
+        // TODOS los demás campos editables deben mostrar el ícono
+        // Incluye: at, atDetalle, montoAT, montoRN, diasDemoraRescate, 
+        // pagoDemora, pagoOutlierSup, documentacion, precioBaseTramo
+        shouldBeClickable = true;
+      }
+      
+      // Validación especial para valorGRD y montoFinal (solo cuando está fuera de norma)
+      if ((key === 'valorGRD' || key === 'montoFinal') && shouldBeClickable) {
+        const episodioParaValidar = episodio || filteredEpisodios[rowIndex];
+        const esFueraDeNorma = episodioParaValidar?.grupoDentroNorma === false;
+        const tienePermiso = (isFinanzas || isCodificador);
+        if (!esFueraDeNorma || !tienePermiso) {
+          shouldBeClickable = false;
+        }
+      }
+      
+      if (shouldBeClickable) {
+        return (
+          <div className="flex items-center gap-1.5">
+            <span>{content}</span>
+            <svg 
+              className="w-3.5 h-3.5 text-blue-500 opacity-70 flex-shrink-0" 
+              fill="none" 
+              stroke="currentColor" 
+              viewBox="0 0 24 24"
+              aria-label="Campo editable"
+            >
+              <path 
+                strokeLinecap="round" 
+                strokeLinejoin="round" 
+                strokeWidth={2} 
+                d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" 
+              />
+            </svg>
+          </div>
+        );
+      }
+    }
+    
+    return content;
+  };
+
   // Función para renderizar valores de celdas con formato apropiado
   const renderCellValue = (key: string, value: any, episodio: Episode, rowIndex: number) => {
     const isEditing = editingCell?.row === rowIndex && editingCell?.field === key;
@@ -919,7 +972,9 @@ const getEditableFields = () => {
     }
     
     // Manejar null/undefined para campos que no sean validado (validado se maneja en el switch)
-    if (key !== 'validado' && (value === null || value === undefined)) return '-';
+    if (key !== 'validado' && (value === null || value === undefined)) {
+      return wrapWithEditIcon(<span className="text-slate-400">-</span>, key, rowIndex, episodio);
+    }
     
     switch (key) {
       case 'validado':
@@ -1003,6 +1058,7 @@ const getEditableFields = () => {
       
       case 'at':
         // Manejar tanto boolean como "S"/"N"
+        // NOTA: 'at' es editable para codificador/gestión y también para finanzas
         const atValue = value === true || value === 'S' || String(value || '').toUpperCase() === 'S';
         const atDisplay = atValue ? 'Sí' : 'No';
         const atValueNormalized = atValue ? 'S' : 'N';
@@ -1012,26 +1068,39 @@ const getEditableFields = () => {
           display: atDisplay,
           normalizado: atValueNormalized
         });
-        return atValue ? (
-          <span className="badge-success">{atDisplay}</span>
-        ) : (
-          <span className="badge-error">{atDisplay}</span>
+        return wrapWithEditIcon(
+          atValue ? (
+            <span className="badge-success">{atDisplay}</span>
+          ) : (
+            <span className="badge-error">{atDisplay}</span>
+          ),
+          key,
+          rowIndex,
+          episodio
         );
       
       case 'inlierOutlier':
-        return (
+        return wrapWithEditIcon(
           <span className={`badge-${
             value === 'Outlier' ? 'warning' : 'success'
           }`}>
             {value || '-'}
-          </span>
+          </span>,
+          key,
+          rowIndex,
+          episodio
         );
       
       case 'grupoDentroNorma':
-        return value ? (
-          <span className="badge-success">Sí</span>
-        ) : (
-          <span className="badge-error">No</span>
+        return wrapWithEditIcon(
+          value ? (
+            <span className="badge-success">Sí</span>
+          ) : (
+            <span className="badge-error">No</span>
+          ),
+          key,
+          rowIndex,
+          episodio
         );
       
       case 'estadoRN':
@@ -1120,19 +1189,25 @@ const getEditableFields = () => {
         // Para otros roles, mostrar badge simple
         const estadoDisplay = value ? String(value) : '-';
         console.log('📊 estadoRN renderizado en tabla:', { original: value, display: estadoDisplay });
-        return value ? (
-          <span className={`badge-${
-            value === 'Aprobado' ? 'success' : 
-            value === 'Pendiente' ? 'warning' : 'error'
-          }`}>
-            {estadoDisplay}
-          </span>
-        ) : (
-          <span className="text-slate-400">-</span>
+        return wrapWithEditIcon(
+          value ? (
+            <span className={`badge-${
+              value === 'Aprobado' ? 'success' : 
+              value === 'Pendiente' ? 'warning' : 'error'
+            }`}>
+              {estadoDisplay}
+            </span>
+          ) : (
+            <span className="text-slate-400">-</span>
+          ),
+          key,
+          rowIndex,
+          episodio
         );
       
       case 'montoAT':
         // Monto AT debe mostrarse solo si AT = 'S'
+        // NOTA: montoAT es editable para finanzas
         const episodioAtParaMonto = episodio.at;
         const atEsSParaMonto = episodioAtParaMonto === true || String(episodioAtParaMonto || '').toUpperCase() === 'S';
         const montoATValue = (atEsSParaMonto && value) ? (typeof value === 'number' ? value : parseFloat(String(value))) : 0;
@@ -1145,14 +1220,17 @@ const getEditableFields = () => {
           montoATValue: montoATValue,
           formatted: montoATFormatted
         });
-        return (
+        return wrapWithEditIcon(
           <div className="flex items-center gap-1">
             <span className={hasErrors ? 'text-red-600' : hasWarnings ? 'text-yellow-600' : ''}>
               {montoATFormatted}
             </span>
             {hasErrors && <span className="text-red-500 text-xs">⚠️</span>}
             {hasWarnings && !hasErrors && <span className="text-yellow-500 text-xs">⚠️</span>}
-          </div>
+          </div>,
+          key,
+          rowIndex,
+          episodio
         );
       
       case 'montoRN':
@@ -1162,18 +1240,26 @@ const getEditableFields = () => {
       case 'valorGRD':
       case 'montoFinal':
         const formattedValue = value ? formatCurrency(value) : '-';
-        return (
+        return wrapWithEditIcon(
           <div className="flex items-center gap-1">
             <span className={hasErrors ? 'text-red-600' : hasWarnings ? 'text-yellow-600' : ''}>
               {formattedValue}
             </span>
             {hasErrors && <span className="text-red-500 text-xs">⚠️</span>}
             {hasWarnings && !hasErrors && <span className="text-yellow-500 text-xs">⚠️</span>}
-          </div>
+          </div>,
+          key,
+          rowIndex,
+          episodio
         );
       
       case 'peso':
-        return value ? value.toFixed(2) : '-';
+        return wrapWithEditIcon(
+          <span>{value ? value.toFixed(2) : <span className="text-slate-400">-</span>}</span>,
+          key,
+          rowIndex,
+          episodio
+        );
       
       case 'pesoGrd':
         // Campo: pesoGrd (number | null)
@@ -1191,43 +1277,75 @@ const getEditableFields = () => {
             episodioKeys: Object.keys(episodio).filter(k => k.toLowerCase().includes('peso'))
           });
         }
-        return value !== null && value !== undefined ? value.toFixed(2) : '-';
+        return wrapWithEditIcon(
+          <span>{value !== null && value !== undefined ? value.toFixed(2) : <span className="text-slate-400">-</span>}</span>,
+          key,
+          rowIndex,
+          episodio
+        );
       
       case 'diasEstada':
       case 'diasDemoraRescate':
-        return value || '-';
+        return wrapWithEditIcon(
+          <span>{value || <span className="text-slate-400">-</span>}</span>,
+          key,
+          rowIndex,
+          episodio
+        );
       
       case 'documentacion':
-        return value ? (
-          <span className="text-xs text-gray-600 max-w-32 truncate" title={value}>
-            {value}
-          </span>
-        ) : '-';
+        return wrapWithEditIcon(
+          value ? (
+            <span className="text-xs text-gray-600 max-w-32 truncate" title={value}>
+              {value}
+            </span>
+          ) : (
+            <span className="text-slate-400">-</span>
+          ),
+          key,
+          rowIndex,
+          episodio
+        );
       
       case 'atDetalle':
         // Asegurar que el valor se muestre correctamente
         const atDetalleDisplay = value ? String(value).trim() : '';
-        return atDetalleDisplay ? (
-          <span className="text-xs text-slate-700 max-w-[200px] truncate" title={atDetalleDisplay}>
-            {atDetalleDisplay}
-          </span>
-        ) : (
-          <span className="text-slate-400">-</span>
+        return wrapWithEditIcon(
+          atDetalleDisplay ? (
+            <span className="text-xs text-slate-700 max-w-[200px] truncate" title={atDetalleDisplay}>
+              {atDetalleDisplay}
+            </span>
+          ) : (
+            <span className="text-slate-400">-</span>
+          ),
+          key,
+          rowIndex,
+          episodio
         );
       
       case 'convenio':
         // Mostrar el código del convenio
         const convenioDisplay = value ? String(value).trim() : '';
-        return convenioDisplay ? (
-          <span className="text-slate-700 font-medium" title={convenioDisplay}>
-            {convenioDisplay}
-          </span>
-        ) : (
-          <span className="text-slate-400">-</span>
+        return wrapWithEditIcon(
+          convenioDisplay ? (
+            <span className="text-slate-700 font-medium" title={convenioDisplay}>
+              {convenioDisplay}
+            </span>
+          ) : (
+            <span className="text-slate-400">-</span>
+          ),
+          key,
+          rowIndex,
+          episodio
         );
       
       default:
-        return value || '-';
+        return wrapWithEditIcon(
+          <span>{value || <span className="text-slate-400">-</span>}</span>,
+          key,
+          rowIndex,
+          episodio
+        );
     }
   };
 
@@ -2047,24 +2165,15 @@ const getEditableFields = () => {
                       // Determinar si el campo debe ser clickeable
                       let shouldBeClickable = false;
 
-                      if (key === 'montoAT') {
-                        // montoAT nunca es editable
-                        shouldBeClickable = false;
-                      } else if (isFinanzas && key === 'validado') {
+                      if (isFinanzas && key === 'validado') {
                         // Para Finanzas, VALIDADO ya tiene dropdown directo, no usamos startEdit
                         shouldBeClickable = false;
+                      } else if (isFinanzas && key === 'estadoRN') {
+                        // Para Finanzas, estadoRN ya tiene dropdown directo
+                        shouldBeClickable = false;
                       } else if (isEditable) {
+                        // Todos los demás campos editables
                         shouldBeClickable = true;
-                      }
-
-                      // AT y AT Detalle: clickeables solo si Codificador o Gestión
-                      if ((key === 'at' || key === 'atDetalle') && !isCodificador && !isGestion) {
-                        shouldBeClickable = false;
-                      }
-                      
-                      // precioBaseTramo: NO EDITABLE - se calcula automáticamente desde precios convenios
-                      if (key === 'precioBaseTramo') {
-                        shouldBeClickable = false;
                       }
                       
                       // valorGRD y montoFinal: solo editables para Finanzas o Codificador cuando el episodio está fuera de norma
