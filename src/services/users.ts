@@ -36,7 +36,7 @@ export async function getUsers(): Promise<User[]> {
       role: (user.rol || user.role).toLowerCase() as Role,
       status: user.activo === true || user.activo === 'active' ? 'active' : 'inactive',
       createdAt: user.createdAt || user.created_at,
-      lastLogin: user.lastLogin || user.last_login
+      lastLogin: user.lastAccessAt || user.lastLogin || user.last_login
     }));
   } catch (error) {
     console.error('Error al obtener usuarios:', error);
@@ -67,7 +67,7 @@ export async function createUser(userData: CreateUserData): Promise<User> {
       role: (user.rol || user.role).toLowerCase() as Role,
       status: user.activo === true || user.activo === 'active' ? 'active' : 'inactive',
       createdAt: user.createdAt || user.created_at,
-      lastLogin: user.lastLogin || user.last_login
+      lastLogin: user.lastAccessAt || user.lastLogin || user.last_login
     };
   } catch (error: any) {
     console.error('Error al crear usuario:', error);
@@ -98,7 +98,7 @@ export async function updateUser(userData: UpdateUserData): Promise<User> {
       role: (user.rol || user.role).toLowerCase() as Role,
       status: user.activo === true || user.activo === 'active' ? 'active' : 'inactive',
       createdAt: user.createdAt || user.created_at,
-      lastLogin: user.lastLogin || user.last_login
+      lastLogin: user.lastAccessAt || user.lastLogin || user.last_login
     };
   } catch (error: any) {
     console.error('Error al actualizar usuario:', error);
@@ -135,7 +135,7 @@ export async function toggleUserStatus(userId: string, status: 'active' | 'inact
       role: (user.rol || user.role).toLowerCase() as Role,
       status: user.activo === true || user.activo === 'active' ? 'active' : 'inactive',
       createdAt: user.createdAt || user.created_at,
-      lastLogin: user.lastLogin || user.last_login
+      lastLogin: user.lastAccessAt || user.lastLogin || user.last_login
     };
   } catch (error: any) {
     console.error('Error al cambiar estado del usuario:', error);
