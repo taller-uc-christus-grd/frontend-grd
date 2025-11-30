@@ -356,7 +356,7 @@ export default function PreciosConvenios() {
   ];
 
   return (
-    <main className="max-w-[1600px] mx-auto px-6 py-10">
+    <main className="max-w-[1400px] mx-auto px-6 py-10">
       {/* Botón volver */}
       <div className="mb-6">
         <Link to="/dashboard" className="text-xs px-3 py-1 rounded-full bg-slate-100 text-slate-700 hover:bg-slate-200 ring-1 ring-slate-300/80 shadow-sm transition-all duration-300 inline-block">

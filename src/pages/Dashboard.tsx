@@ -44,7 +44,7 @@ export default function Dashboard() {
   }
 
   return (
-    <main className="max-w-[1400px] mx-auto px-6 py-14 md:py-20">
+    <main className="max-w-[1400px] mx-auto px-6 py-10">
       {/* Header: tarjeta superior mostrando rol real (no Admin) */}
       <div className="mb-6 rounded-2xl border border-slate-200 bg-white shadow-sm px-6 py-5">
         <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-2">
@@ -119,7 +119,7 @@ export default function Dashboard() {
           {hasRole(user, ['finanzas', 'gestion']) && (
             <Link to="/ajustes-tecnologia" className="rounded-2xl border border-slate-200 bg-white/90 shadow-sm p-6 transition-all hover:shadow-md hover:-translate-y-0.5 hover:ring-1 hover:ring-blue-200 group">
               <div className="flex items-center mb-3">
-                <img src={documentImg} alt="Ajustes Por Tecnología" className="w-8 h-8 mr-3 select-none object-contain" style={{ filter: 'invert(27%) sepia(51%) saturate(2878%) hue-rotate(346deg) brightness(104%) contrast(97%)' }} />
+                <img src={documentImg} alt="Ajustes Por Tecnología" className="w-8 h-8 mr-3 select-none object-contain" style={{ filter: 'invert(48%) sepia(79%) saturate(2476%) hue-rotate(194deg) brightness(100%) contrast(96%)' }} />
                 <div className="text-blue-600 text-lg font-medium">Ajustes Por Tecnología</div>
               </div>
               <p className="text-sm text-slate-600 mb-4">Gestiona los ajustes por tecnología (AT) y sus montos asociados.</p>
