@@ -2085,6 +2085,63 @@ const getEditableFields = () => {
       </header>
       </div>
 
+      {/* Campos editables para Codificador - después del título, antes del buscador */}
+      {isCodificador && (
+        <div className="mb-6 rounded-2xl border border-slate-200 bg-white shadow-sm overflow-hidden">
+          <div className="bg-gradient-to-br from-blue-50 to-indigo-50 border-t border-blue-200 px-6 py-6">
+            <div className="flex items-start gap-3 mb-4">
+              <img src={icon1} alt="Codificador" className="w-8 h-8 object-contain mt-1" style={{ filter: 'invert(48%) sepia(79%) saturate(2476%) hue-rotate(194deg) brightness(100%) contrast(96%)' }} />
+              <div className="flex-1">
+                <h3 className="text-base font-open-sauce font-medium text-blue-900 mb-4">Campos editables para Codificador</h3>
+                
+                {/* Instrucciones primero */}
+                <div className="mb-6 -mx-6 px-6 py-4 bg-white/80 border-l-4 border-blue-500 rounded-r-lg shadow-sm">
+                  <h4 className="text-sm font-semibold text-blue-900 mb-3">Instrucciones</h4>
+                  <div className="space-y-2.5">
+                    <p className="text-sm text-slate-700 flex items-start gap-2.5">
+                      <span className="text-blue-500 mt-0.5 font-bold">•</span>
+                      <span>Primero selecciona <strong>AT(S/N)</strong> como "Sí" o "No".</span>
+                    </p>
+                    <p className="text-sm text-slate-700 flex items-start gap-2.5">
+                      <span className="text-blue-500 mt-0.5 font-bold">•</span>
+                      <span>Si seleccionas "Sí", entonces podrás editar <strong>AT Detalle</strong>.</span>
+                    </p>
+                    <p className="text-sm text-slate-700 flex items-start gap-2.5">
+                      <span className="text-blue-500 mt-0.5 font-bold">•</span>
+                      <span>El <strong>Monto AT</strong> se autocompleta automáticamente según el AT Detalle seleccionado (no es editable).</span>
+                    </p>
+                    <p className="text-sm text-slate-700 flex items-start gap-2.5">
+                      <span className="text-blue-500 mt-0.5 font-bold">•</span>
+                      <span>Si seleccionas "No" en AT(S/N), se limpiarán automáticamente AT Detalle y Monto AT.</span>
+                    </p>
+                  </div>
+                </div>
+                
+                {/* Lista de campos editables */}
+                <div className="grid md:grid-cols-2 gap-x-8 gap-y-2.5 text-sm text-slate-700">
+                  <div className="space-y-2.5">
+                    <p className="flex items-start gap-2">
+                      <span className="text-blue-500 mt-1">•</span>
+                      <span><strong className="font-semibold text-slate-900">AT (S/N)</strong> - Ajuste por Tecnología (Sí/No)</span>
+                    </p>
+                    <p className="flex items-start gap-2">
+                      <span className="text-blue-500 mt-1">•</span>
+                      <span><strong className="font-semibold text-slate-900">AT Detalle</strong> - Detalle del AT (solo habilitado si AT = Sí)</span>
+                    </p>
+                  </div>
+                  <div className="space-y-2.5">
+                    <p className="flex items-start gap-2">
+                      <span className="text-blue-500 mt-1">•</span>
+                      <span><strong className="font-semibold text-slate-900">Monto AT</strong> - Se autocompleta automáticamente (solo lectura)</span>
+                    </p>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
       {/* Div 2: Instrucciones */}
       <div className='mb-6 rounded-2xl border border-slate-200 bg-white shadow-sm overflow-hidden'>
         {error && (
@@ -2483,59 +2540,6 @@ const getEditableFields = () => {
           </div>
         )}
 
-        {isCodificador && (
-          <div className="bg-gradient-to-br from-blue-50 to-indigo-50 border-t border-blue-200 px-6 py-6">
-            <div className="flex items-start gap-3 mb-4">
-              <img src={icon1} alt="Codificador" className="w-8 h-8 object-contain mt-1" style={{ filter: 'invert(48%) sepia(79%) saturate(2476%) hue-rotate(194deg) brightness(100%) contrast(96%)' }} />
-              <div className="flex-1">
-                <h3 className="text-base font-open-sauce font-medium text-blue-900 mb-4">Campos editables para Codificador</h3>
-                
-                {/* Instrucciones primero */}
-                <div className="mb-6 -mx-6 px-6 py-4 bg-white/80 border-l-4 border-blue-500 rounded-r-lg shadow-sm">
-                  <h4 className="text-sm font-semibold text-blue-900 mb-3">Instrucciones</h4>
-                  <div className="space-y-2.5">
-                    <p className="text-sm text-slate-700 flex items-start gap-2.5">
-                      <span className="text-blue-500 mt-0.5 font-bold">•</span>
-                      <span>Primero selecciona <strong>AT(S/N)</strong> como "Sí" o "No".</span>
-                    </p>
-                    <p className="text-sm text-slate-700 flex items-start gap-2.5">
-                      <span className="text-blue-500 mt-0.5 font-bold">•</span>
-                      <span>Si seleccionas "Sí", entonces podrás editar <strong>AT Detalle</strong>.</span>
-                    </p>
-                    <p className="text-sm text-slate-700 flex items-start gap-2.5">
-                      <span className="text-blue-500 mt-0.5 font-bold">•</span>
-                      <span>El <strong>Monto AT</strong> se autocompleta automáticamente según el AT Detalle seleccionado (no es editable).</span>
-                    </p>
-                    <p className="text-sm text-slate-700 flex items-start gap-2.5">
-                      <span className="text-blue-500 mt-0.5 font-bold">•</span>
-                      <span>Si seleccionas "No" en AT(S/N), se limpiarán automáticamente AT Detalle y Monto AT.</span>
-                    </p>
-                  </div>
-                </div>
-                
-                {/* Lista de campos editables */}
-                <div className="grid md:grid-cols-2 gap-x-8 gap-y-2.5 text-sm text-slate-700">
-                  <div className="space-y-2.5">
-                    <p className="flex items-start gap-2">
-                      <span className="text-blue-500 mt-1">•</span>
-                      <span><strong className="font-semibold text-slate-900">AT (S/N)</strong> - Ajuste por Tecnología (Sí/No)</span>
-                    </p>
-                    <p className="flex items-start gap-2">
-                      <span className="text-blue-500 mt-1">•</span>
-                      <span><strong className="font-semibold text-slate-900">AT Detalle</strong> - Detalle del AT (solo habilitado si AT = Sí)</span>
-                    </p>
-                  </div>
-                  <div className="space-y-2.5">
-                    <p className="flex items-start gap-2">
-                      <span className="text-blue-500 mt-1">•</span>
-                      <span><strong className="font-semibold text-slate-900">Monto AT</strong> - Se autocompleta automáticamente (solo lectura)</span>
-                    </p>
-                  </div>
-                </div>
-              </div>
-            </div>
-          </div>
-        )}
       </div>
       
       {/* Modal de fórmula */}
