@@ -53,7 +53,7 @@ export async function login(credentials: LoginCredentials): Promise<Role> {
   }
 
   const authenticatedUser: User = {
-    id: userData.id || userData._id || '',
+    id: userData.id || (userData as any)._id || '',
     email: userData.email,
     role: userData.role as Role,
     token: token || ''
@@ -87,15 +87,15 @@ export async function login(credentials: LoginCredentials): Promise<Role> {
  */
 export async function getCurrentUser(): Promise<User> {
   const response = await api.get<{ user: User } | User>('/api/auth/me');
-  const userData = response.data.user || (response.data as User);
-  const token = getStoredUser()?.token || userData.token;
+  const userData = ('user' in response.data ? response.data.user : response.data) as User;
+  const token = getStoredUser()?.token || (userData as any).token;
 
   if (!userData || !userData.role) {
     throw new Error('Respuesta del servidor inválida');
   }
 
   const currentUser: User = {
-    id: userData.id || userData._id || '',
+    id: userData.id || (userData as any)._id || '',
     email: userData.email,
     role: userData.role as Role,
     token: token || ''

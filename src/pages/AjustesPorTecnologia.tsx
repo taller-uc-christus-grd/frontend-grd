@@ -124,6 +124,7 @@ export default function AjustesPorTecnologia() {
       setTimeout(() => setMessage(''), 3000);
     } catch (error: any) {
       console.error('❌ Error al guardar:', error);
+      const ajuste = ajustes[rowIndex];
       console.error('📋 Detalles del error:', {
         status: error.response?.status,
         data: error.response?.data,

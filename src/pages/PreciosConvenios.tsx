@@ -200,6 +200,7 @@ export default function PreciosConvenios() {
       }
     } catch (error: any) {
       console.error('❌ Error al guardar:', error);
+      const precio = precios[rowIndex];
       console.error('📋 Detalles del error:', {
         status: error.response?.status,
         data: error.response?.data,

@@ -313,13 +313,13 @@ export default function Carga() {
       }
     }
     
-    if (convenioHeaderFound && !headersForView.includes(convenioHeaderFound)) {
+    if (convenioHeaderFound && !headersForView.includes(convenioHeaderFound as any)) {
       // Insertar después de "Nombre" (índice 3)
       const nombreIndex = headersForView.indexOf('Nombre');
       if (nombreIndex !== -1) {
-        headersForView.splice(nombreIndex + 1, 0, convenioHeaderFound);
+        headersForView.splice(nombreIndex + 1, 0, convenioHeaderFound as any);
       } else {
-        headersForView.push(convenioHeaderFound);
+        headersForView.push(convenioHeaderFound as any);
       }
     }
     
