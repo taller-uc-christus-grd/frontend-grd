@@ -13,6 +13,58 @@ import {
 import { getConfig, updateConfig, type SystemConfig } from '@/services/config';
 import { getLogs, type SystemLog } from '@/services/logs';
 
+// Función helper para formatear fecha a zona horaria America/Santiago
+function formatDateChile(dateString: string | Date | null | undefined, fallback: string = 'Sin acceso'): string {
+  if (!dateString) {
+    return fallback;
+  }
+  
+  try {
+    // Asegurarnos de que la fecha se interprete como UTC si viene como string ISO
+    let date: Date;
+    if (dateString instanceof Date) {
+      date = dateString;
+    } else if (typeof dateString === 'string') {
+      // Si es un string ISO con Z al final, asegurarnos de que se interprete como UTC
+      // Si no tiene Z, agregarlo para forzar interpretación UTC
+      const isoString = dateString.endsWith('Z') || dateString.includes('+') || dateString.includes('-', 10)
+        ? dateString
+        : dateString + 'Z';
+      date = new Date(isoString);
+    } else {
+      date = new Date(dateString);
+    }
+    
+    // Verificar que la fecha sea válida
+    if (isNaN(date.getTime())) {
+      console.error('Fecha inválida:', dateString);
+      return 'Fecha inválida';
+    }
+    
+    // Usar toLocaleString con timeZone para convertir de UTC a America/Santiago
+    // La fecha viene en UTC desde el backend, y la convertimos a hora local de Chile
+    const formatted = date.toLocaleString('es-CL', {
+      timeZone: 'America/Santiago',
+      day: '2-digit',
+      month: '2-digit',
+      year: 'numeric',
+      hour: '2-digit',
+      minute: '2-digit',
+      hour12: false
+    });
+    
+    return formatted;
+  } catch (error) {
+    console.error('Error formateando fecha:', error, dateString);
+    return 'Fecha inválida';
+  }
+}
+
+// Función específica para último acceso
+function formatLastAccess(dateString: string | null | undefined): string {
+  return formatDateChile(dateString, 'Sin acceso');
+}
+
 export default function Admin() {
   const { user } = useAuth();
   const [activeTab, setActiveTab] = useState<'users' | 'config' | 'logs'>('users');
@@ -469,7 +521,7 @@ export default function Admin() {
                             </span>
                           </td>
                           <td className="px-6 py-4 whitespace-nowrap text-sm text-slate-500">
-                            {user.lastLogin || 'Nunca'}
+                            {formatLastAccess(user.lastLogin)}
                           </td>
                           <td className="px-6 py-4 whitespace-nowrap text-sm font-medium space-x-2">
                             <button
@@ -808,7 +860,7 @@ export default function Admin() {
                                 <div className="text-sm text-slate-900">{log.action}</div>
                               </td>
                               <td className="px-6 py-4 whitespace-nowrap">
-                                <div className="text-sm text-slate-500">{new Date(log.timestamp).toLocaleString('es-CL')}</div>
+                                <div className="text-sm text-slate-500">{formatDateChile(log.timestamp)}</div>
                               </td>
                               <td className="px-6 py-4 whitespace-nowrap">
                                 <div className="text-sm text-slate-500 font-mono">{log.ip}</div>
@@ -847,7 +899,7 @@ export default function Admin() {
                     Mostrando {filteredLogs.length} de {logs.length} logs
                   </div>
                   <div className="text-sm text-slate-500">
-                    Última actualización: {new Date().toLocaleString()}
+                    Última actualización: {formatDateChile(new Date())}
                   </div>
                 </div>
               </div>
