@@ -89,8 +89,8 @@ export default function Episodios() {
       );
     }
 
-    // Filtro por convenio (solo para finanzas, filtra en tiempo real)
-    if (isFinanzas && filterConvenio.trim() !== '') {
+    // Filtro por convenio (para finanzas y codificador, filtra en tiempo real)
+    if ((isFinanzas || isCodificador) && filterConvenio.trim() !== '') {
       const convenioTerm = filterConvenio.trim().toLowerCase();
       filtered = filtered.filter(ep => {
         const convenio = ep.convenio?.toLowerCase() || '';
@@ -113,6 +113,18 @@ export default function Episodios() {
     'pagoOutlierSup',
     'documentacion',
     'precioBaseTramo'
+  ];
+
+  // Lista de campos editables para codificador que deben mostrar el ícono
+  const camposEditablesCodificador = [
+    'at',
+    'atDetalle',
+    'diasDemoraRescate',
+    'pagoDemora',
+    'montoRN',
+    'pagoOutlierSup',
+    'valorGRD',
+    'montoFinal'
   ];
 
   // Campos editables según rol del usuario
@@ -145,9 +157,14 @@ const getEditableFields = () => {
   }
   
   if (isCodificador) {
-    // Codificador puede editar AT(S/N) y AT Detalle (montoAT es solo lectura)
+    // Codificador puede editar: AT(S/N), AT Detalle, Días Demora Rescate, 
+    // Pagos Demora Rescate, Monto RN y Pago por Outlier Superior
     editableFields.add('at');
     editableFields.add('atDetalle');
+    editableFields.add('diasDemoraRescate');
+    editableFields.add('pagoDemora');
+    editableFields.add('montoRN');
+    editableFields.add('pagoOutlierSup');
     
     // Para casos fuera de norma, Codificador puede hacer override manual de valorGRD y montoFinal
     editableFields.add('valorGRD');
@@ -886,8 +903,12 @@ const getEditableFields = () => {
       </svg>
     );
     
-    // Mostrar ícono si es finanzas, el campo está en la lista y no está siendo editado
-    if (isFinanzas && camposEditablesFinanzas.includes(key) && !isEditing) {
+    // Mostrar ícono si es finanzas o codificador, el campo está en la lista y no está siendo editado
+    const shouldShowIcon = 
+      (isFinanzas && camposEditablesFinanzas.includes(key)) ||
+      (isCodificador && camposEditablesCodificador.includes(key));
+    
+    if (shouldShowIcon && !isEditing) {
       return (
         <div className="flex items-center gap-1.5">
           <span>{content}</span>
@@ -1629,6 +1650,22 @@ const getEditableFields = () => {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []); // Solo montar/desmontar el listener una vez
   
+  // Recargar episodios cuando cambie el filtro de convenio (para finanzas y codificador)
+  useEffect(() => {
+    if ((isFinanzas || isCodificador) && filterConvenio.trim() !== '') {
+      // Debounce: esperar 500ms después del último cambio antes de recargar
+      const timeoutId = setTimeout(() => {
+        loadEpisodios();
+      }, 500);
+      
+      return () => clearTimeout(timeoutId);
+    } else if ((isFinanzas || isCodificador) && filterConvenio.trim() === '') {
+      // Si se limpia el filtro, recargar inmediatamente
+      loadEpisodios();
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [filterConvenio, isFinanzas, isCodificador]);
+  
   // Función para cargar ajustes de tecnología del backend
   const loadAjustesTecnologia = async () => {
     setLoadingAjustes(true);
@@ -1660,13 +1697,18 @@ const getEditableFields = () => {
       });
       
       // Agregar timestamp para evitar caché del navegador
-      const response = await api.get('/api/episodios/final', {
-        params: {
-          page: 1,
-          pageSize: 100, // Cargar los primeros 100 episodios
-          _t: Date.now() // Timestamp para evitar caché
-        }
-      });
+      // Incluir filtro de convenio si está presente (para finanzas y codificador)
+      const params: any = {
+        page: 1,
+        pageSize: 100, // Cargar los primeros 100 episodios
+        _t: Date.now() // Timestamp para evitar caché
+      };
+      
+      if ((isFinanzas || isCodificador) && filterConvenio.trim() !== '') {
+        params.convenio = filterConvenio.trim();
+      }
+      
+      const response = await api.get('/api/episodios/final', { params });
       
       // El backend debería devolver { items: Episode[], total: number }
       let episodiosData = response.data?.items || response.data || [];
@@ -2350,8 +2392,8 @@ const getEditableFields = () => {
             </select>
           </div>
 
-          {/* Filtro por convenio (solo para finanzas) */}
-          {isFinanzas && (
+          {/* Filtro por convenio (para finanzas y codificador) */}
+          {(isFinanzas || isCodificador) && (
             <div>
               <label className="block text-sm font-medium text-slate-700 mb-2">Convenio</label>
               <input
