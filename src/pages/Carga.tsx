@@ -36,6 +36,67 @@ function toNumberLoose(v: any) {
   return Number.isFinite(n) ? n : NaN;
 }
 
+// Función helper para convertir números de serie de Excel a fechas
+function excelSerialToDate(serial: number): Date {
+  // Excel cuenta desde el 30 de diciembre de 1899 (día 0)
+  // Pero hay un bug conocido: Excel trata 1900 como año bisiesto aunque no lo es
+  // Por eso usamos el 31 de diciembre de 1899 como base
+  const excelEpoch = new Date(1899, 11, 30); // 30 de diciembre de 1899
+  const millisecondsPerDay = 86400000;
+  const date = new Date(excelEpoch.getTime() + (serial - 1) * millisecondsPerDay);
+  return date;
+}
+
+// Función helper para parsear fechas desde Excel
+function parseExcelDateValue(value: any): any {
+  if (value === null || value === undefined || value === '') {
+    return value;
+  }
+  
+  // Si ya es una fecha, devolverla
+  if (value instanceof Date) {
+    return value;
+  }
+  
+  // Si es un número, es un número de serie de Excel
+  if (typeof value === 'number' && !isNaN(value)) {
+    // Los números de serie de Excel suelen ser > 1 (1 = 1 de enero de 1900)
+    // Si el número es muy grande (más de 100000), probablemente no es una fecha
+    if (value > 0 && value < 100000) {
+      return excelSerialToDate(value);
+    }
+    return value;
+  }
+  
+  // Si es un string, intentar parsearlo
+  if (typeof value === 'string') {
+    // Formato DD-MM-YYYY HH:mm:ss o variaciones
+    const dateStr = value.trim();
+    if (dateStr) {
+      // Intentar parsear formato DD-MM-YYYY
+      const ddmmyyyy = /^(\d{1,2})[-\/](\d{1,2})[-\/](\d{4})(?:\s+(\d{1,2}):(\d{1,2})(?::(\d{1,2}))?)?/;
+      const match = dateStr.match(ddmmyyyy);
+      if (match) {
+        const day = parseInt(match[1], 10);
+        const month = parseInt(match[2], 10) - 1; // Meses en JS son 0-indexed
+        const year = parseInt(match[3], 10);
+        const hour = match[4] ? parseInt(match[4], 10) : 0;
+        const minute = match[5] ? parseInt(match[5], 10) : 0;
+        const second = match[6] ? parseInt(match[6], 10) : 0;
+        return new Date(year, month, day, hour, minute, second);
+      }
+      
+      // Intentar parsear con Date nativo
+      const parsed = new Date(dateStr);
+      if (!isNaN(parsed.getTime())) {
+        return parsed;
+      }
+    }
+  }
+  
+  return value;
+}
+
 /* ================= Modal simple de previsualización/edición ================== */
 function PrecheckDialog({
   open,
@@ -134,11 +195,38 @@ function PrecheckDialog({
                       const cellIssue = issues.find(x => x.rowIndex === absIndex && x.column === h);
                       const bad = !!cellIssue && (cellIssue.type === 'empty' || cellIssue.type === 'invalid' || cellIssue.type === 'duplicate');
 
+                      // Formatear fechas para mostrar
+                      const isFechaColumn = h.toLowerCase().includes('fecha');
+                      let displayValue = r[h] ?? '';
+                      if (isFechaColumn && r[h]) {
+                        if (r[h] instanceof Date) {
+                          displayValue = r[h].toLocaleString('es-CL', {
+                            day: '2-digit',
+                            month: '2-digit',
+                            year: 'numeric',
+                            hour: '2-digit',
+                            minute: '2-digit',
+                            second: '2-digit'
+                          });
+                        } else if (typeof r[h] === 'number' && r[h] > 0 && r[h] < 100000) {
+                          // Es un número de serie de Excel
+                          const fecha = excelSerialToDate(r[h]);
+                          displayValue = fecha.toLocaleString('es-CL', {
+                            day: '2-digit',
+                            month: '2-digit',
+                            year: 'numeric',
+                            hour: '2-digit',
+                            minute: '2-digit',
+                            second: '2-digit'
+                          });
+                        }
+                      }
+
                       return (
                         <td key={h} className={`p-1 align-top ${bad ? 'bg-amber-50' : ''}`}>
                           <input
                             className="w-full border rounded px-1 py-1"
-                            defaultValue={r[h] ?? ''}
+                            defaultValue={displayValue}
                             onBlur={e => onBlur(e.target.value)}
                           />
                         </td>
@@ -252,9 +340,29 @@ export default function Carga() {
     
     try {
       const buf = await file.arrayBuffer();
-      const wb = XLSX.read(buf, { type: 'array' });
+      const wb = XLSX.read(buf, { 
+        type: 'array',
+        cellDates: true, // Intentar parsear fechas automáticamente
+        cellNF: false,
+        cellText: false
+      });
       const ws = wb.Sheets[wb.SheetNames[0]];
-      const rowsRaw = XLSX.utils.sheet_to_json<any>(ws, { defval: '' });
+      const rowsRaw = XLSX.utils.sheet_to_json<any>(ws, { 
+        defval: '',
+        raw: false, // No usar raw para que XLSX intente parsear fechas
+        dateNF: 'dd/mm/yyyy' // Formato de fecha esperado
+      });
+      
+      // Procesar fechas manualmente para asegurar que se conviertan correctamente
+      const fechaColumns = ['Fecha Ingreso completa', 'Fecha Completa', 'Fecha Ingreso', 'Fecha Alta'];
+      rowsRaw.forEach((row: any) => {
+        Object.keys(row).forEach(key => {
+          const normalizedKey = normalizeHeader(key);
+          if (fechaColumns.some(fc => normalizedKey.toLowerCase().includes(fc.toLowerCase().replace(/\s+/g, '')))) {
+            row[key] = parseExcelDateValue(row[key]);
+          }
+        });
+      });
 
       if (!rowsRaw.length) {
         setError('El archivo está vacío.');
@@ -354,17 +462,55 @@ export default function Carga() {
       const v = editedViewRows[idx] ?? {};
       const copy = { ...full };
       REQUIRED_HEADERS.forEach(h => {
-        if (h in v) copy[h] = v[h];
+        if (h in v) {
+          // Si es una fecha editada, parsearla correctamente
+          const isFechaColumn = h.toLowerCase().includes('fecha');
+          if (isFechaColumn && v[h]) {
+            const parsed = parseExcelDateValue(v[h]);
+            copy[h] = parsed instanceof Date ? parsed.toISOString() : v[h];
+          } else {
+            copy[h] = v[h];
+          }
+        }
       });
       // También aplicar cambios al campo de convenio si está presente
       if (convenioHeaderName && convenioHeaderName in v) {
         copy[convenioHeaderName] = v[convenioHeaderName];
       }
+      
+      // Asegurar que las fechas en el dataset completo estén en formato correcto
+      const fechaColumns = ['Fecha Ingreso completa', 'Fecha Completa', 'Fecha Ingreso', 'Fecha Alta'];
+      Object.keys(copy).forEach(key => {
+        const normalizedKey = normalizeHeader(key);
+        if (fechaColumns.some(fc => normalizedKey.toLowerCase().includes(fc.toLowerCase().replace(/\s+/g, '')))) {
+          const parsed = parseExcelDateValue(copy[key]);
+          if (parsed instanceof Date) {
+            copy[key] = parsed.toISOString();
+          }
+        }
+      });
+      
       return copy;
     });
 
     // Serializar TODO el dataset (completo) y enviar
-    const ws = XLSX.utils.json_to_sheet(merged, { header: rawHeaders.length ? rawHeaders : undefined });
+    // Convertir fechas ISO strings de vuelta a objetos Date para que XLSX las maneje correctamente
+    const mergedWithDates = merged.map(row => {
+      const rowCopy = { ...row };
+      Object.keys(rowCopy).forEach(key => {
+        const normalizedKey = normalizeHeader(key);
+        const fechaColumns = ['Fecha Ingreso completa', 'Fecha Completa', 'Fecha Ingreso', 'Fecha Alta'];
+        if (fechaColumns.some(fc => normalizedKey.toLowerCase().includes(fc.toLowerCase().replace(/\s+/g, '')))) {
+          if (typeof rowCopy[key] === 'string' && rowCopy[key].includes('T')) {
+            // Es un ISO string, convertirlo a Date
+            rowCopy[key] = new Date(rowCopy[key]);
+          }
+        }
+      });
+      return rowCopy;
+    });
+    
+    const ws = XLSX.utils.json_to_sheet(mergedWithDates, { header: rawHeaders.length ? rawHeaders : undefined });
     const wb = XLSX.utils.book_new();
     XLSX.utils.book_append_sheet(wb, ws, 'SIGESA_FULL');
     const out = XLSX.write(wb, { type: 'array', bookType: 'xlsx' });
