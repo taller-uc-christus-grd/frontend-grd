@@ -70,7 +70,7 @@ function PrecheckDialog({
 
   const visibleRows = useMemo(() => viewRows.slice(0, limit), [viewRows, limit]);
   const hasCritical = issues.some(i => i.type === 'missing_header');
-  const canUpload = issues.length === 0 && viewRows.length > 0;
+  const canUpload = !hasCritical && viewRows.length > 0;
 
   if (!open) return null;
   return (
