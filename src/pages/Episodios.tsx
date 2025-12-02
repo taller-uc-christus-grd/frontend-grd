@@ -2577,10 +2577,12 @@ const getEditableFields = () => {
                         className={`px-4 py-3 text-left font-semibold whitespace-nowrap ${
                           isEditableForUser ? 'bg-blue-50 text-blue-700' : 'text-slate-700'
                         } ${
-                          isFixedColumn ? 'sticky z-10 bg-slate-50 shadow-[2px_0_5px_rgba(0,0,0,0.1)]' : ''
+                          isFixedColumn ? 'sticky z-10 shadow-[2px_0_5px_rgba(0,0,0,0.1)]' : ''
                         }`}
                         style={isFixedColumn ? {
-                          left: getLeftPosition(colIndex)
+                          left: getLeftPosition(colIndex),
+                          backgroundColor: isEditableForUser ? '#eff6ff' : '#f8fafc', // bg-blue-50 o bg-slate-50 sólido
+                          borderRight: colIndex === 3 ? '2px solid #94a3b8' : 'none' // Línea gris al final de Episodio (colIndex 3)
                         } : {}}
                         title={isEditableForUser ? 'Campo editable' : 'Campo de solo lectura'}
                       >
@@ -2694,16 +2696,26 @@ const getEditableFields = () => {
                         return `${left}px`;
                       };
                       
+                      // Determinar el color de fondo para columnas fijas
+                      const getFixedColumnBg = () => {
+                        if (shouldBeClickable) {
+                          return '#eff6ff'; // bg-blue-50 sólido
+                        }
+                        return '#ffffff'; // bg-white sólido
+                      };
+                      
                       return (
                         <td 
                           key={key}
                           className={`px-4 py-3 text-slate-700 ${
-                            shouldBeClickable ? 'bg-blue-50/50 font-medium cursor-pointer hover:bg-blue-100/70 transition-colors' : ''
+                            shouldBeClickable ? 'font-medium cursor-pointer hover:bg-blue-100 transition-colors' : ''
                           } ${
-                            isFixedColumn ? 'sticky z-10 bg-white shadow-[2px_0_5px_rgba(0,0,0,0.1)]' : ''
+                            isFixedColumn ? 'sticky z-10 shadow-[2px_0_5px_rgba(0,0,0,0.1)]' : ''
                           }`}
                           style={isFixedColumn ? {
-                            left: getLeftPosition(colIndex)
+                            left: getLeftPosition(colIndex),
+                            backgroundColor: getFixedColumnBg(),
+                            borderRight: colIndex === 3 ? '2px solid #94a3b8' : 'none' // Línea gris al final de Episodio (colIndex 3)
                           } : {}}
                           onClick={() => shouldBeClickable && startEdit(rowIndex, key, value)}
                           title={shouldBeClickable ? 'Hacer clic para editar' : ''}
