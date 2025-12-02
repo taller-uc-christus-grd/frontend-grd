@@ -1189,8 +1189,8 @@ const getEditableFields = () => {
       );
     }
     
-    // Manejar null/undefined para campos que no sean validado (validado se maneja en el switch)
-    if (key !== 'validado' && (value === null || value === undefined)) {
+    // Manejar null/undefined para campos que no sean validado ni estadoRN (estos se manejan en el switch)
+    if (key !== 'validado' && key !== 'estadoRN' && (value === null || value === undefined)) {
       return wrapWithEditIcon(<span className="text-slate-400">-</span>, key, rowIndex, episodio);
     }
     
@@ -1341,11 +1341,11 @@ const getEditableFields = () => {
         );
       
       case 'estadoRN':
-        // Para Finanzas, mostrar dropdown directamente con ícono
+        // Para Finanzas, mostrar dropdown directamente con ícono (sin entrar en modo edición)
         if (isFinanzas) {
           // Manejar null/undefined como 'Pendiente' (default)
-          const currentValueStr = value === 'Aprobado' ? 'Aprobado' : 
-                                  value === 'Rechazado' ? 'Rechazado' : 
+          const currentValueStr = (value === 'Aprobado' || value === 'Aprobado') ? 'Aprobado' : 
+                                  (value === 'Rechazado' || value === 'Rechazado') ? 'Rechazado' : 
                                   'Pendiente';
 
           const selectDropdown = (
