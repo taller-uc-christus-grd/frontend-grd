@@ -128,6 +128,7 @@ export default function Episodios() {
   const camposEditablesCodificador = [
     'at',
     'atDetalle',
+    'documentacion',
     'valorGRD',
     'montoFinal'
   ];
@@ -163,11 +164,12 @@ const getEditableFields = () => {
   }
   
   if (isCodificador) {
-    // Codificador puede editar: AT(S/N), AT Detalle
+    // Codificador puede editar: AT(S/N), AT Detalle, Documentación necesaria
     // NOTA: montoRN, diasDemoraRescate, pagoDemora, pagoOutlierSup NO son editables para codificador
     // (aunque el backend los acepta, no se muestran como editables en la UI)
     editableFields.add('at');
     editableFields.add('atDetalle');
+    editableFields.add('documentacion');
     
     // Para casos fuera de norma, Codificador puede hacer override manual de valorGRD y montoFinal
     editableFields.add('valorGRD');
