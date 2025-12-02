@@ -84,9 +84,10 @@ export default function Episodios() {
 
     // Filtro por outlier
     if (filterOutlier !== 'all') {
-      filtered = filtered.filter(ep => 
-        filterOutlier === 'outlier' ? ep.inlierOutlier === 'Outlier' : ep.inlierOutlier !== 'Outlier'
-      );
+      filtered = filtered.filter(ep => {
+        const isOutlier = ep.inlierOutlier === 'Outlier Superior' || ep.inlierOutlier === 'Outlier Inferior';
+        return filterOutlier === 'outlier' ? isOutlier : ep.inlierOutlier === 'Inlier';
+      });
     }
 
     // Filtro por convenio (para finanzas y codificador, filtra en tiempo real)
@@ -1280,11 +1281,16 @@ const getEditableFields = () => {
         );
       
       case 'inlierOutlier':
+        // Mostrar correctamente "Outlier Superior", "Outlier Inferior" o "Inlier"
+        const inlierValue = value || '';
+        const isOutlierSuperior = inlierValue === 'Outlier Superior';
+        const isOutlierInferior = inlierValue === 'Outlier Inferior';
+        const isInlier = inlierValue === 'Inlier';
+        const badgeClass = isOutlierSuperior || isOutlierInferior ? 'warning' : isInlier ? 'success' : 'secondary';
+        
         return wrapWithEditIcon(
-          <span className={`badge-${
-            value === 'Outlier' ? 'warning' : 'success'
-          }`}>
-            {value || '-'}
+          <span className={`badge-${badgeClass}`}>
+            {inlierValue || '-'}
           </span>,
           key,
           rowIndex,
