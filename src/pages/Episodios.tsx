@@ -2489,7 +2489,23 @@ const getEditableFields = () => {
               <tr className="bg-slate-50 border-b-2 border-slate-200">
                   {FINAL_COLUMNS.map(([header, key, editable]) => {
                     // Verificar si el campo es editable para el rol actual del usuario
+                    // IMPORTANTE: valorGRD y montoFinal son editables para finanzas y codificador
+                    // aunque estén marcados como false en planillaConfig
                     const isEditableForUser = editableFields.has(key);
+                    
+                    // Debug para valorGRD y montoFinal
+                    if ((key === 'valorGRD' || key === 'montoFinal') && process.env.NODE_ENV === 'development') {
+                      console.log(`🔍 Header ${key}:`, {
+                        header,
+                        key,
+                        isEditableForUser,
+                        editableFieldsHas: editableFields.has(key),
+                        editableFieldsArray: Array.from(editableFields),
+                        isFinanzas,
+                        isCodificador
+                      });
+                    }
+                    
                     return (
                       <th 
                         key={key}
