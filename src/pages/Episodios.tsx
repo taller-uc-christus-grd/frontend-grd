@@ -137,50 +137,51 @@ export default function Episodios() {
 const getEditableFields = () => {
   const editableFields = new Set<string>();
   
+  // Campos que NO son editables para NINGÚN perfil (se calculan automáticamente):
+  // - valorGRD (calculado: peso * precioBaseTramo)
+  // - montoFinal (calculado: suma de valores)
+  // - precioBaseTramo (calculado desde precios convenios)
+  // - pagoDemora (calculado automáticamente)
+  
   if (isFinanzas) {
     // Finanzas puede editar estos campos:
     // ESTADO RN, MONTO RN, 
-    // Días de demora rescate, Pago demora rescate, Pago por outlier superior, 
-    // DOCUMENTACION NECESARIA, Precio Base por tramo correspondiente
+    // Días de demora rescate, Pago por outlier superior
     // IMPORTANTE: Finanzas NO puede editar AT(S/N), AT Detalle ni Monto AT (solo codificador y gestión)
+    // IMPORTANTE: NO puede editar valorGRD, montoFinal, precioBaseTramo, pagoDemora (se calculan automáticamente)
     
-    // Incluir campos editables de FINAL_COLUMNS EXCEPTO 'at', 'atDetalle', 'montoAT' y 'documentacion'
+    // Incluir campos editables de FINAL_COLUMNS EXCEPTO los calculados automáticamente
     FINAL_COLUMNS.forEach(([header, key, editable]) => {
-      if (editable && key !== 'at' && key !== 'atDetalle' && key !== 'montoAT' && key !== 'documentacion') {
-        editableFields.add(key); // Incluye: estadoRN, montoRN, 
-                                  // diasDemoraRescate, pagoDemora, pagoOutlierSup
+      if (editable && 
+          key !== 'at' && 
+          key !== 'atDetalle' && 
+          key !== 'montoAT' && 
+          key !== 'documentacion' &&
+          key !== 'valorGRD' &&      // NO editable - calculado
+          key !== 'montoFinal' &&    // NO editable - calculado
+          key !== 'precioBaseTramo' && // NO editable - calculado
+          key !== 'pagoDemora') {    // NO editable - calculado
+        editableFields.add(key); // Incluye: estadoRN, montoRN, diasDemoraRescate, pagoOutlierSup
       }
     });
 
     // Nos aseguramos explícitamente que VALIDADO sí está
     editableFields.add('validado');
-    
-    // Agregar precioBaseTramo explícitamente (aunque en planillaConfig está como false)
-    editableFields.add('precioBaseTramo');
-    
-    // Para casos fuera de norma, Finanzas puede hacer override manual de valorGRD y montoFinal
-    editableFields.add('valorGRD');
-    editableFields.add('montoFinal');
   }
   
   if (isCodificador) {
     // Codificador puede editar: AT(S/N), AT Detalle, Documentación necesaria
-    // NOTA: montoRN, diasDemoraRescate, pagoDemora, pagoOutlierSup NO son editables para codificador
-    // (aunque el backend los acepta, no se muestran como editables en la UI)
+    // NOTA: NO puede editar valorGRD, montoFinal, precioBaseTramo, pagoDemora (se calculan automáticamente)
     editableFields.add('at');
     editableFields.add('atDetalle');
     editableFields.add('documentacion');
-    
-    // Para casos fuera de norma, Codificador puede hacer override manual de valorGRD y montoFinal
-    editableFields.add('valorGRD');
-    editableFields.add('montoFinal');
   }
 
   if (isGestion) {
-    // Gestión NO valida, pero SÍ puede editar ajustes por tecnología y precio base por tramo
+    // Gestión NO valida, pero SÍ puede editar ajustes por tecnología
+    // NOTA: NO puede editar precioBaseTramo (se calcula automáticamente desde precios convenios)
     editableFields.add('at');
     editableFields.add('atDetalle');
-    editableFields.add('precioBaseTramo'); // Gestión puede editar precioBaseTramo (igual que finanzas)
   }
   
   return editableFields;
@@ -1636,6 +1637,62 @@ const getEditableFields = () => {
           episodio
         );
       
+      case 'fechaIngreso':
+      case 'fechaAlta':
+        // Formatear fechas correctamente
+        const formatDate = (dateValue: any): string => {
+          if (!dateValue) return '-';
+          
+          // Si es un string, intentar parsearlo
+          let fecha: Date | null = null;
+          if (typeof dateValue === 'string') {
+            // Si es un string ISO o formato YYYY-MM-DD
+            if (dateValue.includes('T') || /^\d{4}-\d{2}-\d{2}/.test(dateValue)) {
+              fecha = new Date(dateValue);
+            } else {
+              // Intentar otros formatos
+              fecha = new Date(dateValue);
+            }
+          } else if (dateValue instanceof Date) {
+            fecha = dateValue;
+          } else if (typeof dateValue === 'number') {
+            // Si es un timestamp
+            fecha = new Date(dateValue);
+          }
+          
+          // Verificar que la fecha sea válida y no sea 1970-01-01 (epoch 0)
+          if (!fecha || isNaN(fecha.getTime())) {
+            return '-';
+          }
+          
+          // Verificar si es 1970-01-01 (fecha por defecto cuando no se pudo parsear)
+          const epochDate = new Date(0);
+          if (fecha.getTime() === epochDate.getTime()) {
+            return '-';
+          }
+          
+          // Formatear como DD-MM-YYYY
+          const day = fecha.getDate().toString().padStart(2, '0');
+          const month = (fecha.getMonth() + 1).toString().padStart(2, '0');
+          const year = fecha.getFullYear();
+          
+          return `${day}-${month}-${year}`;
+        };
+        
+        const fechaFormateada = formatDate(value);
+        return wrapWithEditIcon(
+          fechaFormateada !== '-' ? (
+            <span className="text-slate-700" title={value}>
+              {fechaFormateada}
+            </span>
+          ) : (
+            <span className="text-slate-400">-</span>
+          ),
+          key,
+          rowIndex,
+          episodio
+        );
+      
       default:
         return wrapWithEditIcon(
           <span>{value || <span className="text-slate-400">-</span>}</span>,
@@ -2483,11 +2540,11 @@ const getEditableFields = () => {
             </Link>
           </div>
         ) : (
-          <div className="overflow-x-auto">
+          <div className="overflow-x-auto overflow-y-auto max-h-[calc(100vh-400px)]">
           <table className="w-full text-sm border-collapse">
-            <thead>
+            <thead className="sticky top-0 z-20">
               <tr className="bg-slate-50 border-b-2 border-slate-200">
-                  {FINAL_COLUMNS.map(([header, key, editable]) => {
+                  {FINAL_COLUMNS.map(([header, key, editable], colIndex) => {
                     // Verificar si el campo es editable para el rol actual del usuario
                     // IMPORTANTE: valorGRD y montoFinal son editables para finanzas y codificador
                     // aunque estén marcados como false en planillaConfig
@@ -2506,12 +2563,30 @@ const getEditableFields = () => {
                       });
                     }
                     
+                    // Determinar si esta columna debe estar fija (las primeras 4: Validado, Centro, N°Folio, Episodio)
+                    const isFixedColumn = colIndex < 4; // Validado (0), Centro (1), N°Folio (2), Episodio (3)
+                    
+                    // Calcular la posición left para columnas fijas (anchos aproximados)
+                    const getLeftPosition = (index: number) => {
+                      const widths = [120, 150, 120, 150]; // Anchos aproximados para las 4 primeras columnas
+                      let left = 0;
+                      for (let i = 0; i < index; i++) {
+                        left += widths[i] || 120;
+                      }
+                      return `${left}px`;
+                    };
+                    
                     return (
                       <th 
                         key={key}
                         className={`px-4 py-3 text-left font-semibold whitespace-nowrap ${
                           isEditableForUser ? 'bg-blue-50 text-blue-700' : 'text-slate-700'
+                        } ${
+                          isFixedColumn ? 'sticky z-10 bg-slate-50 shadow-[2px_0_5px_rgba(0,0,0,0.1)]' : ''
                         }`}
+                        style={isFixedColumn ? {
+                          left: getLeftPosition(colIndex)
+                        } : {}}
                         title={isEditableForUser ? 'Campo editable' : 'Campo de solo lectura'}
                       >
                         {header}
@@ -2523,8 +2598,8 @@ const getEditableFields = () => {
             </thead>
             <tbody>
                 {filteredEpisodios.map((episodio, rowIndex) => (
-                  <tr key={episodio.episodio} className="border-b border-slate-100 hover:bg-slate-50/50 transition-colors">
-                    {FINAL_COLUMNS.map(([header, key, editable]) => {
+                  <tr key={episodio.episodio} className="border-b border-slate-100 hover:bg-slate-50/50 transition-colors bg-white">
+                    {FINAL_COLUMNS.map(([header, key, editable], colIndex) => {
                       const value = key.split('.').reduce((acc: any, k) => acc?.[k], episodio as any);
                       
                       // Debug para pesoGrd - VERIFICAR QUÉ VALOR ESTÁ LLEGANDO
@@ -2586,12 +2661,9 @@ const getEditableFields = () => {
                         }
                       }
                       
-                      // precioBaseTramo: permitir finanzas y gestión
-                      if (key === 'precioBaseTramo' && shouldBeClickable) {
-                        const tienePermiso = (isFinanzas || isGestion);
-                        if (!tienePermiso) {
-                          shouldBeClickable = false;
-                        }
+                      // precioBaseTramo: NO es editable para ningún perfil (se calcula automáticamente)
+                      if (key === 'precioBaseTramo') {
+                        shouldBeClickable = false;
                       }
                       
                       // montoAT: NO es editable para ningún rol - se autocompleta automáticamente
@@ -2599,21 +2671,45 @@ const getEditableFields = () => {
                         shouldBeClickable = false;
                       }
                       
-                      // valorGRD y montoFinal: solo editables para Finanzas o Codificador cuando el episodio está fuera de norma
-                      if ((key === 'valorGRD' || key === 'montoFinal') && shouldBeClickable) {
-                        const esFueraDeNorma = episodio.grupoDentroNorma === false;
-                        const tienePermiso = (isFinanzas || isCodificador);
-                        if (!esFueraDeNorma || !tienePermiso) {
-                          shouldBeClickable = false;
-                        }
+                      // valorGRD: NO es editable para ningún perfil (se calcula automáticamente)
+                      if (key === 'valorGRD') {
+                        shouldBeClickable = false;
                       }
+                      
+                      // montoFinal: NO es editable para ningún perfil (se calcula automáticamente)
+                      if (key === 'montoFinal') {
+                        shouldBeClickable = false;
+                      }
+                      
+                      // pagoDemora: NO es editable para ningún perfil (se calcula automáticamente)
+                      if (key === 'pagoDemora') {
+                        shouldBeClickable = false;
+                      }
+                      
+                      // Determinar si esta columna debe estar fija (las primeras 4: Validado, Centro, N°Folio, Episodio)
+                      const isFixedColumn = colIndex < 4; // Validado (0), Centro (1), N°Folio (2), Episodio (3)
+                      
+                      // Calcular la posición left para columnas fijas (anchos aproximados)
+                      const getLeftPosition = (index: number) => {
+                        const widths = [120, 150, 120, 150]; // Anchos aproximados para las 4 primeras columnas
+                        let left = 0;
+                        for (let i = 0; i < index; i++) {
+                          left += widths[i] || 120;
+                        }
+                        return `${left}px`;
+                      };
                       
                       return (
                         <td 
                           key={key}
                           className={`px-4 py-3 text-slate-700 ${
                             shouldBeClickable ? 'bg-blue-50/50 font-medium cursor-pointer hover:bg-blue-100/70 transition-colors' : ''
+                          } ${
+                            isFixedColumn ? 'sticky z-10 bg-white shadow-[2px_0_5px_rgba(0,0,0,0.1)]' : ''
                           }`}
+                          style={isFixedColumn ? {
+                            left: getLeftPosition(colIndex)
+                          } : {}}
                           onClick={() => shouldBeClickable && startEdit(rowIndex, key, value)}
                           title={shouldBeClickable ? 'Hacer clic para editar' : ''}
                         >
