@@ -591,8 +591,15 @@ const getEditableFields = () => {
             ...updatedEpisodioFromBackend 
           };
           
-          // Asegurar que AT esté normalizado
-          episodioActualizado.at = updatedEpisodioFromBackend.at;
+          // Asegurar que AT esté normalizado - FORZAR el valor que enviamos si estamos actualizando AT
+          if (field === 'at') {
+            // Si estamos actualizando AT, usar el valor que enviamos (el validado)
+            episodioActualizado.at = validatedValue === 'S' || validatedValue === true ? 'S' : 'N' as any;
+            console.log('✅ AT forzado en actualización de estado:', { validatedValue, atFinal: episodioActualizado.at });
+          } else {
+            // Si no estamos actualizando AT, usar el valor normalizado del backend
+            episodioActualizado.at = updatedEpisodioFromBackend.at;
+          }
           
           // Asegurar que estadoRN esté normalizado (usar el valor que enviamos si estamos actualizando estadoRN)
           if (field === 'estadoRN') {
