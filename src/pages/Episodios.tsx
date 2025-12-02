@@ -152,15 +152,10 @@ const getEditableFields = () => {
     
     // Incluir campos editables de FINAL_COLUMNS EXCEPTO los calculados automáticamente
     FINAL_COLUMNS.forEach(([header, key, editable]) => {
-      if (editable && 
-          key !== 'at' && 
-          key !== 'atDetalle' && 
-          key !== 'montoAT' && 
-          key !== 'documentacion' &&
-          key !== 'valorGRD' &&      // NO editable - calculado
-          key !== 'montoFinal' &&    // NO editable - calculado
-          key !== 'precioBaseTramo' && // NO editable - calculado
-          key !== 'pagoDemora') {    // NO editable - calculado
+      // Campos que NO son editables (se calculan automáticamente)
+      const camposNoEditables = ['at', 'atDetalle', 'montoAT', 'documentacion', 'valorGRD', 'montoFinal', 'precioBaseTramo', 'pagoDemora'];
+      
+      if (editable && !camposNoEditables.includes(key as string)) {
         editableFields.add(key); // Incluye: estadoRN, montoRN, diasDemoraRescate, pagoOutlierSup
       }
     });
