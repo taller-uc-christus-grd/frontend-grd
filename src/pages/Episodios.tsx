@@ -144,11 +144,11 @@ const getEditableFields = () => {
     // DOCUMENTACION NECESARIA, Precio Base por tramo correspondiente
     // IMPORTANTE: Finanzas NO puede editar AT(S/N), AT Detalle ni Monto AT (solo codificador y gestión)
     
-    // Incluir campos editables de FINAL_COLUMNS EXCEPTO 'at', 'atDetalle' y 'montoAT'
+    // Incluir campos editables de FINAL_COLUMNS EXCEPTO 'at', 'atDetalle', 'montoAT' y 'documentacion'
     FINAL_COLUMNS.forEach(([header, key, editable]) => {
-      if (editable && key !== 'at' && key !== 'atDetalle' && key !== 'montoAT') {
+      if (editable && key !== 'at' && key !== 'atDetalle' && key !== 'montoAT' && key !== 'documentacion') {
         editableFields.add(key); // Incluye: estadoRN, montoRN, 
-                                  // diasDemoraRescate, pagoDemora, pagoOutlierSup, documentacion
+                                  // diasDemoraRescate, pagoDemora, pagoOutlierSup
       }
     });
 
@@ -177,10 +177,10 @@ const getEditableFields = () => {
   }
 
   if (isGestion) {
-    // Gestión NO valida, pero SÍ puede editar ajustes por tecnología
+    // Gestión NO valida, pero SÍ puede editar ajustes por tecnología y precio base por tramo
     editableFields.add('at');
     editableFields.add('atDetalle');
-    // precioBaseTramo ya NO es editable - se calcula automáticamente desde precios convenios
+    editableFields.add('precioBaseTramo'); // Gestión puede editar precioBaseTramo (igual que finanzas)
   }
   
   return editableFields;
@@ -231,10 +231,22 @@ const getEditableFields = () => {
       field !== 'montoFinal' &&
       field !== 'at' &&
       field !== 'atDetalle' &&
+      field !== 'documentacion' &&
+      field !== 'precioBaseTramo' &&
       !isFinanzas
     ) {
       // Otros campos: solo Finanzas (campos financieros)
-      // EXCEPTO AT y AT Detalle que ya se validaron arriba
+      // EXCEPTO AT, AT Detalle, documentacion (codificador), precioBaseTramo (gestión) que ya se validaron arriba
+      return;
+    }
+    
+    // Validación adicional: documentacion solo para codificador
+    if (field === 'documentacion' && !isCodificador) {
+      return;
+    }
+    
+    // Validación adicional: precioBaseTramo solo para finanzas y gestión
+    if (field === 'precioBaseTramo' && !isFinanzas && !isGestion) {
       return;
     }
     
@@ -2546,6 +2558,21 @@ const getEditableFields = () => {
                       // AT y AT Detalle: permitir codificador y gestión
                       if ((key === 'at' || key === 'atDetalle') && shouldBeClickable) {
                         const tienePermiso = (isCodificador || isGestion);
+                        if (!tienePermiso) {
+                          shouldBeClickable = false;
+                        }
+                      }
+                      
+                      // documentacion: solo codificador
+                      if (key === 'documentacion' && shouldBeClickable) {
+                        if (!isCodificador) {
+                          shouldBeClickable = false;
+                        }
+                      }
+                      
+                      // precioBaseTramo: permitir finanzas y gestión
+                      if (key === 'precioBaseTramo' && shouldBeClickable) {
+                        const tienePermiso = (isFinanzas || isGestion);
                         if (!tienePermiso) {
                           shouldBeClickable = false;
                         }
