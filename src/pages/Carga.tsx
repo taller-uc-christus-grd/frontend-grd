@@ -69,8 +69,14 @@ function PrecheckDialog({
   }, [open, headers, viewRows]);
 
   const visibleRows = useMemo(() => viewRows.slice(0, limit), [viewRows, limit]);
+  
+  // --- MODIFICACIÓN AQUÍ ---
+  // Identificar errores críticos (falta columna entera)
   const hasCritical = issues.some(i => i.type === 'missing_header');
-  const canUpload = issues.length === 0 && viewRows.length > 0;
+  
+  // Permitir subir SIEMPRE que haya filas y no falten columnas enteras
+  // (Ignoramos si hay celdas vacías o duplicados para el bloqueo del botón)
+  const canUpload = !hasCritical && viewRows.length > 0;
 
   if (!open) return null;
   return (
@@ -91,6 +97,12 @@ function PrecheckDialog({
               </div>
             ) : (
               <ul className="space-y-1 text-sm">
+                {/* Mensaje informativo si hay issues pero se permite subir */}
+                {canUpload && (
+                   <li className="p-2 rounded border border-blue-200 bg-blue-50 text-blue-800 mb-2 font-medium">
+                     ℹ️ Hay observaciones, pero puedes continuar con la subida. Las filas incompletas podrían ser rechazadas por el servidor.
+                   </li>
+                )}
                 {issues.map((it, i) => (
                   <li key={i} className={`p-2 rounded border ${
                     it.type === 'missing_header' ? 'border-rose-200 bg-rose-50 text-rose-700' :
@@ -167,12 +179,17 @@ function PrecheckDialog({
         <div className="p-4 border-t flex items-center justify-end gap-2">
           <button className="px-3 py-2 rounded border" onClick={onClose}>Cancelar</button>
           <button
-            className="px-4 py-2 rounded bg-indigo-600 text-white disabled:opacity-60"
-            disabled={hasCritical || !canUpload}
+            className={`px-4 py-2 rounded text-white disabled:opacity-60 ${
+                issues.length > 0 && canUpload ? 'bg-amber-600 hover:bg-amber-700' : 'bg-indigo-600 hover:bg-indigo-700'
+            }`}
+            disabled={!canUpload} // Solo bloqueado si faltan headers o no hay filas
             onClick={() => onConfirm(viewRows)}
-            title={hasCritical ? 'Faltan columnas requeridas' : (!canUpload ? 'Corrige las observaciones' : 'Subir al backend')}
+            title={
+                hasCritical ? 'Faltan columnas requeridas' : 
+                (issues.length > 0 ? 'Subir con observaciones (las filas vacías podrían ser ignoradas)' : 'Subir al backend')
+            }
           >
-            Subir
+            {issues.length > 0 && canUpload ? 'Subir con Observaciones' : 'Subir'}
           </button>
         </div>
       </div>
@@ -294,8 +311,6 @@ export default function Carga() {
     const headersForView = REQUIRED_HEADERS.filter(h => present.has(h));
     
     // Agregar "Convenios (cod)" si está presente en el archivo (para mostrar en previsualización)
-    // Debe aparecer después de "Nombre" (índice 3 en REQUIRED_HEADERS)
-    // Buscar de manera flexible para encontrar variaciones del nombre
     const convenioHeaders = ['Convenios (cod)', 'Convenios  (cod)', 'Convenios(cod)', 'Convenio (cod)', 'Convenio'];
     let convenioHeaderFound: string | undefined;
     
