@@ -124,13 +124,10 @@ export default function Episodios() {
   ];
 
   // Lista de campos editables para codificador que deben mostrar el ícono
+  // NOTA: montoRN, diasDemoraRescate, pagoDemora, pagoOutlierSup NO son editables para codificador
   const camposEditablesCodificador = [
     'at',
     'atDetalle',
-    'diasDemoraRescate',
-    'pagoDemora',
-    'montoRN',
-    'pagoOutlierSup',
     'valorGRD',
     'montoFinal'
   ];
@@ -923,10 +920,13 @@ const getEditableFields = () => {
       </svg>
     );
     
-    // Mostrar ícono si es finanzas o codificador, el campo está en la lista y no está siendo editado
+    // Mostrar ícono si el campo es realmente editable para el rol del usuario
+    // Verificar usando editableFields en lugar de las listas estáticas para mayor precisión
+    const isFieldEditable = editableFields.has(key);
     const shouldShowIcon = 
-      (isFinanzas && camposEditablesFinanzas.includes(key)) ||
-      (isCodificador && camposEditablesCodificador.includes(key));
+      (isFinanzas && camposEditablesFinanzas.includes(key) && isFieldEditable) ||
+      (isCodificador && camposEditablesCodificador.includes(key) && isFieldEditable) ||
+      (isGestion && (key === 'at' || key === 'atDetalle' || key === 'precioBaseTramo') && isFieldEditable);
     
     if (shouldShowIcon && !isEditing) {
       return (
