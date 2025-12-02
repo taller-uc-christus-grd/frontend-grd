@@ -43,7 +43,7 @@ export const FINAL_COLUMNS = [
   ['DOCUMENTACIÓN NECESARIA', 'documentacion', true], // texto libre
   ['Inlier/Outlier', 'inlierOutlier', false],
   ['Grupo dentro de norma S/N', 'grupoDentroNorma', false],
-  ['Días de Estada', 'diasEstada', false],
+  ['Días de Estadía', 'diasEstada', false],
   ['Precio Base por tramo correspondiente', 'precioBaseTramo', false], // NO EDITABLE - calculado automáticamente desde precios convenios
   ['Valor GRD', 'valorGRD', false], // CALCULADO: peso * precioBaseTramo (no editable)
   ['Monto Final', 'montoFinal', true], // editable solo para finanzas

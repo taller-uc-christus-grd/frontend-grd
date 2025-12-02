@@ -1291,7 +1291,7 @@ export default function EpisodioDetalle() {
               </div>
             </div>
             <div className="bg-slate-50 p-3 rounded-lg border border-slate-200">
-              <div className="text-xs font-medium text-slate-500 mb-1">Días Estada</div>
+              <div className="text-xs font-medium text-slate-500 mb-1">Días Estadía</div>
               <div className="text-sm font-semibold text-slate-900">{episodio.diasEstada || 'No disponible'}</div>
             </div>
             <div className="bg-slate-50 p-3 rounded-lg border border-slate-200">
