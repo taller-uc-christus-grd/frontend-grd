@@ -2557,7 +2557,7 @@ const getEditableFields = () => {
               })}
             </colgroup>
             <thead style={{ position: 'sticky', top: 0, zIndex: 25, backgroundColor: '#f8fafc' }}>
-              <tr className="border-b-2 border-slate-200" style={{ backgroundColor: '#f8fafc' }}>
+              <tr style={{ backgroundColor: '#f8fafc', borderBottom: '1px solid #e2e8f0' }}>
                   {FINAL_COLUMNS.map(([header, key, editable], colIndex) => {
                     // Verificar si el campo es editable para el rol actual del usuario
                     // IMPORTANTE: valorGRD y montoFinal son editables para finanzas y codificador
@@ -2634,7 +2634,7 @@ const getEditableFields = () => {
             </thead>
             <tbody>
                 {filteredEpisodios.map((episodio, rowIndex) => (
-                  <tr key={episodio.episodio} className="border-b border-slate-100 hover:bg-slate-50/50 transition-colors bg-white">
+                  <tr key={episodio.episodio} className="hover:bg-slate-50/50 transition-colors bg-white" style={{ borderBottom: '1px solid #e2e8f0' }}>
                     {FINAL_COLUMNS.map(([header, key, editable], colIndex) => {
                       const value = key.split('.').reduce((acc: any, k) => acc?.[k], episodio as any);
                       
