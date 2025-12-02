@@ -102,10 +102,9 @@ export default function Episodios() {
   }, [episodios, searchTerm, filterValidated, filterOutlier, filterConvenio, isFinanzas]);
 
   // Lista de campos editables para finanzas que deben mostrar el ícono
+  // IMPORTANTE: NO incluir 'at' ni 'atDetalle' - solo codificador y gestión pueden editarlos
   const camposEditablesFinanzas = [
     'estadoRN',
-    'at',
-    'atDetalle',
     'montoAT',
     'montoRN',
     'diasDemoraRescate',
@@ -132,15 +131,16 @@ const getEditableFields = () => {
   const editableFields = new Set<string>();
   
   if (isFinanzas) {
-    // Finanzas puede editar TODOS estos campos:
-    // ESTADO RN, AT (S/N), AT detalle, Monto AT, MONTO RN, 
+    // Finanzas puede editar estos campos:
+    // ESTADO RN, Monto AT, MONTO RN, 
     // Días de demora rescate, Pago demora rescate, Pago por outlier superior, 
     // DOCUMENTACION NECESARIA, Precio Base por tramo correspondiente
+    // IMPORTANTE: Finanzas NO puede editar AT(S/N) ni AT Detalle (solo codificador y gestión)
     
-    // Incluir TODOS los campos editables de FINAL_COLUMNS (sin exclusiones)
+    // Incluir campos editables de FINAL_COLUMNS EXCEPTO 'at' y 'atDetalle'
     FINAL_COLUMNS.forEach(([header, key, editable]) => {
-      if (editable) {
-        editableFields.add(key); // Incluye: estadoRN, at, atDetalle, montoAT, montoRN, 
+      if (editable && key !== 'at' && key !== 'atDetalle') {
+        editableFields.add(key); // Incluye: estadoRN, montoAT, montoRN, 
                                   // diasDemoraRescate, pagoDemora, pagoOutlierSup, documentacion
       }
     });
@@ -480,8 +480,10 @@ const getEditableFields = () => {
         // Si el backend devuelve algo diferente, forzar el valor que enviamos
         if (field === 'at') {
           // Si estamos actualizando AT, usar el valor que enviamos (el validado)
-          updatedEpisodioFromBackend.at = validatedValue as any;
-          console.log('✅ AT forzado al valor enviado:', validatedValue);
+          // Asegurar que sea 'S' o 'N' como string
+          const atNormalized = validatedValue === 'S' || validatedValue === true ? 'S' : 'N';
+          updatedEpisodioFromBackend.at = atNormalized as any;
+          console.log('✅ AT forzado al valor enviado y normalizado:', { validatedValue, atNormalized });
         } else {
           // Si no estamos actualizando AT, normalizar el valor que viene del backend
           if (atValue === true || String(atValue || '').trim().toUpperCase() === 'S' || atValue === 'S') {
