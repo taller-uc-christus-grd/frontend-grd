@@ -2535,10 +2535,10 @@ const getEditableFields = () => {
             </Link>
           </div>
         ) : (
-          <div className="overflow-x-auto overflow-y-auto max-h-[calc(100vh-400px)]">
-          <table className="w-full text-sm border-collapse">
-            <thead className="sticky top-0 z-20">
-              <tr className="bg-slate-50 border-b-2 border-slate-200">
+          <div className="overflow-x-auto overflow-y-auto max-h-[calc(100vh-400px)]" style={{ position: 'relative' }}>
+          <table className="w-full text-sm border-collapse" style={{ tableLayout: 'auto' }}>
+            <thead className="sticky top-0 z-20" style={{ backgroundColor: '#f8fafc' }}>
+              <tr className="border-b-2 border-slate-200" style={{ backgroundColor: '#f8fafc' }}>
                   {FINAL_COLUMNS.map(([header, key, editable], colIndex) => {
                     // Verificar si el campo es editable para el rol actual del usuario
                     // IMPORTANTE: valorGRD y montoFinal son editables para finanzas y codificador
@@ -2558,15 +2558,15 @@ const getEditableFields = () => {
                       });
                     }
                     
-                    // Determinar si esta columna debe estar fija (las primeras 4: Validado, Centro, N°Folio, Episodio)
-                    const isFixedColumn = colIndex < 4; // Validado (0), Centro (1), N°Folio (2), Episodio (3)
+                    // Determinar si esta columna debe estar fija (las primeras 5: Validado, Centro, N°Folio, Episodio, Rut Paciente)
+                    const isFixedColumn = colIndex < 5; // Validado (0), Centro (1), N°Folio (2), Episodio (3), Rut Paciente (4)
                     
-                    // Calcular la posición left para columnas fijas (anchos aproximados)
+                    // Calcular la posición left para columnas fijas (anchos aproximados con más padding)
                     const getLeftPosition = (index: number) => {
-                      const widths = [120, 150, 120, 150]; // Anchos aproximados para las 4 primeras columnas
+                      const widths = [140, 180, 140, 180, 140]; // Anchos con más espacio para las 5 primeras columnas
                       let left = 0;
                       for (let i = 0; i < index; i++) {
-                        left += widths[i] || 120;
+                        left += widths[i] || 140;
                       }
                       return `${left}px`;
                     };
@@ -2574,15 +2574,18 @@ const getEditableFields = () => {
                     return (
                       <th 
                         key={key}
-                        className={`px-4 py-3 text-left font-semibold whitespace-nowrap ${
-                          isEditableForUser ? 'bg-blue-50 text-blue-700' : 'text-slate-700'
+                        className={`py-3 text-left font-semibold whitespace-nowrap ${
+                          isEditableForUser ? 'text-blue-700' : 'text-slate-700'
                         } ${
-                          isFixedColumn ? 'sticky z-10 shadow-[2px_0_5px_rgba(0,0,0,0.1)]' : ''
+                          isFixedColumn ? 'sticky z-30 shadow-[2px_0_5px_rgba(0,0,0,0.15)]' : 'px-4'
                         }`}
                         style={isFixedColumn ? {
                           left: getLeftPosition(colIndex),
                           backgroundColor: isEditableForUser ? '#eff6ff' : '#f8fafc', // bg-blue-50 o bg-slate-50 sólido
-                          borderRight: colIndex === 3 ? '2px solid #94a3b8' : 'none' // Línea gris al final de Episodio (colIndex 3)
+                          paddingLeft: '1.5rem', // px-6
+                          paddingRight: '1.5rem', // px-6
+                          minWidth: colIndex === 0 ? '140px' : colIndex === 1 ? '180px' : colIndex === 2 ? '140px' : colIndex === 3 ? '180px' : '140px',
+                          borderRight: colIndex === 4 ? '3px solid #64748b' : 'none' // Línea gris más gruesa al final de Rut Paciente (colIndex 4)
                         } : {}}
                         title={isEditableForUser ? 'Campo editable' : 'Campo de solo lectura'}
                       >
@@ -2683,20 +2686,20 @@ const getEditableFields = () => {
                         shouldBeClickable = false;
                       }
                       
-                      // Determinar si esta columna debe estar fija (las primeras 4: Validado, Centro, N°Folio, Episodio)
-                      const isFixedColumn = colIndex < 4; // Validado (0), Centro (1), N°Folio (2), Episodio (3)
+                      // Determinar si esta columna debe estar fija (las primeras 5: Validado, Centro, N°Folio, Episodio, Rut Paciente)
+                      const isFixedColumn = colIndex < 5; // Validado (0), Centro (1), N°Folio (2), Episodio (3), Rut Paciente (4)
                       
-                      // Calcular la posición left para columnas fijas (anchos aproximados)
+                      // Calcular la posición left para columnas fijas (anchos aproximados con más padding)
                       const getLeftPosition = (index: number) => {
-                        const widths = [120, 150, 120, 150]; // Anchos aproximados para las 4 primeras columnas
+                        const widths = [140, 180, 140, 180, 140]; // Anchos con más espacio para las 5 primeras columnas
                         let left = 0;
                         for (let i = 0; i < index; i++) {
-                          left += widths[i] || 120;
+                          left += widths[i] || 140;
                         }
                         return `${left}px`;
                       };
                       
-                      // Determinar el color de fondo para columnas fijas
+                      // Determinar el color de fondo para columnas fijas (completamente opaco)
                       const getFixedColumnBg = () => {
                         if (shouldBeClickable) {
                           return '#eff6ff'; // bg-blue-50 sólido
@@ -2707,15 +2710,22 @@ const getEditableFields = () => {
                       return (
                         <td 
                           key={key}
-                          className={`px-4 py-3 text-slate-700 ${
+                          className={`py-3 text-slate-700 ${
                             shouldBeClickable ? 'font-medium cursor-pointer hover:bg-blue-100 transition-colors' : ''
                           } ${
-                            isFixedColumn ? 'sticky z-10 shadow-[2px_0_5px_rgba(0,0,0,0.1)]' : ''
+                            isFixedColumn ? 'sticky z-20 shadow-[2px_0_5px_rgba(0,0,0,0.15)]' : 'px-4'
                           }`}
                           style={isFixedColumn ? {
                             left: getLeftPosition(colIndex),
                             backgroundColor: getFixedColumnBg(),
-                            borderRight: colIndex === 3 ? '2px solid #94a3b8' : 'none' // Línea gris al final de Episodio (colIndex 3)
+                            paddingLeft: '1.5rem', // px-6 - más espacio
+                            paddingRight: '1.5rem', // px-6 - más espacio
+                            minWidth: colIndex === 0 ? '140px' : colIndex === 1 ? '180px' : colIndex === 2 ? '140px' : colIndex === 3 ? '180px' : '140px',
+                            borderRight: colIndex === 4 ? '3px solid #64748b' : 'none', // Línea gris más gruesa al final de Rut Paciente (colIndex 4)
+                            // Asegurar que el fondo sea completamente opaco
+                            opacity: 1,
+                            // Forzar que el contenido no se transparente
+                            isolation: 'isolate'
                           } : {}}
                           onClick={() => shouldBeClickable && startEdit(rowIndex, key, value)}
                           title={shouldBeClickable ? 'Hacer clic para editar' : ''}
