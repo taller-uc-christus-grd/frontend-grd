@@ -227,13 +227,19 @@ const getEditableFields = () => {
     // VALIDADO: solo Finanzas
     if (field === 'validado' && !isFinanzas) return;
 
-    // Otros campos: solo Finanzas (campos financieros)
-    if (
+    // AT y AT Detalle: permitir codificador y gestión
+    if ((field === 'at' || field === 'atDetalle') && (isCodificador || isGestion)) {
+      // Permitir editar - continuar con el flujo
+    } else if (
       field !== 'validado' &&
       field !== 'valorGRD' &&
       field !== 'montoFinal' &&
+      field !== 'at' &&
+      field !== 'atDetalle' &&
       !isFinanzas
     ) {
+      // Otros campos: solo Finanzas (campos financieros)
+      // EXCEPTO AT y AT Detalle que ya se validaron arriba
       return;
     }
     
@@ -2536,6 +2542,14 @@ const getEditableFields = () => {
                       } else if (isEditable) {
                         // Todos los demás campos editables
                         shouldBeClickable = true;
+                      }
+                      
+                      // AT y AT Detalle: permitir codificador y gestión
+                      if ((key === 'at' || key === 'atDetalle') && shouldBeClickable) {
+                        const tienePermiso = (isCodificador || isGestion);
+                        if (!tienePermiso) {
+                          shouldBeClickable = false;
+                        }
                       }
                       
                       // valorGRD y montoFinal: solo editables para Finanzas o Codificador cuando el episodio está fuera de norma
