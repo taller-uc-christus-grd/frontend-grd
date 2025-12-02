@@ -2538,11 +2538,24 @@ const getEditableFields = () => {
           <div className="overflow-x-auto overflow-y-auto max-h-[calc(100vh-400px)]" style={{ position: 'relative', isolation: 'isolate' }}>
           <style>{`
             .episodio-fixed-border {
-              border-right: 3px solid #64748b !important;
-              box-shadow: 2px 0 5px rgba(0,0,0,0.15), inset -3px 0 0 #64748b !important;
+              border-right: 1px solid #e2e8f0 !important;
+              box-shadow: 2px 0 5px rgba(0,0,0,0.15) !important;
             }
           `}</style>
           <table className="w-full text-sm" style={{ tableLayout: 'auto', position: 'relative', borderCollapse: 'separate', borderSpacing: 0 }}>
+            <colgroup>
+              {FINAL_COLUMNS.map((_, colIndex) => {
+                const isFixedColumn = colIndex < 4;
+                return (
+                  <col 
+                    key={colIndex}
+                    style={isFixedColumn ? {
+                      minWidth: colIndex === 0 ? '140px' : colIndex === 1 ? '180px' : colIndex === 2 ? '140px' : '180px'
+                    } : {}}
+                  />
+                );
+              })}
+            </colgroup>
             <thead style={{ position: 'sticky', top: 0, zIndex: 25, backgroundColor: '#f8fafc' }}>
               <tr className="border-b-2 border-slate-200" style={{ backgroundColor: '#f8fafc' }}>
                   {FINAL_COLUMNS.map(([header, key, editable], colIndex) => {
@@ -2588,7 +2601,7 @@ const getEditableFields = () => {
                         style={isFixedColumn ? {
                           left: getLeftPosition(colIndex),
                           top: 0, // Fijar al top para que quede fijo al hacer scroll vertical
-                          backgroundColor: isEditableForUser ? '#eff6ff' : '#f8fafc', // bg-blue-50 o bg-slate-50 sólido
+                          backgroundColor: isEditableForUser ? '#eff6ff' : '#f8fafc', // bg-blue-50 (celeste) para editables, bg-slate-50 para no editables
                           paddingLeft: '1.5rem', // px-6
                           paddingRight: '1.5rem', // px-6
                           minWidth: colIndex === 0 ? '140px' : colIndex === 1 ? '180px' : colIndex === 2 ? '140px' : '180px',
@@ -2596,8 +2609,20 @@ const getEditableFields = () => {
                           opacity: 1,
                           isolation: 'isolate',
                           // Asegurar que la línea se mantenga fija
-                          position: 'sticky'
-                        } : {}}
+                          position: 'sticky',
+                          // Línea divisoria al final de Episodio (mismo estilo que las otras líneas del panel)
+                          ...(colIndex === 3 ? { 
+                            borderRight: '1px solid #e2e8f0'
+                          } : {
+                            // Líneas divisorias entre columnas fijas (mismo estilo)
+                            borderRight: '1px solid #e2e8f0'
+                          })
+                        } : {
+                          // Para columnas NO fijas, aplicar fondo celeste si son editables
+                          ...(isEditableForUser ? { backgroundColor: '#eff6ff' } : {}),
+                          // Líneas divisorias entre columnas (mismo estilo)
+                          borderRight: '1px solid #e2e8f0'
+                        }}
                         title={isEditableForUser ? 'Campo editable' : 'Campo de solo lectura'}
                       >
                         {header}
@@ -2710,12 +2735,13 @@ const getEditableFields = () => {
                         return `${left}px`;
                       };
                       
-                      // Determinar el color de fondo para columnas fijas (completamente opaco)
-                      const getFixedColumnBg = () => {
-                        if (shouldBeClickable) {
-                          return '#eff6ff'; // bg-blue-50 sólido
+                      // Determinar el color de fondo - celeste para editables, blanco para no editables
+                      const getCellBg = () => {
+                        const isEditable = editableFields.has(key);
+                        if (isEditable) {
+                          return '#eff6ff'; // bg-blue-50 (celeste) para campos editables
                         }
-                        return '#ffffff'; // bg-white sólido
+                        return '#ffffff'; // bg-white para campos no editables
                       };
                       
                       return (
@@ -2728,7 +2754,7 @@ const getEditableFields = () => {
                           }`}
                           style={isFixedColumn ? {
                             left: getLeftPosition(colIndex),
-                            backgroundColor: getFixedColumnBg(),
+                            backgroundColor: getCellBg(), // Celeste para editables, blanco para no editables
                             paddingLeft: '1.5rem', // px-6 - más espacio
                             paddingRight: '1.5rem', // px-6 - más espacio
                             minWidth: colIndex === 0 ? '140px' : colIndex === 1 ? '180px' : colIndex === 2 ? '140px' : '180px',
@@ -2737,8 +2763,20 @@ const getEditableFields = () => {
                             // Forzar que el contenido no se transparente
                             isolation: 'isolate',
                             // Asegurar que la línea se mantenga fija
-                            position: 'sticky'
-                          } : {}}
+                            position: 'sticky',
+                            // Línea divisoria al final de Episodio (mismo estilo que las otras líneas del panel)
+                            ...(colIndex === 3 ? { 
+                              borderRight: '1px solid #e2e8f0'
+                            } : {
+                              // Líneas divisorias entre columnas fijas (mismo estilo)
+                              borderRight: '1px solid #e2e8f0'
+                            })
+                          } : {
+                            // Para columnas NO fijas, aplicar fondo celeste si son editables
+                            backgroundColor: editableFields.has(key) ? '#eff6ff' : '#ffffff',
+                            // Líneas divisorias entre columnas (mismo estilo)
+                            borderRight: '1px solid #e2e8f0'
+                          }}
                           onClick={() => shouldBeClickable && startEdit(rowIndex, key, value)}
                           title={shouldBeClickable ? 'Hacer clic para editar' : ''}
                         >
