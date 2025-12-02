@@ -112,10 +112,9 @@ export default function Episodios() {
   }, [episodios, searchTerm, filterValidated, filterOutlier, filterConvenio, isFinanzas]);
 
   // Lista de campos editables para finanzas que deben mostrar el ícono
-  // IMPORTANTE: NO incluir 'at' ni 'atDetalle' - solo codificador y gestión pueden editarlos
+  // IMPORTANTE: NO incluir 'at', 'atDetalle' ni 'montoAT' - solo codificador y gestión pueden editarlos
   const camposEditablesFinanzas = [
     'estadoRN',
-    'montoAT',
     'montoRN',
     'diasDemoraRescate',
     'pagoDemora',
@@ -142,15 +141,15 @@ const getEditableFields = () => {
   
   if (isFinanzas) {
     // Finanzas puede editar estos campos:
-    // ESTADO RN, Monto AT, MONTO RN, 
+    // ESTADO RN, MONTO RN, 
     // Días de demora rescate, Pago demora rescate, Pago por outlier superior, 
     // DOCUMENTACION NECESARIA, Precio Base por tramo correspondiente
-    // IMPORTANTE: Finanzas NO puede editar AT(S/N) ni AT Detalle (solo codificador y gestión)
+    // IMPORTANTE: Finanzas NO puede editar AT(S/N), AT Detalle ni Monto AT (solo codificador y gestión)
     
-    // Incluir campos editables de FINAL_COLUMNS EXCEPTO 'at' y 'atDetalle'
+    // Incluir campos editables de FINAL_COLUMNS EXCEPTO 'at', 'atDetalle' y 'montoAT'
     FINAL_COLUMNS.forEach(([header, key, editable]) => {
-      if (editable && key !== 'at' && key !== 'atDetalle') {
-        editableFields.add(key); // Incluye: estadoRN, montoAT, montoRN, 
+      if (editable && key !== 'at' && key !== 'atDetalle' && key !== 'montoAT') {
+        editableFields.add(key); // Incluye: estadoRN, montoRN, 
                                   // diasDemoraRescate, pagoDemora, pagoOutlierSup, documentacion
       }
     });
@@ -167,14 +166,11 @@ const getEditableFields = () => {
   }
   
   if (isCodificador) {
-    // Codificador puede editar: AT(S/N), AT Detalle, Días Demora Rescate, 
-    // Pagos Demora Rescate, Monto RN y Pago por Outlier Superior
+    // Codificador puede editar: AT(S/N), AT Detalle
+    // NOTA: montoRN, diasDemoraRescate, pagoDemora, pagoOutlierSup NO son editables para codificador
+    // (aunque el backend los acepta, no se muestran como editables en la UI)
     editableFields.add('at');
     editableFields.add('atDetalle');
-    editableFields.add('diasDemoraRescate');
-    editableFields.add('pagoDemora');
-    editableFields.add('montoRN');
-    editableFields.add('pagoOutlierSup');
     
     // Para casos fuera de norma, Codificador puede hacer override manual de valorGRD y montoFinal
     editableFields.add('valorGRD');
@@ -864,8 +860,7 @@ const getEditableFields = () => {
 
   // Función para navegar al siguiente campo con TAB
   const handleTabNavigation = (e: React.KeyboardEvent, currentField: string, rowIndex: number, currentValue: any) => {
-    // Solo permitir navegación con TAB para usuarios de finanzas
-    if (!isFinanzas) return;
+    // Permitir navegación con TAB para todos los usuarios (finanzas, codificador, gestión)
     
     // Solo manejar TAB
     if (e.key !== 'Tab') return;
@@ -1437,7 +1432,7 @@ const getEditableFields = () => {
       
       case 'montoAT':
         // Monto AT debe mostrarse solo si AT = 'S'
-        // NOTA: montoAT es editable para finanzas
+        // NOTA: montoAT NO es editable - se autocompleta automáticamente
         const episodioAtParaMonto = episodio.at;
         const atEsSParaMonto = episodioAtParaMonto === true || String(episodioAtParaMonto || '').toUpperCase() === 'S';
         const montoATValue = (atEsSParaMonto && value) ? (typeof value === 'number' ? value : parseFloat(String(value))) : 0;
@@ -1450,17 +1445,15 @@ const getEditableFields = () => {
           montoATValue: montoATValue,
           formatted: montoATFormatted
         });
-        return wrapWithEditIcon(
+        // NO usar wrapWithEditIcon porque montoAT no es editable para ningún rol
+        return (
           <div className="flex items-center gap-1">
             <span className={hasErrors ? 'text-red-600' : hasWarnings ? 'text-yellow-600' : ''}>
               {montoATFormatted}
             </span>
             {hasErrors && <span className="text-red-500 text-xs">⚠️</span>}
             {hasWarnings && !hasErrors && <span className="text-yellow-500 text-xs">⚠️</span>}
-          </div>,
-          key,
-          rowIndex,
-          episodio
+          </div>
         );
       
       case 'montoRN':
@@ -2550,6 +2543,11 @@ const getEditableFields = () => {
                         if (!tienePermiso) {
                           shouldBeClickable = false;
                         }
+                      }
+                      
+                      // montoAT: NO es editable para ningún rol - se autocompleta automáticamente
+                      if (key === 'montoAT') {
+                        shouldBeClickable = false;
                       }
                       
                       // valorGRD y montoFinal: solo editables para Finanzas o Codificador cuando el episodio está fuera de norma
