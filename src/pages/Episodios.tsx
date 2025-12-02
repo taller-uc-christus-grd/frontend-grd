@@ -2536,6 +2536,12 @@ const getEditableFields = () => {
           </div>
         ) : (
           <div className="overflow-x-auto overflow-y-auto max-h-[calc(100vh-400px)]" style={{ position: 'relative' }}>
+          <style>{`
+            .fixed-column-divider {
+              border-right: 3px solid #64748b !important;
+              box-shadow: 2px 0 5px rgba(0,0,0,0.15), 3px 0 0 #64748b !important;
+            }
+          `}</style>
           <table className="w-full text-sm border-collapse" style={{ tableLayout: 'auto' }}>
             <thead style={{ position: 'sticky', top: 0, zIndex: 25, backgroundColor: '#f8fafc' }}>
               <tr className="border-b-2 border-slate-200" style={{ backgroundColor: '#f8fafc' }}>
@@ -2577,7 +2583,7 @@ const getEditableFields = () => {
                         className={`py-3 text-left font-semibold whitespace-nowrap ${
                           isEditableForUser ? 'text-blue-700' : 'text-slate-700'
                         } ${
-                          isFixedColumn ? 'sticky top-0 z-30 shadow-[2px_0_5px_rgba(0,0,0,0.15)]' : 'px-4'
+                          isFixedColumn ? `sticky top-0 z-30 shadow-[2px_0_5px_rgba(0,0,0,0.15)] ${colIndex === 3 ? 'fixed-column-divider' : ''}` : 'px-4'
                         }`}
                         style={isFixedColumn ? {
                           left: getLeftPosition(colIndex),
@@ -2586,10 +2592,12 @@ const getEditableFields = () => {
                           paddingLeft: '1.5rem', // px-6
                           paddingRight: '1.5rem', // px-6
                           minWidth: colIndex === 0 ? '140px' : colIndex === 1 ? '180px' : colIndex === 2 ? '140px' : '180px',
-                          borderRight: colIndex === 3 ? '3px solid #64748b' : 'none', // Línea gris gruesa al final de Episodio (colIndex 3)
+                          borderRight: colIndex === 3 ? '3px solid #64748b' : 'none', // Línea gris gruesa al final de Episodio (colIndex 3) - FIJA
                           // Asegurar que el fondo sea completamente opaco
                           opacity: 1,
-                          isolation: 'isolate'
+                          isolation: 'isolate',
+                          // Asegurar que la línea se mantenga fija
+                          position: 'sticky'
                         } : {}}
                         title={isEditableForUser ? 'Campo editable' : 'Campo de solo lectura'}
                       >
@@ -2717,7 +2725,7 @@ const getEditableFields = () => {
                           className={`py-3 text-slate-700 ${
                             shouldBeClickable ? 'font-medium cursor-pointer hover:bg-blue-100 transition-colors' : ''
                           } ${
-                            isFixedColumn ? 'sticky z-20 shadow-[2px_0_5px_rgba(0,0,0,0.15)]' : 'px-4'
+                            isFixedColumn ? `sticky z-20 shadow-[2px_0_5px_rgba(0,0,0,0.15)] ${colIndex === 3 ? 'fixed-column-divider' : ''}` : 'px-4'
                           }`}
                           style={isFixedColumn ? {
                             left: getLeftPosition(colIndex),
@@ -2725,12 +2733,12 @@ const getEditableFields = () => {
                             paddingLeft: '1.5rem', // px-6 - más espacio
                             paddingRight: '1.5rem', // px-6 - más espacio
                             minWidth: colIndex === 0 ? '140px' : colIndex === 1 ? '180px' : colIndex === 2 ? '140px' : '180px',
-                            borderRight: colIndex === 3 ? '3px solid #64748b' : 'none', // Línea gris gruesa al final de Episodio (colIndex 3) - fija
+                            borderRight: colIndex === 3 ? '3px solid #64748b' : 'none', // Línea gris gruesa al final de Episodio (colIndex 3) - FIJA
                             // Asegurar que el fondo sea completamente opaco
                             opacity: 1,
                             // Forzar que el contenido no se transparente
                             isolation: 'isolate',
-                            // Asegurar que la línea no se mueva
+                            // Asegurar que la línea se mantenga fija
                             position: 'sticky'
                           } : {}}
                           onClick={() => shouldBeClickable && startEdit(rowIndex, key, value)}
