@@ -10,9 +10,8 @@ export interface User {
 
 // === Estados (lo tuyo, con un pequeño ajuste en Inlier) ===
 export type EstadoRN = 'Aprobado' | 'Pendiente' | 'Rechazado' | null;
-// En la fuente aparece "Outliers Superiores" e incluso "-".
-// Dejamos compatibilidad con "Outlier" por si aparece en algún dataset.
-export type InlierFlag = 'Inlier' | 'Outliers Superiores' | 'Outlier' | '-' | null;
+// Valores posibles para inlierOutlier según el cálculo automático del backend
+export type InlierFlag = 'Inlier' | 'Outlier Superior' | 'Outlier Inferior' | 'Outliers Superiores' | 'Outlier' | '-' | null;
 
 // === Episodio base (tu tipo original, lo mantengo) ===
 export interface Episode {

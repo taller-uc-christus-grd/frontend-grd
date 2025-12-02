@@ -85,8 +85,17 @@ export default function Episodios() {
     // Filtro por outlier
     if (filterOutlier !== 'all') {
       filtered = filtered.filter(ep => {
-        const isOutlier = ep.inlierOutlier === 'Outlier Superior' || ep.inlierOutlier === 'Outlier Inferior';
-        return filterOutlier === 'outlier' ? isOutlier : ep.inlierOutlier === 'Inlier';
+        const inlierValue = ep.inlierOutlier;
+        // Type narrowing: verificar que el valor sea uno de los strings esperados
+        // Verificar explícitamente que no sea null/undefined antes de comparar
+        if (inlierValue === null || inlierValue === undefined) {
+          return false;
+        }
+        if (filterOutlier === 'outlier') {
+          return inlierValue === 'Outlier Superior' || inlierValue === 'Outlier Inferior';
+        } else {
+          return inlierValue === 'Inlier';
+        }
       });
     }
 
