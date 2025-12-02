@@ -2473,17 +2473,21 @@ const getEditableFields = () => {
           <table className="w-full text-sm border-collapse">
             <thead>
               <tr className="bg-slate-50 border-b-2 border-slate-200">
-                  {FINAL_COLUMNS.map(([header, key, editable]) => (
-                    <th 
-                      key={key}
-                      className={`px-4 py-3 text-left font-semibold text-slate-700 whitespace-nowrap ${
-                        editable ? 'bg-blue-50' : ''
-                      }`}
-                      title={editable ? 'Campo editable' : 'Campo de solo lectura'}
-                    >
-                      {header}
-                    </th>
-                  ))}
+                  {FINAL_COLUMNS.map(([header, key, editable]) => {
+                    // Verificar si el campo es editable para el rol actual del usuario
+                    const isEditableForUser = editableFields.has(key);
+                    return (
+                      <th 
+                        key={key}
+                        className={`px-4 py-3 text-left font-semibold whitespace-nowrap ${
+                          isEditableForUser ? 'bg-blue-50 text-blue-700' : 'text-slate-700'
+                        }`}
+                        title={isEditableForUser ? 'Campo editable' : 'Campo de solo lectura'}
+                      >
+                        {header}
+                      </th>
+                    );
+                  })}
                 <th className="px-4 py-3 text-left font-semibold text-slate-700 whitespace-nowrap">Acciones</th>
               </tr>
             </thead>
