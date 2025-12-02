@@ -2634,7 +2634,7 @@ const getEditableFields = () => {
             </thead>
             <tbody>
                 {filteredEpisodios.map((episodio, rowIndex) => (
-                  <tr key={episodio.episodio} className="hover:bg-slate-50/50 transition-colors bg-white" style={{ borderBottom: '1px solid #e2e8f0' }}>
+                  <tr key={episodio.episodio} className="hover:bg-slate-50/50 transition-colors bg-white">
                     {FINAL_COLUMNS.map(([header, key, editable], colIndex) => {
                       const value = key.split('.').reduce((acc: any, k) => acc?.[k], episodio as any);
                       
@@ -2770,12 +2770,16 @@ const getEditableFields = () => {
                             } : {
                               // Líneas divisorias entre columnas fijas (mismo estilo)
                               borderRight: '1px solid #e2e8f0'
-                            })
+                            }),
+                            // Línea horizontal inferior (mismo estilo que las verticales)
+                            borderBottom: '1px solid #e2e8f0'
                           } : {
                             // Para columnas NO fijas, aplicar fondo celeste si son editables
                             backgroundColor: editableFields.has(key) ? '#eff6ff' : '#ffffff',
                             // Líneas divisorias entre columnas (mismo estilo)
-                            borderRight: '1px solid #e2e8f0'
+                            borderRight: '1px solid #e2e8f0',
+                            // Línea horizontal inferior (mismo estilo que las verticales)
+                            borderBottom: '1px solid #e2e8f0'
                           }}
                           onClick={() => shouldBeClickable && startEdit(rowIndex, key, value)}
                           title={shouldBeClickable ? 'Hacer clic para editar' : ''}
