@@ -1,0 +1,27 @@
+/**
+ * ACTUALIZACIÓN DEL SCHEMA DE PRISMA
+ * 
+ * Agregar estos campos a la tabla Grd en tu schema.prisma
+ * 
+ * Ejecutar migración después de agregar:
+ * npx prisma migrate dev --name add_percentiles_to_grd
+ * npx prisma generate
+ */
+
+model Grd {
+  id Int @id @default(autoincrement())
+  codigo String @unique
+  descripcion String?
+  peso Decimal? @db.Decimal(10, 4)
+  precioBaseTramo Decimal? @db.Decimal(14, 2)
+  puntoCorteInf Decimal?
+  puntoCorteSup Decimal?
+  // ========== CAMPOS NUEVOS PARA PERCENTILES ==========
+  percentil25 Decimal? @db.Decimal(10, 2)  // Percentil 25 (días)
+  percentil50 Decimal? @db.Decimal(10, 2)  // Percentil 50 (días) - CRÍTICO para cálculo de outlier
+  percentil75 Decimal? @db.Decimal(10, 2)  // Percentil 75 (días)
+  // ====================================================
+  createdAt DateTime @default(now())
+  episodios Episodio[]
+}
+
