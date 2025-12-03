@@ -1467,30 +1467,7 @@ export default function EpisodioDetalle() {
             </p>
           </div>
 
-          {/* Botones de acción */}
-          <div className="flex flex-wrap gap-3">
-            <button
-              onClick={() => actualizarEstadoRevision('aprobado')}
-              disabled={saving || episodio.validado === true}
-              className="px-4 py-2 bg-green-600 text-white rounded-lg font-medium hover:bg-green-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors duration-200 flex items-center gap-2"
-            >
-              {saving ? (
-                <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
-              ) : null}
-              Aprobar Episodio
-            </button>
-            
-            <button
-              onClick={() => actualizarEstadoRevision('rechazado')}
-              disabled={saving || episodio.validado === false}
-              className="px-4 py-2 bg-red-600 text-white rounded-lg font-medium hover:bg-red-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors duration-200 flex items-center gap-2"
-            >
-              {saving ? (
-                <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
-              ) : null}
-              Rechazar Episodio
-            </button>
-          </div>
+          {/* Botones de acción - Eliminados para gestión (gestión no tiene permisos para aprobar/rechazar) */}
 
           {/* Mensaje de confirmación */}
           {saveMessage && (

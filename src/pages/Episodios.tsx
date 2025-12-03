@@ -99,8 +99,8 @@ export default function Episodios() {
       });
     }
 
-    // Filtro por convenio (para finanzas y codificador, filtra en tiempo real)
-    if ((isFinanzas || isCodificador) && filterConvenio.trim() !== '') {
+    // Filtro por convenio (para finanzas, codificador y gestión, filtra en tiempo real)
+    if ((isFinanzas || isCodificador || isGestion) && filterConvenio.trim() !== '') {
       const convenioTerm = filterConvenio.trim().toLowerCase();
       filtered = filtered.filter(ep => {
         const convenio = ep.convenio?.toLowerCase() || '';
@@ -109,7 +109,7 @@ export default function Episodios() {
     }
 
     return filtered;
-  }, [episodios, searchTerm, filterValidated, filterOutlier, filterConvenio, isFinanzas]);
+  }, [episodios, searchTerm, filterValidated, filterOutlier, filterConvenio, isFinanzas, isCodificador, isGestion]);
 
   // Lista de campos editables para finanzas que deben mostrar el ícono
   // IMPORTANTE: NO incluir 'at', 'atDetalle' ni 'montoAT' - solo codificador y gestión pueden editarlos
@@ -947,16 +947,6 @@ const getEditableFields = () => {
       );
     }
     
-    // Mostrar ícono para 'validado' solo si es gestión
-    if (isGestion && key === 'validado' && !isEditing) {
-      return (
-        <div className="flex items-center gap-1.5">
-          <span>{content}</span>
-          <EditIcon />
-        </div>
-      );
-    }
-    
     // Mostrar ícono para 'estadoRN' si es finanzas (incluido en la lista, pero también para dropdowns)
     if (isFinanzas && key === 'estadoRN' && !isEditing) {
       return (
@@ -1265,15 +1255,12 @@ const getEditableFields = () => {
           return wrapWithEditIcon(selectDropdown, key, rowIndex, episodio);
         }
 
-        // Para Gestión, mostrar badge con ícono
+        // Para Gestión, mostrar badge sin ícono (gestión no puede editar validado)
         if (isGestion) {
-          return wrapWithEditIcon(
+          return (
             <span className={`badge-${value ? 'success' : 'warning'}`}>
               {value ? '✓' : '○'}
-            </span>,
-            key,
-            rowIndex,
-            episodio
+            </span>
           );
         }
 
@@ -1739,21 +1726,21 @@ const getEditableFields = () => {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []); // Solo montar/desmontar el listener una vez
   
-  // Recargar episodios cuando cambie el filtro de convenio (para finanzas y codificador)
+  // Recargar episodios cuando cambie el filtro de convenio (para finanzas, codificador y gestión)
   useEffect(() => {
-    if ((isFinanzas || isCodificador) && filterConvenio.trim() !== '') {
+    if ((isFinanzas || isCodificador || isGestion) && filterConvenio.trim() !== '') {
       // Debounce: esperar 500ms después del último cambio antes de recargar
       const timeoutId = setTimeout(() => {
         loadEpisodios();
       }, 500);
       
       return () => clearTimeout(timeoutId);
-    } else if ((isFinanzas || isCodificador) && filterConvenio.trim() === '') {
+    } else if ((isFinanzas || isCodificador || isGestion) && filterConvenio.trim() === '') {
       // Si se limpia el filtro, recargar inmediatamente
       loadEpisodios();
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [filterConvenio, isFinanzas, isCodificador]);
+  }, [filterConvenio, isFinanzas, isCodificador, isGestion]);
   
   // Función para cargar ajustes de tecnología del backend
   const loadAjustesTecnologia = async () => {
@@ -1793,7 +1780,7 @@ const getEditableFields = () => {
         _t: Date.now() // Timestamp para evitar caché
       };
       
-      if ((isFinanzas || isCodificador) && filterConvenio.trim() !== '') {
+      if ((isFinanzas || isCodificador || isGestion) && filterConvenio.trim() !== '') {
         params.convenio = filterConvenio.trim();
       }
       
@@ -2481,8 +2468,8 @@ const getEditableFields = () => {
             </select>
           </div>
 
-          {/* Filtro por convenio (para finanzas y codificador) */}
-          {(isFinanzas || isCodificador) && (
+          {/* Filtro por convenio (para finanzas, codificador y gestión) */}
+          {(isFinanzas || isCodificador || isGestion) && (
             <div>
               <label className="block text-sm font-medium text-slate-700 mb-2">Convenio</label>
               <input
