@@ -566,15 +566,25 @@ export default function EpisodioDetalle() {
               />
             )}
             <button
-              onClick={() => saveField(field)}
+              onClick={(e) => {
+                e.preventDefault();
+                e.stopPropagation();
+                saveField(field);
+              }}
               disabled={savingField}
               className="px-3 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 disabled:opacity-50"
+              type="button"
             >
               {savingField ? '...' : '✓'}
             </button>
             <button
-              onClick={cancelEdit}
+              onClick={(e) => {
+                e.preventDefault();
+                e.stopPropagation();
+                cancelEdit();
+              }}
               className="px-3 py-2 bg-gray-600 text-white rounded-lg hover:bg-gray-700"
+              type="button"
             >
               ✕
             </button>

@@ -1158,16 +1158,26 @@ const getEditableFields = () => {
             />
           )}
           <button
-            onClick={saveEdit}
+            onClick={(e) => {
+              e.preventDefault();
+              e.stopPropagation();
+              saveEdit();
+            }}
             disabled={saving}
             className="px-2 py-1 text-xs bg-green-600 text-white rounded hover:bg-green-700 disabled:opacity-50"
             title={saving ? 'Guardando en servidor...' : 'Guardar cambios'}
+            type="button"
           >
             {saving ? '⏳' : '✓'}
           </button>
           <button
-            onClick={cancelEdit}
+            onClick={(e) => {
+              e.preventDefault();
+              e.stopPropagation();
+              cancelEdit();
+            }}
             className="px-2 py-1 text-xs bg-gray-600 text-white rounded hover:bg-gray-700"
+            type="button"
           >
             ✕
           </button>
