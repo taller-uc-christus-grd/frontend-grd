@@ -32,8 +32,8 @@ export default function FormulaModal({ isOpen, onClose, formula, title }: Formul
           </button>
         </div>
         
-        <div className="bg-purple-50 rounded-lg p-4 border border-purple-200">
-          <p className="text-xl font-mono font-semibold text-purple-900 text-center">
+        <div className="bg-purple-50 rounded-lg p-4 border border-purple-200 overflow-x-auto">
+          <p className="text-sm font-mono font-semibold text-purple-900 text-center whitespace-nowrap">
             {formula}
           </p>
         </div>
