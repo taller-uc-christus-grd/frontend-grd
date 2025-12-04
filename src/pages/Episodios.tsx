@@ -776,39 +776,35 @@ const getEditableFields = () => {
   };
 
   // Función para obtener campos editables en orden según FINAL_COLUMNS
-  // Solo incluye campos que usan startEdit (excluye dropdowns directos como validado y estadoRN para finanzas)
+  // Incluye todos los campos editables en el orden correcto, incluyendo validado y estadoRN
   const getEditableFieldsInOrder = (rowIndex: number) => {
     const editableFieldsList: string[] = [];
     const episodio = filteredEpisodios[rowIndex];
     
-    // Para finanzas, incluir todos los campos editables que usan startEdit (no dropdowns directos)
+    // Para finanzas, incluir todos los campos editables en orden según FINAL_COLUMNS
     if (isFinanzas) {
-      FINAL_COLUMNS.forEach(([header, key, editable]) => {
-        // Excluir campos con dropdown directo (estos no usan startEdit)
-        if (key === 'validado' || key === 'estadoRN') {
-          return; // No incluir en navegación TAB porque tienen dropdown directo
-        }
-        
-        // Si el campo está en la lista de editables para finanzas
-        if (camposEditablesFinanzas.includes(key)) {
-          // Validaciones especiales para campos condicionales
-          if (key === 'valorGRD' || key === 'montoFinal') {
-            const esFueraDeNorma = episodio?.grupoDentroNorma === false;
-            if (!esFueraDeNorma) {
-              return; // No incluir si no está fuera de norma
-            }
-          }
-          
+      // Orden específico para finanzas según lo solicitado:
+      // validado → estadoRN → montoRN → diasDemoraRescate → pagoOutlierSup
+      const ordenCamposFinanzas = [
+        'validado',
+        'estadoRN',
+        'montoRN',
+        'diasDemoraRescate',
+        'pagoOutlierSup'
+      ];
+      
+      ordenCamposFinanzas.forEach(key => {
+        // Verificar que el campo sea editable para finanzas
+        if (key === 'validado' && editableFields.has('validado')) {
           editableFieldsList.push(key);
-        }
-        
-        // precioBaseTramo está marcado como false en planillaConfig pero es editable para finanzas
-        if (key === 'precioBaseTramo' && editableFields.has(key)) {
+        } else if (key === 'estadoRN' && camposEditablesFinanzas.includes(key)) {
+          editableFieldsList.push(key);
+        } else if (camposEditablesFinanzas.includes(key)) {
           editableFieldsList.push(key);
         }
       });
     } else {
-      // Para otros roles, usar la lógica de editableFields
+      // Para otros roles, usar la lógica de editableFields manteniendo el orden de FINAL_COLUMNS
       FINAL_COLUMNS.forEach(([header, key, editable]) => {
         if (!editableFields.has(key)) return;
         
@@ -897,12 +893,26 @@ const getEditableFields = () => {
       
       // Pequeño delay para asegurar que el estado se actualice
       setTimeout(() => {
-        // Obtener el valor del siguiente campo
-        const nextEpisodio = filteredEpisodios[nextField.rowIndex];
-        const nextValue = nextField.field.split('.').reduce((acc: any, k) => acc?.[k], nextEpisodio as any);
-        
-        // Iniciar edición del siguiente campo
-        startEdit(nextField.rowIndex, nextField.field, nextValue);
+        // Campos con dropdown directo (validado y estadoRN) no usan startEdit
+        // En su lugar, enfocamos directamente el select
+        if (nextField.field === 'validado' || nextField.field === 'estadoRN') {
+          // Buscar el select en el DOM y enfocarlo
+          const rowElement = document.querySelector(`tr[data-row-index="${nextField.rowIndex}"]`);
+          if (rowElement) {
+            const selectElement = rowElement.querySelector(`select[data-field="${nextField.field}"]`) as HTMLSelectElement;
+            if (selectElement) {
+              selectElement.focus();
+              selectElement.click(); // Abrir el dropdown
+            }
+          }
+        } else {
+          // Para otros campos, usar startEdit normalmente
+          const nextEpisodio = filteredEpisodios[nextField.rowIndex];
+          const nextValue = nextField.field.split('.').reduce((acc: any, k) => acc?.[k], nextEpisodio as any);
+          
+          // Iniciar edición del siguiente campo
+          startEdit(nextField.rowIndex, nextField.field, nextValue);
+        }
       }, 50);
     }
   };
@@ -1200,7 +1210,10 @@ const getEditableFields = () => {
 
           const selectDropdown = (
             <select
+              data-row-index={rowIndex}
+              data-field="validado"
               value={currentValueStr}
+              onKeyDown={(e) => handleTabNavigation(e, 'validado', rowIndex, value)}
               onChange={async (e) => {
                 const newValue = e.target.value;
                 let validatedValue: any = null;
@@ -1343,7 +1356,10 @@ const getEditableFields = () => {
 
           const selectDropdown = (
             <select
+              data-row-index={rowIndex}
+              data-field="estadoRN"
               value={currentValueStr}
+              onKeyDown={(e) => handleTabNavigation(e, 'estadoRN', rowIndex, value)}
               onChange={async (e) => {
                 const newValue = e.target.value;
                 let validatedValue: any = null;
@@ -2631,7 +2647,7 @@ const getEditableFields = () => {
             </thead>
             <tbody>
                 {filteredEpisodios.map((episodio, rowIndex) => (
-                  <tr key={episodio.episodio} className="hover:bg-slate-50/50 transition-colors bg-white">
+                  <tr key={episodio.episodio} data-row-index={rowIndex} className="hover:bg-slate-50/50 transition-colors bg-white">
                     {FINAL_COLUMNS.map(([header, key, editable], colIndex) => {
                       const value = key.split('.').reduce((acc: any, k) => acc?.[k], episodio as any);
                       
