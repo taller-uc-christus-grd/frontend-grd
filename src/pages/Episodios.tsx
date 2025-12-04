@@ -607,7 +607,7 @@ const getEditableFields = () => {
             console.log('✅ AT forzado en actualización de estado:', { validatedValue, atFinal: episodioActualizado.at });
           } else {
             // Si no estamos actualizando AT, usar el valor normalizado del backend
-            episodioActualizado.at = updatedEpisodioFromBackend.at;
+          episodioActualizado.at = updatedEpisodioFromBackend.at;
           }
           
           // Asegurar que estadoRN esté normalizado (usar el valor que enviamos si estamos actualizando estadoRN)
@@ -781,7 +781,7 @@ const getEditableFields = () => {
     const editableFieldsList: string[] = [];
     const episodio = filteredEpisodios[rowIndex];
     
-    // Para finanzas, incluir todos los campos editables en orden según FINAL_COLUMNS
+    // Para finanzas, incluir todos los campos editables en orden específico
     if (isFinanzas) {
       // Orden específico para finanzas según lo solicitado:
       // validado → estadoRN → montoRN → diasDemoraRescate → pagoOutlierSup
@@ -793,16 +793,26 @@ const getEditableFields = () => {
         'pagoOutlierSup'
       ];
       
+      // Incluir solo los campos que realmente son editables para finanzas
       ordenCamposFinanzas.forEach(key => {
-        // Verificar que el campo sea editable para finanzas
+        // validado está en editableFields pero no en camposEditablesFinanzas
         if (key === 'validado' && editableFields.has('validado')) {
           editableFieldsList.push(key);
-        } else if (key === 'estadoRN' && camposEditablesFinanzas.includes(key)) {
-          editableFieldsList.push(key);
-        } else if (camposEditablesFinanzas.includes(key)) {
+        }
+        // estadoRN, montoRN, diasDemoraRescate, pagoOutlierSup están en camposEditablesFinanzas
+        else if (editableFields.has(key)) {
           editableFieldsList.push(key);
         }
       });
+      
+      // Debug: verificar qué campos se están incluyendo
+      if (process.env.NODE_ENV === 'development') {
+        console.log('📋 Campos editables en orden para finanzas:', {
+          editableFieldsList,
+          editableFields: Array.from(editableFields),
+          camposEditablesFinanzas
+        });
+      }
     } else {
       // Para otros roles, usar la lógica de editableFields manteniendo el orden de FINAL_COLUMNS
       FINAL_COLUMNS.forEach(([header, key, editable]) => {
@@ -876,12 +886,27 @@ const getEditableFields = () => {
     
     const isShiftTab = e.shiftKey;
     
+    // Debug: verificar qué campo actual estamos navegando
+    if (process.env.NODE_ENV === 'development') {
+      console.log('🔍 Navegación TAB:', {
+        currentField,
+        rowIndex,
+        isShiftTab,
+        editableFields: Array.from(editableFields)
+      });
+    }
+    
     // Encontrar el siguiente campo editable
     const nextField = findNextEditableField(
       currentField, 
       rowIndex, 
       isShiftTab ? 'prev' : 'next'
     );
+    
+    // Debug: verificar qué campo siguiente encontramos
+    if (process.env.NODE_ENV === 'development') {
+      console.log('➡️ Siguiente campo encontrado:', nextField);
+    }
     
     if (nextField) {
       e.preventDefault();
@@ -897,23 +922,53 @@ const getEditableFields = () => {
         // En su lugar, enfocamos directamente el select
         if (nextField.field === 'validado' || nextField.field === 'estadoRN') {
           // Buscar el select en el DOM y enfocarlo
-          const rowElement = document.querySelector(`tr[data-row-index="${nextField.rowIndex}"]`);
-          if (rowElement) {
-            const selectElement = rowElement.querySelector(`select[data-field="${nextField.field}"]`) as HTMLSelectElement;
-            if (selectElement) {
-              selectElement.focus();
-              selectElement.click(); // Abrir el dropdown
+          // Usar requestAnimationFrame para asegurar que el DOM esté actualizado
+          requestAnimationFrame(() => {
+            const rowElement = document.querySelector(`tr[data-row-index="${nextField.rowIndex}"]`);
+            if (rowElement) {
+              const selectElement = rowElement.querySelector(`select[data-field="${nextField.field}"]`) as HTMLSelectElement;
+              if (selectElement) {
+                selectElement.focus();
+                // No hacer click, solo focus para que el usuario pueda usar las flechas
+              } else {
+                console.error('❌ No se encontró el select:', {
+                  field: nextField.field,
+                  rowIndex: nextField.rowIndex,
+                  selector: `select[data-field="${nextField.field}"]`
+                });
+              }
+            } else {
+              console.error('❌ No se encontró la fila:', {
+                rowIndex: nextField.rowIndex,
+                selector: `tr[data-row-index="${nextField.rowIndex}"]`
+              });
             }
-          }
+          });
         } else {
           // Para otros campos, usar startEdit normalmente
-          const nextEpisodio = filteredEpisodios[nextField.rowIndex];
-          const nextValue = nextField.field.split('.').reduce((acc: any, k) => acc?.[k], nextEpisodio as any);
-          
-          // Iniciar edición del siguiente campo
-          startEdit(nextField.rowIndex, nextField.field, nextValue);
+          // Usar requestAnimationFrame para asegurar que el DOM esté actualizado
+          requestAnimationFrame(() => {
+            const nextEpisodio = filteredEpisodios[nextField.rowIndex];
+            if (!nextEpisodio) {
+              console.error('❌ No se encontró el episodio en el índice:', nextField.rowIndex);
+              return;
+            }
+            const nextValue = nextField.field.split('.').reduce((acc: any, k) => acc?.[k], nextEpisodio as any);
+            
+            // Iniciar edición del siguiente campo
+            startEdit(nextField.rowIndex, nextField.field, nextValue);
+          });
         }
-      }, 50);
+      }, 100);
+    } else {
+      // Debug: si no se encontró el siguiente campo
+      if (process.env.NODE_ENV === 'development') {
+        console.warn('⚠️ No se encontró el siguiente campo editable:', {
+          currentField,
+          rowIndex,
+          editableFieldsList: getEditableFieldsInOrder(rowIndex)
+        });
+      }
     }
   };
 
@@ -1801,14 +1856,14 @@ const getEditableFields = () => {
       // Agregar timestamp para evitar caché del navegador
       // Incluir filtro de convenio si está presente (para finanzas y codificador)
       const params: any = {
-        page: 1,
-        pageSize: 100, // Cargar los primeros 100 episodios
-        _t: Date.now() // Timestamp para evitar caché
+          page: 1,
+          pageSize: 100, // Cargar los primeros 100 episodios
+          _t: Date.now() // Timestamp para evitar caché
       };
       
       if ((isFinanzas || isCodificador || isGestion) && filterConvenio.trim() !== '') {
         params.convenio = filterConvenio.trim();
-      }
+        }
       
       const response = await api.get('/api/episodios/final', { params });
       
@@ -2604,8 +2659,8 @@ const getEditableFields = () => {
                     };
                     
                     return (
-                      <th 
-                        key={key}
+                    <th 
+                      key={key}
                         className={`py-3 text-left font-semibold whitespace-nowrap ${
                           isEditableForUser ? 'text-blue-700' : 'text-slate-700'
                         } ${
@@ -2637,9 +2692,9 @@ const getEditableFields = () => {
                           borderRight: '1px solid #e2e8f0'
                         }}
                         title={isEditableForUser ? 'Campo editable' : 'Campo de solo lectura'}
-                      >
-                        {header}
-                      </th>
+                    >
+                      {header}
+                    </th>
                     );
                   })}
                 <th className="px-4 py-3 text-left font-semibold text-slate-700 whitespace-nowrap">Acciones</th>
@@ -2694,12 +2749,12 @@ const getEditableFields = () => {
                         // Todos los demás campos editables
                         shouldBeClickable = true;
                       }
-                      
+
                       // AT y AT Detalle: permitir codificador y gestión
                       if ((key === 'at' || key === 'atDetalle') && shouldBeClickable) {
                         const tienePermiso = (isCodificador || isGestion);
                         if (!tienePermiso) {
-                          shouldBeClickable = false;
+                        shouldBeClickable = false;
                         }
                       }
                       
@@ -2717,8 +2772,8 @@ const getEditableFields = () => {
                       
                       // montoAT: NO es editable para ningún rol - se autocompleta automáticamente
                       if (key === 'montoAT') {
-                        shouldBeClickable = false;
-                      }
+                          shouldBeClickable = false;
+                        }
                       
                       // valorGRD: NO es editable para ningún perfil (se calcula automáticamente)
                       if (key === 'valorGRD') {
@@ -2847,8 +2902,8 @@ const getEditableFields = () => {
           </div>
         )}
 
-      </div>
-      
+                </div>
+                
       {/* Modal de fórmula */}
       <FormulaModal
         isOpen={formulaModal.isOpen}
